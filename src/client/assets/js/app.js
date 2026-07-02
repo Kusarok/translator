@@ -197,3 +197,4 @@ setLanguage(localStorage.getItem("lang") || "en");
 loadHealth();
 updateCharacterCount();
 updateDirection(elements.inputText);
+document.body.classList.add("ready");
