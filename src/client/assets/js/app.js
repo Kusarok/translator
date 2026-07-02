@@ -193,7 +193,7 @@ const bindEvents = () => {
 
 bindEvents();
 initTheme();
-setLanguage(localStorage.getItem("lang") || "fa");
+setLanguage(localStorage.getItem("lang") || "en");
 loadHealth();
 updateCharacterCount();
 updateDirection(elements.inputText);

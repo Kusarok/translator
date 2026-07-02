@@ -18,7 +18,7 @@ const applyTheme = (theme) => {
 export const initTheme = () => {
   const saved = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(saved || (prefersDark ? "dark" : "light"));
+  applyTheme(saved || "dark");
 };
 
 initTheme.toggle = () => {

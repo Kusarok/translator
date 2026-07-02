@@ -1,4 +1,4 @@
-let lang = localStorage.getItem("lang") || "fa";
+let lang = localStorage.getItem("lang") || "en";
 
 export const getLang = () => lang;
 
