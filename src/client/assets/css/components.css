@@ -26,21 +26,33 @@
   background: rgba(239, 68, 68, 0.15);
 }
 
-.theme-toggle {
-  width: 36px;
+.theme-toggle,
+.lang-toggle {
   height: 36px;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--text);
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.theme-toggle:hover {
+.theme-toggle {
+  width: 36px;
+  font-size: 16px;
+}
+
+.lang-toggle {
+  min-width: 36px;
+  padding: 0 10px;
+}
+
+.theme-toggle:hover,
+.lang-toggle:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -64,7 +76,6 @@ select {
   background: var(--surface);
   color: var(--text);
   padding: 0 12px;
-  direction: rtl;
 }
 
 .icon-button {
@@ -112,7 +123,6 @@ textarea {
   padding: 14px;
   line-height: 1.65;
   font-size: 15px;
-  direction: rtl;
 }
 
 textarea::placeholder {

@@ -3,6 +3,7 @@ export const elements = {
   modelSelect: document.querySelector("#modelSelect"),
   toneSelect: document.querySelector("#toneSelect"),
   themeToggle: document.querySelector("#themeToggle"),
+  langToggle: document.querySelector("#langToggle"),
   sourceLanguage: document.querySelector("#sourceLanguage"),
   targetLanguage: document.querySelector("#targetLanguage"),
   inputText: document.querySelector("#inputText"),

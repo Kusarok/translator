@@ -2,11 +2,13 @@ import { getHealth, translate } from "./api.js";
 import { elements } from "./dom.js";
 import { oppositeLanguage } from "./constants.js";
 import { setHealth, setLoading, state } from "./state.js";
+import { t } from "./i18n.js";
 import {
   applyHealth,
   initTheme,
   resetOutput,
   resetStats,
+  setLanguage,
   setStats,
   setLoadingView,
   setMessage,
@@ -21,9 +23,9 @@ const loadHealth = async () => {
     const health = await getHealth();
     setHealth(health);
     applyHealth();
-    setServerStatus("آنلاین");
+    setServerStatus("online");
   } catch (error) {
-    setServerStatus("آفلاین", "error");
+    setServerStatus("offline", "error");
     setMessage(error.message, "error");
   }
 };
@@ -32,12 +34,12 @@ const translateText = async () => {
   const text = elements.inputText.value.trim();
 
   if (!text) {
-    setMessage("متن را وارد کنید.", "warning");
+    setMessage(t("msgEmpty"), "warning");
     return;
   }
 
   if (text.length > state.maxTextLength) {
-    setMessage(`متن باید حداکثر ${state.maxTextLength} کاراکتر باشد.`, "error");
+    setMessage(t("msgTooLong", { max: state.maxTextLength }), "error");
     return;
   }
 
@@ -59,7 +61,7 @@ const translateText = async () => {
     setOutput(result.translation);
     elements.modelName.textContent = result.model || elements.modelSelect.value;
     setStats(result);
-    setMessage("انجام شد.");
+    setMessage(t("msgDone"));
   } catch (error) {
     setMessage(error.message, "error");
   } finally {
@@ -74,9 +76,9 @@ const pasteText = async () => {
     elements.inputText.value = text;
     updateDirection(elements.inputText);
     updateCharacterCount();
-    setMessage("متن وارد شد.");
+    setMessage(t("msgPasted"));
   } catch {
-    setMessage("Paste در این مرورگر در دسترس نیست.", "warning");
+    setMessage(t("msgPasteFail"), "warning");
   }
 };
 
@@ -84,17 +86,17 @@ const copyOutput = async () => {
   const text = elements.outputText.value;
 
   if (!text) {
-    setMessage("متنی برای کپی وجود ندارد.", "warning");
+    setMessage(t("msgNothingToCopy"), "warning");
     return;
   }
 
   try {
     await navigator.clipboard.writeText(text);
-    setMessage("کپی شد.");
+    setMessage(t("msgCopied"));
   } catch {
     elements.outputText.select();
     document.execCommand("copy");
-    setMessage("کپی شد.");
+    setMessage(t("msgCopied"));
   }
 };
 
@@ -161,10 +163,12 @@ const bindEvents = () => {
   elements.clearButton.addEventListener("click", clearAll);
   elements.swapButton.addEventListener("click", swapLanguages);
   elements.themeToggle.addEventListener("click", initTheme.toggle);
+  elements.langToggle.addEventListener("click", setLanguage.toggle);
 };
 
 bindEvents();
 initTheme();
+setLanguage(localStorage.getItem("lang") || "fa");
 loadHealth();
 updateCharacterCount();
 updateDirection(elements.inputText);

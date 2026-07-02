@@ -13,12 +13,12 @@
       <section class="workspace" aria-label="Translation workspace">
         <header class="topbar">
           <div class="topbar-left">
-            <h1>مترجم</h1>
+            <h1 data-i18n="appName">مترجم</h1>
             <label class="model-field">
-              <select id="modelSelect" name="model" aria-label="انتخاب مدل"></select>
+              <select id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="انتخاب مدل"></select>
             </label>
             <label class="model-field">
-              <select id="toneSelect" aria-label="انتخاب لحن">
+              <select id="toneSelect" data-i18n-aria="selectTone" aria-label="انتخاب لحن">
                 <option value="default">پیش‌فرض</option>
                 <option value="formal">رسمی</option>
                 <option value="informal">غیررسمی</option>
@@ -27,15 +27,16 @@
             </label>
           </div>
           <div class="topbar-right">
-            <button class="theme-toggle" id="themeToggle" type="button" aria-label="تغییر تم">🌙</button>
-            <div class="status-pill" id="serverStatus">در حال بررسی</div>
+            <button class="lang-toggle" id="langToggle" type="button" data-i18n-aria="switchLang" aria-label="English">EN</button>
+            <button class="theme-toggle" id="themeToggle" type="button" data-i18n-aria="toggleTheme" aria-label="تغییر تم">🌙</button>
+            <div class="status-pill" id="serverStatus" data-i18n="checkingStatus">در حال بررسی</div>
           </div>
         </header>
 
         <form class="translator" id="translatorForm">
           <div class="language-row">
             <label class="field">
-              <span>زبان ورودی</span>
+              <span data-i18n="sourceLanguage">زبان ورودی</span>
               <select id="sourceLanguage" name="sourceLanguage">
                 <option value="auto">تشخیص خودکار</option>
                 <option value="fa">فارسی</option>
@@ -43,12 +44,12 @@
               </select>
             </label>
 
-            <button class="icon-button" id="swapButton" type="button" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
+            <button class="icon-button" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
               <span aria-hidden="true">⇄</span>
             </button>
 
             <label class="field">
-              <span>زبان خروجی</span>
+              <span data-i18n="targetLanguage">زبان خروجی</span>
               <select id="targetLanguage" name="targetLanguage">
                 <option value="en">انگلیسی</option>
                 <option value="fa">فارسی</option>
@@ -59,41 +60,41 @@
           <div class="panes">
             <section class="pane" aria-label="Input text">
               <div class="pane-header">
-                <span>متن ورودی</span>
+                <span data-i18n="inputText">متن ورودی</span>
                 <span id="characterCount">0 / 8000</span>
               </div>
-              <textarea id="inputText" name="text" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
+              <textarea id="inputText" name="text" data-i18n-placeholder="inputPlaceholder" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
               <div class="pane-actions">
-                <button class="ghost-button" id="pasteButton" type="button">Paste</button>
-                <button class="ghost-button" id="clearButton" type="button">پاک کردن</button>
+                <button class="ghost-button" id="pasteButton" type="button" data-i18n="paste">Paste</button>
+                <button class="ghost-button" id="clearButton" type="button" data-i18n="clear">پاک کردن</button>
               </div>
             </section>
 
             <section class="pane output-pane" aria-label="Translated text">
               <div class="pane-header">
-                <span>ترجمه</span>
-                <span id="modelName">آماده</span>
+                <span data-i18n="translation">ترجمه</span>
+                <span id="modelName" data-i18n="ready">آماده</span>
               </div>
-              <textarea id="outputText" readonly placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
+              <textarea id="outputText" readonly data-i18n-placeholder="outputPlaceholder" placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
               <div class="pane-actions">
-                <button class="ghost-button" id="copyButton" type="button">کپی</button>
+                <button class="ghost-button" id="copyButton" type="button" data-i18n="copy">کپی</button>
               </div>
             </section>
           </div>
 
           <div class="stats-bar" id="statsBar" hidden>
-            <span class="stat"><b id="statModel">—</b> مدل</span>
-            <span class="stat"><b id="statInput">—</b> توکن ورودی</span>
-            <span class="stat"><b id="statOutput">—</b> توکن خروجی</span>
-            <span class="stat"><b id="statSpeed">—</b> توکن/ثانیه</span>
-            <span class="stat"><b id="statTime">—</b> میلی‌ثانیه</span>
+            <span class="stat"><b id="statModel">—</b> <span data-i18n="statModel">مدل</span></span>
+            <span class="stat"><b id="statInput">—</b> <span data-i18n="statInput">توکن ورودی</span></span>
+            <span class="stat"><b id="statOutput">—</b> <span data-i18n="statOutput">توکن خروجی</span></span>
+            <span class="stat"><b id="statSpeed">—</b> <span data-i18n="statSpeed">توکن/ثانیه</span></span>
+            <span class="stat"><b id="statTime">—</b> <span data-i18n="statTime">زمان</span></span>
           </div>
 
           <div class="footer-row">
             <p class="message" id="message" role="status" aria-live="polite"></p>
             <button class="primary-button" id="translateButton" type="submit">
               <span class="spinner" id="spinner" aria-hidden="true"></span>
-              <span id="translateButtonText">ترجمه</span>
+              <span id="translateButtonText" data-i18n="translate">ترجمه</span>
             </button>
           </div>
         </form>
