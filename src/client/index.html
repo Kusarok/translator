@@ -7,13 +7,27 @@
     <link rel="stylesheet" href="/assets/css/base.css">
     <link rel="stylesheet" href="/assets/css/layout.css">
     <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/chat.css">
   </head>
   <body>
     <main class="app-shell">
-      <section class="workspace" aria-label="Translation workspace">
+      <section class="workspace" aria-label="App">
         <header class="topbar">
           <div class="topbar-left">
-            <h1 data-i18n="appName">مترجم</h1>
+            <nav class="app-menu">
+              <button class="menu-tab active" data-view="translator" data-i18n="appName">مترجم</button>
+              <button class="menu-tab" data-view="chat" data-i18n="chat">چت</button>
+            </nav>
+          </div>
+          <div class="topbar-right">
+            <button class="lang-toggle" id="langToggle" type="button" data-i18n-aria="switchLang" aria-label="English">EN</button>
+            <button class="theme-toggle" id="themeToggle" type="button" data-i18n-aria="toggleTheme" aria-label="تغییر تم">🌙</button>
+            <div class="status-pill" id="serverStatus" data-i18n="checkingStatus">در حال بررسی</div>
+          </div>
+        </header>
+
+        <div class="view-section" id="translatorView">
+          <div class="sub-header">
             <label class="model-field">
               <select id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="انتخاب مدل"></select>
             </label>
@@ -26,78 +40,150 @@
               </select>
             </label>
           </div>
-          <div class="topbar-right">
-            <button class="lang-toggle" id="langToggle" type="button" data-i18n-aria="switchLang" aria-label="English">EN</button>
-            <button class="theme-toggle" id="themeToggle" type="button" data-i18n-aria="toggleTheme" aria-label="تغییر تم">🌙</button>
-            <div class="status-pill" id="serverStatus" data-i18n="checkingStatus">در حال بررسی</div>
-          </div>
-        </header>
 
-        <form class="translator" id="translatorForm">
-          <div class="language-row">
-            <label class="field">
-              <span data-i18n="sourceLanguage">زبان ورودی</span>
-              <select id="sourceLanguage" name="sourceLanguage">
-                <option value="auto">تشخیص خودکار</option>
-                <option value="fa">فارسی</option>
-                <option value="en">انگلیسی</option>
-              </select>
+          <form class="translator" id="translatorForm">
+            <div class="language-row">
+              <label class="field">
+                <span data-i18n="sourceLanguage">زبان ورودی</span>
+                <select id="sourceLanguage" name="sourceLanguage">
+                  <option value="auto">تشخیص خودکار</option>
+                  <option value="fa">فارسی</option>
+                  <option value="en">انگلیسی</option>
+                </select>
+              </label>
+
+              <button class="icon-button" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
+                <span aria-hidden="true">⇄</span>
+              </button>
+
+              <label class="field">
+                <span data-i18n="targetLanguage">زبان خروجی</span>
+                <select id="targetLanguage" name="targetLanguage">
+                  <option value="en">انگلیسی</option>
+                  <option value="fa">فارسی</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="panes">
+              <section class="pane" aria-label="Input text">
+                <div class="pane-header">
+                  <span data-i18n="inputText">متن ورودی</span>
+                  <span id="characterCount">0 / 8000</span>
+                </div>
+                <textarea id="inputText" name="text" data-i18n-placeholder="inputPlaceholder" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
+                <div class="pane-actions">
+                  <button class="ghost-button" id="pasteButton" type="button" data-i18n="paste">Paste</button>
+                  <button class="ghost-button" id="clearButton" type="button" data-i18n="clear">پاک کردن</button>
+                </div>
+              </section>
+
+              <section class="pane output-pane" aria-label="Translated text">
+                <div class="pane-header">
+                  <span data-i18n="translation">ترجمه</span>
+                  <span id="modelName" data-i18n="ready">آماده</span>
+                </div>
+                <textarea id="outputText" readonly data-i18n-placeholder="outputPlaceholder" placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
+                <div class="pane-actions">
+                  <button class="ghost-button" id="copyButton" type="button" data-i18n="copy">کپی</button>
+                </div>
+              </section>
+            </div>
+
+            <div class="stats-bar" id="statsBar" hidden>
+              <span class="stat"><b id="statModel">—</b> <span data-i18n="statModel">مدل</span></span>
+              <span class="stat"><b id="statInput">—</b> <span data-i18n="statInput">توکن ورودی</span></span>
+              <span class="stat"><b id="statOutput">—</b> <span data-i18n="statOutput">توکن خروجی</span></span>
+              <span class="stat"><b id="statSpeed">—</b> <span data-i18n="statSpeed">توکن/ثانیه</span></span>
+              <span class="stat"><b id="statTime">—</b> <span data-i18n="statTime">زمان</span></span>
+            </div>
+
+            <div class="footer-row">
+              <p class="message" id="message" role="status" aria-live="polite"></p>
+              <button class="primary-button" id="translateButton" type="submit">
+                <span class="spinner" id="spinner" aria-hidden="true"></span>
+                <span id="translateButtonText" data-i18n="translate">ترجمه</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="view-section" id="chatView" hidden>
+          <div class="chat-header">
+            <label class="model-field">
+              <select id="chatModelSelect" data-i18n-aria="selectModel" aria-label="Select model"></select>
             </label>
-
-            <button class="icon-button" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
-              <span aria-hidden="true">⇄</span>
-            </button>
-
-            <label class="field">
-              <span data-i18n="targetLanguage">زبان خروجی</span>
-              <select id="targetLanguage" name="targetLanguage">
-                <option value="en">انگلیسی</option>
-                <option value="fa">فارسی</option>
-              </select>
-            </label>
+            <button class="ghost-button" id="chatSettingsButton" type="button" data-chat-i18n="chatSettings">تنظیمات</button>
+            <button class="ghost-button" id="chatClearButton" type="button" data-chat-i18n="chatClear">پاک کردن چت</button>
           </div>
-
-          <div class="panes">
-            <section class="pane" aria-label="Input text">
-              <div class="pane-header">
-                <span data-i18n="inputText">متن ورودی</span>
-                <span id="characterCount">0 / 8000</span>
-              </div>
-              <textarea id="inputText" name="text" data-i18n-placeholder="inputPlaceholder" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
-              <div class="pane-actions">
-                <button class="ghost-button" id="pasteButton" type="button" data-i18n="paste">Paste</button>
-                <button class="ghost-button" id="clearButton" type="button" data-i18n="clear">پاک کردن</button>
-              </div>
-            </section>
-
-            <section class="pane output-pane" aria-label="Translated text">
-              <div class="pane-header">
-                <span data-i18n="translation">ترجمه</span>
-                <span id="modelName" data-i18n="ready">آماده</span>
-              </div>
-              <textarea id="outputText" readonly data-i18n-placeholder="outputPlaceholder" placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
-              <div class="pane-actions">
-                <button class="ghost-button" id="copyButton" type="button" data-i18n="copy">کپی</button>
-              </div>
-            </section>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-empty" id="chatEmptyState">شروع گفتگو...</div>
           </div>
-
-          <div class="stats-bar" id="statsBar" hidden>
-            <span class="stat"><b id="statModel">—</b> <span data-i18n="statModel">مدل</span></span>
-            <span class="stat"><b id="statInput">—</b> <span data-i18n="statInput">توکن ورودی</span></span>
-            <span class="stat"><b id="statOutput">—</b> <span data-i18n="statOutput">توکن خروجی</span></span>
-            <span class="stat"><b id="statSpeed">—</b> <span data-i18n="statSpeed">توکن/ثانیه</span></span>
-            <span class="stat"><b id="statTime">—</b> <span data-i18n="statTime">زمان</span></span>
+          <div class="chat-input-area">
+            <div class="chat-image-preview" id="chatImagePreview" hidden></div>
+            <div class="chat-input-row">
+              <button class="chat-icon-btn" id="chatImageButton" type="button" data-i18n-aria="chatUploadImage" aria-label="آپلود تصویر">📷</button>
+              <input type="file" id="chatImageInput" accept="image/png,image/jpeg" hidden multiple>
+              <textarea id="chatInput" placeholder="پیام خود را بنویسید..." rows="1"></textarea>
+              <button class="primary-button chat-send-btn" id="chatSendButton" type="button">
+                <span id="chatSendButtonText">ارسال</span>
+              </button>
+            </div>
           </div>
+        </div>
 
-          <div class="footer-row">
-            <p class="message" id="message" role="status" aria-live="polite"></p>
-            <button class="primary-button" id="translateButton" type="submit">
-              <span class="spinner" id="spinner" aria-hidden="true"></span>
-              <span id="translateButtonText" data-i18n="translate">ترجمه</span>
-            </button>
+        <div class="settings-overlay" id="chatSettingsPanel" hidden>
+          <div class="settings-panel">
+            <div class="settings-header">
+              <h2 data-chat-i18n="chatSettings">تنظیمات</h2>
+              <button class="settings-close-btn" id="chatSettingsClose" type="button">✕</button>
+            </div>
+            <div class="settings-body">
+              <label class="settings-field">
+                <span data-chat-i18n="chatSystemPrompt">پرامپت سیستمی</span>
+                <textarea id="chatSystemPrompt" rows="3"></textarea>
+              </label>
+              <label class="settings-field">
+                <span><span data-chat-i18n="chatTemperature">دمای نمونه‌برداری</span> <b id="chatTemperatureValue">1.0</b></span>
+                <input type="range" id="chatTemperature" min="0" max="2" step="0.1" value="1">
+              </label>
+              <label class="settings-field">
+                <span data-chat-i18n="chatMaxTokens">حداکثر توکن خروجی</span>
+                <input type="number" id="chatMaxTokens" value="32768">
+              </label>
+              <label class="settings-field">
+                <span><span data-chat-i18n="chatTopP">Top P</span> <b id="chatTopPValue">0.95</b></span>
+                <input type="range" id="chatTopP" min="0" max="1" step="0.05" value="0.95">
+              </label>
+              <label class="settings-field">
+                <span data-chat-i18n="chatFormat">فرمت</span>
+                <select id="chatFormat">
+                  <option value="text">Text</option>
+                  <option value="json_object">JSON Object</option>
+                </select>
+              </label>
+              <label class="settings-field">
+                <span data-chat-i18n="chatSeed">Seed</span>
+                <input type="number" id="chatSeed">
+              </label>
+              <label class="settings-field checkbox-field">
+                <input type="checkbox" id="chatStream">
+                <span data-chat-i18n="chatStream">استریم</span>
+              </label>
+              <label class="settings-field">
+                <span data-chat-i18n="chatStop">دنباله توقف</span>
+                <input type="text" id="chatStop">
+              </label>
+              <label class="settings-field">
+                <span data-chat-i18n="chatFunctions">توابع (JSON)</span>
+                <textarea id="chatFunctions" rows="3"></textarea>
+              </label>
+            </div>
+            <div class="settings-footer">
+              <button class="primary-button" id="chatSettingsSave" type="button" data-chat-i18n="chatSave">ذخیره</button>
+            </div>
           </div>
-        </form>
+        </div>
       </section>
     </main>
 

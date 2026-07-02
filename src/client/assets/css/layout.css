@@ -46,6 +46,33 @@
   white-space: nowrap;
 }
 
+.app-menu {
+  display: flex;
+  gap: 4px;
+}
+
+.menu-tab {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-tab:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.menu-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
 .model-field select {
   min-width: 160px;
   height: 36px;

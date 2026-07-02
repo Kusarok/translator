@@ -17,6 +17,22 @@ import {
   updateCharacterCount,
   updateDirection
 } from "./ui.js";
+import { initChat, onLanguageChange } from "./chat-app.js";
+
+const menuTabs = document.querySelectorAll(".menu-tab");
+const views = {
+  translator: document.querySelector("#translatorView"),
+  chat: document.querySelector("#chatView")
+};
+
+const switchView = (view) => {
+  for (const [name, el] of Object.entries(views)) {
+    if (el) el.hidden = name !== view;
+  }
+  menuTabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.view === view);
+  });
+};
 
 const loadHealth = async () => {
   try {
@@ -24,6 +40,9 @@ const loadHealth = async () => {
     setHealth(health);
     applyHealth();
     setServerStatus("online");
+    if (health.chat) {
+      initChat(health.chat);
+    }
   } catch (error) {
     setServerStatus("offline", "error");
     setMessage(error.message, "error");
@@ -163,7 +182,13 @@ const bindEvents = () => {
   elements.clearButton.addEventListener("click", clearAll);
   elements.swapButton.addEventListener("click", swapLanguages);
   elements.themeToggle.addEventListener("click", initTheme.toggle);
-  elements.langToggle.addEventListener("click", setLanguage.toggle);
+  elements.langToggle.addEventListener("click", () => {
+    setLanguage.toggle();
+    onLanguageChange();
+  });
+  menuTabs.forEach((tab) => {
+    tab.addEventListener("click", () => switchView(tab.dataset.view));
+  });
 };
 
 bindEvents();

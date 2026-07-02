@@ -4,7 +4,9 @@ import rateLimit from "express-rate-limit";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
+import { chatConfig } from "./config/chat.config.js";
 import { translateRouter } from "./routes/translate.routes.js";
+import { chatRouter } from "./routes/chat.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,7 +35,7 @@ export const createApp = () => {
     }
   }));
 
-  app.use(express.json({ limit: "256kb" }));
+  app.use(express.json({ limit: "15mb" }));
   app.use(express.static(clientPath));
 
   app.get("/api/health", (_req, res) => {
@@ -41,7 +43,8 @@ export const createApp = () => {
       ok: true,
       model: env.cerebrasModel,
       models: env.availableModels,
-      maxTextLength: env.maxTextLength
+      maxTextLength: env.maxTextLength,
+      chat: chatConfig
     });
   });
 
@@ -51,6 +54,13 @@ export const createApp = () => {
     standardHeaders: true,
     legacyHeaders: false
   }), translateRouter);
+
+  app.use("/api/chat", rateLimit({
+    windowMs: 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false
+  }), chatRouter);
 
   app.use((_req, res) => {
     res.sendFile(path.join(clientPath, "index.html"));
