@@ -2,6 +2,29 @@ import { hasPersianText } from "./constants.js";
 import { elements } from "./dom.js";
 import { state } from "./state.js";
 
+const formatTime = (ms) =>
+  ms == null ? "—" : (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`);
+
+const formatNumber = (n) =>
+  n == null ? "—" : (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
+
+const applyTheme = (theme) => {
+  document.documentElement.setAttribute("data-theme", theme);
+  elements.themeToggle.textContent = theme === "dark" ? "\u2600\ufe0f" : "\u{1f319}";
+  localStorage.setItem("theme", theme);
+};
+
+export const initTheme = () => {
+  const saved = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(saved || (prefersDark ? "dark" : "light"));
+};
+
+initTheme.toggle = () => {
+  const current = document.documentElement.getAttribute("data-theme") || "light";
+  applyTheme(current === "dark" ? "light" : "dark");
+};
+
 export const setMessage = (text = "", type = "") => {
   elements.message.textContent = text;
   elements.message.className = `message ${type}`.trim();
@@ -54,10 +77,10 @@ export const populateModelSelect = (models, selected) => {
 
 export const setStats = ({ model, usage, timing }) => {
   elements.statModel.textContent = model || "—";
-  elements.statInput.textContent = usage?.prompt_tokens ?? "—";
-  elements.statOutput.textContent = usage?.completion_tokens ?? "—";
+  elements.statInput.textContent = formatNumber(usage?.prompt_tokens);
+  elements.statOutput.textContent = formatNumber(usage?.completion_tokens);
   elements.statSpeed.textContent = timing?.tokens_per_second ?? "—";
-  elements.statTime.textContent = timing?.elapsed_ms ?? "—";
+  elements.statTime.textContent = formatTime(timing?.elapsed_ms);
   elements.statsBar.hidden = false;
 };
 

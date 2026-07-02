@@ -17,8 +17,19 @@
             <label class="model-field">
               <select id="modelSelect" name="model" aria-label="انتخاب مدل"></select>
             </label>
+            <label class="model-field">
+              <select id="toneSelect" aria-label="انتخاب لحن">
+                <option value="default">پیش‌فرض</option>
+                <option value="formal">رسمی</option>
+                <option value="informal">غیررسمی</option>
+                <option value="technical">تخصصی</option>
+              </select>
+            </label>
           </div>
-          <div class="status-pill" id="serverStatus">در حال بررسی</div>
+          <div class="topbar-right">
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="تغییر تم">🌙</button>
+            <div class="status-pill" id="serverStatus">در حال بررسی</div>
+          </div>
         </header>
 
         <form class="translator" id="translatorForm">

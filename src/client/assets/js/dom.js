@@ -1,6 +1,8 @@
 export const elements = {
   form: document.querySelector("#translatorForm"),
   modelSelect: document.querySelector("#modelSelect"),
+  toneSelect: document.querySelector("#toneSelect"),
+  themeToggle: document.querySelector("#themeToggle"),
   sourceLanguage: document.querySelector("#sourceLanguage"),
   targetLanguage: document.querySelector("#targetLanguage"),
   inputText: document.querySelector("#inputText"),

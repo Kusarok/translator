@@ -18,6 +18,33 @@
   color: var(--danger);
 }
 
+:root[data-theme="dark"] .status-pill {
+  background: var(--accent-soft);
+}
+
+:root[data-theme="dark"] .status-pill.error {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -93,7 +120,7 @@ textarea::placeholder {
 }
 
 .output-pane textarea {
-  background: #f8faf9;
+  background: var(--surface-strong);
 }
 
 .pane-actions {

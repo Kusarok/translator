@@ -4,6 +4,7 @@ import { oppositeLanguage } from "./constants.js";
 import { setHealth, setLoading, state } from "./state.js";
 import {
   applyHealth,
+  initTheme,
   resetOutput,
   resetStats,
   setStats,
@@ -51,7 +52,8 @@ const translateText = async () => {
       text,
       sourceLanguage: elements.sourceLanguage.value,
       targetLanguage: elements.targetLanguage.value,
-      model: elements.modelSelect.value
+      model: elements.modelSelect.value,
+      tone: elements.toneSelect.value
     });
 
     setOutput(result.translation);
@@ -110,7 +112,7 @@ const swapLanguages = () => {
   const source = elements.sourceLanguage.value;
   const target = elements.targetLanguage.value;
 
-  elements.sourceLanguage.value = source === "auto" ? target : target;
+  elements.sourceLanguage.value = target;
   elements.targetLanguage.value = source === "auto" ? oppositeLanguage[target] : source;
 
   const input = elements.inputText.value;
@@ -148,13 +150,21 @@ const bindEvents = () => {
   });
 
   elements.sourceLanguage.addEventListener("change", syncTargetWithSource);
+  elements.inputText.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      translateText();
+    }
+  });
   elements.pasteButton.addEventListener("click", pasteText);
   elements.copyButton.addEventListener("click", copyOutput);
   elements.clearButton.addEventListener("click", clearAll);
   elements.swapButton.addEventListener("click", swapLanguages);
+  elements.themeToggle.addEventListener("click", initTheme.toggle);
 };
 
 bindEvents();
+initTheme();
 loadHealth();
 updateCharacterCount();
 updateDirection(elements.inputText);
