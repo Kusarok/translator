@@ -12,9 +12,11 @@
     <main class="app-shell">
       <section class="workspace" aria-label="Translation workspace">
         <header class="topbar">
-          <div>
-            <p class="eyebrow">Cerebras gemma-4-31b</p>
-            <h1>مترجم فارسی و انگلیسی</h1>
+          <div class="topbar-left">
+            <h1>مترجم</h1>
+            <label class="model-field">
+              <select id="modelSelect" name="model" aria-label="انتخاب مدل"></select>
+            </label>
           </div>
           <div class="status-pill" id="serverStatus">در حال بررسی</div>
         </header>
@@ -66,6 +68,14 @@
                 <button class="ghost-button" id="copyButton" type="button">کپی</button>
               </div>
             </section>
+          </div>
+
+          <div class="stats-bar" id="statsBar" hidden>
+            <span class="stat"><b id="statModel">—</b> مدل</span>
+            <span class="stat"><b id="statInput">—</b> توکن ورودی</span>
+            <span class="stat"><b id="statOutput">—</b> توکن خروجی</span>
+            <span class="stat"><b id="statSpeed">—</b> توکن/ثانیه</span>
+            <span class="stat"><b id="statTime">—</b> میلی‌ثانیه</span>
           </div>
 
           <div class="footer-row">

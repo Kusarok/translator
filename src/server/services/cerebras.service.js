@@ -16,10 +16,13 @@ const parseErrorMessage = async (response) => {
   }
 };
 
-export const createChatCompletion = async (messages) => {
+export const createChatCompletion = async (messages, model) => {
   if (!env.cerebrasApiKey) {
     throw new HttpError(500, "Cerebras API key is not configured");
   }
+
+  const selectedModel = model || env.cerebrasModel;
+  const startedAt = performance.now();
 
   const response = await fetch(`${env.cerebrasBaseUrl}/chat/completions`, {
     method: "POST",
@@ -28,7 +31,7 @@ export const createChatCompletion = async (messages) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: env.cerebrasModel,
+      model: selectedModel,
       messages,
       temperature: 0.2,
       max_completion_tokens: 4000
@@ -46,9 +49,24 @@ export const createChatCompletion = async (messages) => {
     throw new HttpError(502, "Cerebras returned an empty translation");
   }
 
+  const elapsedMs = performance.now() - startedAt;
+  const usage = data.usage || {};
+  const completionTokens = usage.completion_tokens || 0;
+  const tokensPerSecond = elapsedMs > 0
+    ? Math.round((completionTokens / (elapsedMs / 1000)) * 10) / 10
+    : 0;
+
   return {
     text: content,
-    model: data.model || env.cerebrasModel,
-    usage: data.usage || null
+    model: data.model || selectedModel,
+    usage: {
+      prompt_tokens: usage.prompt_tokens || 0,
+      completion_tokens: completionTokens,
+      total_tokens: usage.total_tokens || 0
+    },
+    timing: {
+      elapsed_ms: Math.round(elapsedMs),
+      tokens_per_second: tokensPerSecond
+    }
   };
 };

@@ -40,6 +40,7 @@ export const createApp = () => {
     res.json({
       ok: true,
       model: env.cerebrasModel,
+      models: env.availableModels,
       maxTextLength: env.maxTextLength
     });
   });

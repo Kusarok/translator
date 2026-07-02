@@ -47,7 +47,7 @@ const createInstruction = ({ sourceLanguage, targetLanguage }) => {
   ].join("\n");
 };
 
-export const translateText = async ({ text, sourceLanguage, targetLanguage }) => {
+export const translateText = async ({ text, sourceLanguage, targetLanguage, model }) => {
   const cleanText = normalizeText(text);
   const source = normalizeLanguage(sourceLanguage, "auto");
   const target = normalizeLanguage(targetLanguage, "en");
@@ -73,5 +73,5 @@ export const translateText = async ({ text, sourceLanguage, targetLanguage }) =>
       role: "user",
       content: cleanText
     }
-  ]);
+  ], model);
 };

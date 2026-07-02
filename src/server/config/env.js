@@ -7,11 +7,18 @@ const toPositiveInt = (value, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+export const availableModels = [
+  { id: "gpt-oss-120b", label: "GPT-OSS 120B" },
+  { id: "gemma-4-31b", label: "Gemma 4 31B" },
+  { id: "zai-glm-4.7", label: "GLM 4.7" }
+];
+
 export const env = {
   host: process.env.HOST || "0.0.0.0",
   port: toPositiveInt(process.env.PORT, 8080),
   cerebrasApiKey: process.env.CEREBRAS_API_KEY || "",
   cerebrasModel: process.env.CEREBRAS_MODEL || "gemma-4-31b",
   cerebrasBaseUrl: process.env.CEREBRAS_BASE_URL || "https://api.cerebras.ai/v1",
-  maxTextLength: toPositiveInt(process.env.MAX_TEXT_LENGTH, 8000)
+  maxTextLength: toPositiveInt(process.env.MAX_TEXT_LENGTH, 8000),
+  availableModels
 };

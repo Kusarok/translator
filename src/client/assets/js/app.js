@@ -5,6 +5,8 @@ import { setHealth, setLoading, state } from "./state.js";
 import {
   applyHealth,
   resetOutput,
+  resetStats,
+  setStats,
   setLoadingView,
   setMessage,
   setOutput,
@@ -42,16 +44,19 @@ const translateText = async () => {
   setLoadingView(true);
   setMessage("");
   resetOutput();
+  resetStats();
 
   try {
     const result = await translate({
       text,
       sourceLanguage: elements.sourceLanguage.value,
-      targetLanguage: elements.targetLanguage.value
+      targetLanguage: elements.targetLanguage.value,
+      model: elements.modelSelect.value
     });
 
     setOutput(result.translation);
-    elements.modelName.textContent = result.model || state.model;
+    elements.modelName.textContent = result.model || elements.modelSelect.value;
+    setStats(result);
     setMessage("انجام شد.");
   } catch (error) {
     setMessage(error.message, "error");
@@ -94,6 +99,7 @@ const copyOutput = async () => {
 const clearAll = () => {
   elements.inputText.value = "";
   resetOutput();
+  resetStats();
   updateCharacterCount();
   updateDirection(elements.inputText);
   setMessage("");

@@ -6,6 +6,7 @@ export const translate = async (req, res) => {
   res.json({
     translation: result.text,
     model: result.model,
-    usage: result.usage
+    usage: result.usage,
+    timing: result.timing
   });
 };

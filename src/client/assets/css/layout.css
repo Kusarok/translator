@@ -1,5 +1,5 @@
 .app-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1080px, calc(100% - 32px));
   min-height: 100vh;
   margin: 0 auto;
   display: flex;
@@ -12,45 +12,54 @@
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .topbar {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   align-items: center;
-  padding: 24px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--line);
-  background: var(--surface-strong);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .topbar h1 {
-  margin: 4px 0 0;
-  font-size: 28px;
-  line-height: 1.15;
-  letter-spacing: 0;
-  font-weight: 850;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.eyebrow {
-  margin: 0;
-  color: var(--accent);
+.model-field select {
+  min-width: 160px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 10px;
   font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .translator {
-  padding: 24px;
+  padding: 20px;
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .language-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
   gap: 12px;
   align-items: end;
 }
@@ -59,6 +68,15 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.stats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border-radius: 8px;
 }
 
 .footer-row {
@@ -78,19 +96,23 @@
   .topbar {
     align-items: flex-start;
     flex-direction: column;
-    padding: 18px;
+    padding: 14px;
   }
 
   .topbar h1 {
-    font-size: 22px;
+    font-size: 16px;
+  }
+
+  .model-field select {
+    width: 100%;
   }
 
   .translator {
-    padding: 18px;
+    padding: 14px;
   }
 
   .language-row {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) 40px;
   }
 
   .language-row .field:last-child {

@@ -1,14 +1,14 @@
 .status-pill {
-  min-width: 112px;
-  min-height: 36px;
+  min-width: 80px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -20,33 +20,33 @@
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field span,
 .pane-header {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 select {
   width: 100%;
-  height: 46px;
+  height: 42px;
   border: 1px solid var(--line);
-  background: var(--surface-strong);
+  background: var(--surface);
   color: var(--text);
   padding: 0 12px;
   direction: rtl;
 }
 
 .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line);
-  background: var(--surface-strong);
+  background: var(--surface);
   color: var(--accent-strong);
-  font-size: 22px;
+  font-size: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -54,8 +54,8 @@ select {
 
 .icon-button:hover,
 .ghost-button:hover {
-  border-color: rgba(11, 124, 114, 0.45);
-  background: #f4faf9;
+  border-color: rgba(11, 124, 114, 0.4);
+  background: var(--accent-soft);
 }
 
 .pane {
@@ -80,20 +80,20 @@ textarea {
   min-width: 0;
   resize: vertical;
   border: 1px solid var(--line);
-  background: var(--surface-strong);
+  background: var(--surface);
   color: var(--text);
-  padding: 16px;
+  padding: 14px;
   line-height: 1.65;
-  font-size: 16px;
+  font-size: 15px;
   direction: rtl;
 }
 
 textarea::placeholder {
-  color: #8b9693;
+  color: #94a09c;
 }
 
 .output-pane textarea {
-  background: #f8fbfa;
+  background: #f8faf9;
 }
 
 .pane-actions {
@@ -104,20 +104,20 @@ textarea::placeholder {
 
 .ghost-button,
 .primary-button {
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid transparent;
   padding: 0 16px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .ghost-button {
   color: var(--text);
-  background: var(--surface-strong);
+  background: var(--surface);
   border-color: var(--line);
 }
 
 .primary-button {
-  min-width: 150px;
+  min-width: 140px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -138,7 +138,7 @@ textarea::placeholder {
   min-height: 22px;
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .message.error {
@@ -147,6 +147,21 @@ textarea::placeholder {
 
 .message.warning {
   color: var(--warning);
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stat b {
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .spinner {
@@ -171,9 +186,9 @@ textarea::placeholder {
 
 @media (max-width: 760px) {
   .status-pill {
-    min-width: 88px;
-    min-height: 32px;
-    font-size: 12px;
+    min-width: 72px;
+    min-height: 28px;
+    font-size: 11px;
   }
 
   .pane {
@@ -190,5 +205,9 @@ textarea::placeholder {
 
   .primary-button {
     width: 100%;
+  }
+
+  .stats-bar {
+    gap: 8px;
   }
 }

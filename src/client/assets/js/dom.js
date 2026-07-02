@@ -1,5 +1,6 @@
 export const elements = {
   form: document.querySelector("#translatorForm"),
+  modelSelect: document.querySelector("#modelSelect"),
   sourceLanguage: document.querySelector("#sourceLanguage"),
   targetLanguage: document.querySelector("#targetLanguage"),
   inputText: document.querySelector("#inputText"),
@@ -13,5 +14,11 @@ export const elements = {
   characterCount: document.querySelector("#characterCount"),
   message: document.querySelector("#message"),
   serverStatus: document.querySelector("#serverStatus"),
-  modelName: document.querySelector("#modelName")
+  modelName: document.querySelector("#modelName"),
+  statsBar: document.querySelector("#statsBar"),
+  statModel: document.querySelector("#statModel"),
+  statInput: document.querySelector("#statInput"),
+  statOutput: document.querySelector("#statOutput"),
+  statSpeed: document.querySelector("#statSpeed"),
+  statTime: document.querySelector("#statTime")
 };
