@@ -110,23 +110,34 @@
 
         <div class="view-section" id="chatView" hidden>
           <div class="chat-header">
-            <label class="model-field">
+            <div class="chat-bot-info">
+              <div class="chat-bot-avatar">AI</div>
+              <div class="chat-bot-meta">
+                <span class="chat-bot-name" id="chatBotName">AI Assistant</span>
+                <span class="chat-bot-status" data-chat-i18n="online">آنلاین</span>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button id="chatSettingsButton" type="button" data-chat-i18n-aria="chatSettings" aria-label="Settings">⚙</button>
+              <button id="chatClearButton" type="button" data-chat-i18n-aria="chatClear" aria-label="Clear chat">🗑</button>
+            </div>
+            <label class="model-field" hidden>
               <select id="chatModelSelect" data-i18n-aria="selectModel" aria-label="Select model"></select>
             </label>
-            <button class="ghost-button" id="chatSettingsButton" type="button" data-chat-i18n="chatSettings">تنظیمات</button>
-            <button class="ghost-button" id="chatClearButton" type="button" data-chat-i18n="chatClear">پاک کردن چت</button>
           </div>
           <div class="chat-messages" id="chatMessages">
             <div class="chat-empty" id="chatEmptyState">شروع گفتگو...</div>
           </div>
           <div class="chat-input-area">
             <div class="chat-image-preview" id="chatImagePreview" hidden></div>
-            <div class="chat-input-row">
-              <button class="chat-icon-btn" id="chatImageButton" type="button" data-i18n-aria="chatUploadImage" aria-label="آپلود تصویر">📷</button>
+            <div class="chat-input-container">
+              <button class="chat-attach-btn" id="chatImageButton" type="button" data-i18n-aria="chatUploadImage" aria-label="Upload image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
               <input type="file" id="chatImageInput" accept="image/png,image/jpeg" hidden multiple>
               <textarea id="chatInput" placeholder="پیام خود را بنویسید..." rows="1"></textarea>
-              <button class="primary-button chat-send-btn" id="chatSendButton" type="button">
-                <span id="chatSendButtonText">ارسال</span>
+              <button class="chat-send-btn" id="chatSendButton" type="button" aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
               </button>
             </div>
           </div>

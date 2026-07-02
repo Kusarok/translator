@@ -22,6 +22,7 @@ import {
   populateChatModelSelect,
   saveSettingsFromForm,
   updateSliderDisplay,
+  updateChatBotName,
   applySettingsToForm,
   applyChatTranslations
 } from "./chat-ui.js";
@@ -151,6 +152,7 @@ const handleClearChat = () => {
 
 const handleSettingsSave = () => {
   saveSettingsFromForm();
+  updateChatBotName();
   hideSettings();
 };
 
@@ -175,6 +177,13 @@ const bindChatEvents = () => {
       handleSend();
     }
   });
+
+  chatEl.input.addEventListener("input", () => {
+    chatEl.input.style.height = "auto";
+    chatEl.input.style.height = `${Math.min(chatEl.input.scrollHeight, 120)}px`;
+  });
+
+  chatEl.modelSelect.addEventListener("change", updateChatBotName);
 
   chatEl.imageButton.addEventListener("click", () => {
     chatEl.imageInput.click();

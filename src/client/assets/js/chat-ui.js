@@ -35,7 +35,13 @@ export const addMessage = (role, content) => {
 
   const bubble = document.createElement("div");
   bubble.className = `msg-bubble msg-${role}`;
-  bubble.innerHTML = renderContent(content);
+
+  const time = new Date().toLocaleTimeString(getLang() === "fa" ? "fa-IR" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  bubble.innerHTML = renderContent(content) + `<span class="msg-time">${time}</span>`;
 
   const wrapper = document.createElement("div");
   wrapper.className = `msg-row msg-row-${role}`;
@@ -103,7 +109,6 @@ export const clearImagePreview = () => {
 
 export const setChatLoading = (loading) => {
   chatEl.sendButton.disabled = loading;
-  chatEl.sendButtonText.textContent = loading ? t("chatSending") : t("chatSend");
   chatEl.input.disabled = loading;
 };
 
@@ -136,6 +141,13 @@ export const populateChatModelSelect = (models, selected) => {
   }
 
   chatEl.modelSelect.value = selected;
+  updateChatBotName();
+};
+
+export const updateChatBotName = () => {
+  if (!chatEl.botName) return;
+  const opt = chatEl.modelSelect.options[chatEl.modelSelect.selectedIndex];
+  chatEl.botName.textContent = opt ? opt.textContent : "AI";
 };
 
 export const applySettingsToForm = () => {
@@ -188,14 +200,14 @@ export const applyChatTranslations = () => {
   setPh(chatEl.seed, "chatSeedPh");
   setPh(chatEl.stop, "chatStopPh");
   setPh(chatEl.functions, "chatFunctionsPh");
-  set(chatEl.sendButtonText, "chatSend");
-  set(chatEl.clearButton, "chatClear");
-  set(chatEl.settingsButton, "chatSettings");
-  set(chatEl.settingsSave, "chatSave");
-  set(chatEl.settingsClose, "chatClose");
   if (chatEl.emptyState) chatEl.emptyState.textContent = tr.chatNoMessages;
+  updateChatBotName();
 
   document.querySelectorAll("[data-chat-i18n]").forEach((el) => {
     el.textContent = tr[el.dataset.chatI18n];
+  });
+
+  document.querySelectorAll("[data-chat-i18n-aria]").forEach((el) => {
+    el.setAttribute("aria-label", tr[el.dataset.chatI18nAria]);
   });
 };
