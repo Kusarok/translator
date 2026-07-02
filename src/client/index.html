@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترجم فارسی و انگلیسی</title>
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="Translation workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Cerebras gemma-4-31b</p>
+            <h1>مترجم فارسی و انگلیسی</h1>
+          </div>
+          <div class="status-pill" id="serverStatus">در حال بررسی</div>
+        </header>
+
+        <form class="translator" id="translatorForm">
+          <div class="language-row">
+            <label class="field">
+              <span>زبان ورودی</span>
+              <select id="sourceLanguage" name="sourceLanguage">
+                <option value="auto">تشخیص خودکار</option>
+                <option value="fa">فارسی</option>
+                <option value="en">انگلیسی</option>
+              </select>
+            </label>
+
+            <button class="icon-button" id="swapButton" type="button" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
+              <span aria-hidden="true">⇄</span>
+            </button>
+
+            <label class="field">
+              <span>زبان خروجی</span>
+              <select id="targetLanguage" name="targetLanguage">
+                <option value="en">انگلیسی</option>
+                <option value="fa">فارسی</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="panes">
+            <section class="pane" aria-label="Input text">
+              <div class="pane-header">
+                <span>متن ورودی</span>
+                <span id="characterCount">0 / 8000</span>
+              </div>
+              <textarea id="inputText" name="text" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
+              <div class="pane-actions">
+                <button class="ghost-button" id="pasteButton" type="button">Paste</button>
+                <button class="ghost-button" id="clearButton" type="button">پاک کردن</button>
+              </div>
+            </section>
+
+            <section class="pane output-pane" aria-label="Translated text">
+              <div class="pane-header">
+                <span>ترجمه</span>
+                <span id="modelName">آماده</span>
+              </div>
+              <textarea id="outputText" readonly placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
+              <div class="pane-actions">
+                <button class="ghost-button" id="copyButton" type="button">کپی</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="footer-row">
+            <p class="message" id="message" role="status" aria-live="polite"></p>
+            <button class="primary-button" id="translateButton" type="submit">
+              <span class="spinner" id="spinner" aria-hidden="true"></span>
+              <span id="translateButtonText">ترجمه</span>
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/js/app.js"></script>
+  </body>
+</html>
