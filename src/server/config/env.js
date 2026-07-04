@@ -59,5 +59,8 @@ export const env = {
   // Hard cap on output tokens for free requests, so the shared key can't be drained.
   freeMaxTokens: toPositiveInt(process.env.FREE_MAX_TOKENS, 2048),
   // Hard cap on images per free chat request (vision is expensive).
-  freeMaxImages: toPositiveInt(process.env.FREE_MAX_IMAGES, 2)
+  freeMaxImages: toPositiveInt(process.env.FREE_MAX_IMAGES, 2),
+  // Hard cap on total input characters (all message text + system prompt) per free chat
+  // request, so anonymous users can't burn prompt tokens up to the 15 MB body limit.
+  freeMaxInputChars: toPositiveInt(process.env.FREE_MAX_INPUT_CHARS, 16000)
 };

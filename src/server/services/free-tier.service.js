@@ -36,6 +36,7 @@ export const getFreeRuntime = () => {
     lockModel: true,
     maxCompletionTokens: env.freeMaxTokens,
     maxImages: env.freeMaxImages,
+    maxInputChars: env.freeMaxInputChars,
     source: "free"
   };
 };

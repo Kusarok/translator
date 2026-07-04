@@ -88,6 +88,7 @@ FREE_MODEL=gemma-4-31b
 FREE_RATE_LIMIT=5           # free requests per visitor per minute
 FREE_MAX_TOKENS=2048        # max output tokens per free request
 FREE_MAX_IMAGES=2           # max images per free chat request
+FREE_MAX_INPUT_CHARS=16000  # max total input chars (chat text + system prompt)
 ```
 
 > **Behind a reverse proxy, set `TRUST_PROXY`** (e.g. `TRUST_PROXY=1`) so the rate limit is counted per real visitor IP. Without it, everyone shares the proxy's IP and the 5/min budget becomes global.
@@ -116,6 +117,7 @@ FREE_MODEL=gemma-4-31b
 FREE_RATE_LIMIT=5
 FREE_MAX_TOKENS=2048
 FREE_MAX_IMAGES=2
+FREE_MAX_INPUT_CHARS=16000
 ```
 
 ## Live Translate (voice)
@@ -227,6 +229,7 @@ FREE_MODEL=gemma-4-31b
 FREE_RATE_LIMIT=5
 FREE_MAX_TOKENS=2048
 FREE_MAX_IMAGES=2
+FREE_MAX_INPUT_CHARS=16000
 ```
 
 > **پشت پروکسی حتماً `TRUST_PROXY` را تنظیم کنید** (مثلاً `TRUST_PROXY=1`) تا محدودیت بر اساس IP واقعی هر کاربر شمرده شود، نه IP پروکسی.

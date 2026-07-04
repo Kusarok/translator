@@ -103,13 +103,19 @@ export const createApp = () => {
   app.use("/api/auth", authRouter);
   app.use("/api/settings", settingsRouter);
 
+  // A request is BYOK only when BOTH provider and key are present — this mirrors
+  // resolveRuntime() exactly. Checking the key alone would let `{ apiKey: "x" }` (no
+  // provider) skip the free limiter while still falling through to the free server key.
+  const isByokRequest = (req) =>
+    Boolean(String(req.body?.provider || "").trim() && String(req.body?.apiKey || "").trim());
+
   // A request falls back to the shared free tier only when the visitor is not the owner
   // and did not bring their own key. BYOK and owner traffic must not be counted against
   // (or blocked by) the free quota, so we skip them here.
   const isFreeRequest = (req) =>
     freeTierEnabled() &&
     !isOwnerAuthenticated(req) &&
-    !String(req.body?.apiKey || "").trim();
+    !isByokRequest(req);
 
   // One shared limiter instance mounted on both routes => translate + chat draw from the
   // same per-visitor budget (default 5/min), keyed by IP. Requires TRUST_PROXY to be set

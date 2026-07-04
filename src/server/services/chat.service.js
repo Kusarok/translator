@@ -78,9 +78,36 @@ const validateMessages = (messages, maxImages = chatConfig.maxImages) => {
   }
 };
 
+// Total length of all user-supplied text (message text parts + system prompt).
+// Used to cap free-tier input so the shared key can't be drained with huge prompts.
+const measureInputChars = (messages, systemPrompt) => {
+  let total = String(systemPrompt || "").length;
+  for (const msg of messages) {
+    if (typeof msg.content === "string") {
+      total += msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (part?.type === "text" && typeof part.text === "string") {
+          total += part.text.length;
+        }
+      }
+    }
+  }
+  return total;
+};
+
 export const sendChat = async ({ model, messages, systemPrompt, settings, provider, apiKey, authenticated }) => {
   const runtime = resolveRuntime({ provider, apiKey, model, authenticated });
   validateMessages(messages, runtime.maxImages ?? chatConfig.maxImages);
+
+  // Free tier only: cap total input size so the shared key can't be drained with a giant
+  // prompt. Owner/BYOK runtimes leave maxInputChars undefined and are unaffected.
+  if (runtime.maxInputChars != null) {
+    const inputChars = measureInputChars(messages, systemPrompt);
+    if (inputChars > runtime.maxInputChars) {
+      throw new HttpError(413, `Free chat input must be ${runtime.maxInputChars} characters or fewer. Add your own API key in Settings for longer conversations.`);
+    }
+  }
   const body = buildRequestBody({ model, messages, systemPrompt, settings, runtime });
   const { data, elapsedMs, provider: providerId } = await providerRequest(body, runtime);
 
