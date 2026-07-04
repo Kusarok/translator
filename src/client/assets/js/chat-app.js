@@ -29,7 +29,8 @@ import {
 } from "./chat-ui.js";
 import { t, getLang } from "./i18n.js";
 import { state } from "./state.js";
-import { getRuntime, getRequestPayload, updateModel } from "./byok.js";
+import { getRuntime, getRequestPayload, updateModel, isFreeMode } from "./byok.js";
+import { freeModelList } from "./ui.js";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 5;
@@ -162,6 +163,11 @@ const handleSettingsSave = () => {
 };
 
 const effectiveChatModels = () => {
+  if (isFreeMode()) {
+    const models = freeModelList();
+    return { models, selected: models[0].id };
+  }
+
   const runtime = getRuntime();
   const catalogEntry = runtime ? state.catalog.find((provider) => provider.id === runtime.provider) : null;
 

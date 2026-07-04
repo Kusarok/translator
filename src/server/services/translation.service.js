@@ -101,7 +101,8 @@ export const translateText = async ({ text, sourceLanguage, targetLanguage, mode
   }
 
   const runtime = resolveRuntime({ provider, apiKey, model, authenticated });
-  const selectedModel = model || runtime.model;
+  // On the free tier the model is locked server-side; a client-supplied model is ignored.
+  const selectedModel = runtime.lockModel ? runtime.model : (model || runtime.model);
 
   const key = cacheKey({ provider: runtime.id, model: selectedModel, sourceLanguage: source, targetLanguage: target, tone: selectedTone, text: cleanText });
   const cached = getCached(key);

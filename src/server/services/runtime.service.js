@@ -1,6 +1,7 @@
 import { providerMap } from "../config/providers.js";
 import { HttpError } from "../utils/http-error.js";
 import { getActiveProvider, getProviderRuntime } from "./settings.store.js";
+import { freeTierEnabled, getFreeRuntime } from "./free-tier.service.js";
 
 export const resolveRuntime = ({ provider, apiKey, model, authenticated }) => {
   const cleanKey = String(apiKey || "").trim();
@@ -26,6 +27,11 @@ export const resolveRuntime = ({ provider, apiKey, model, authenticated }) => {
 
   if (authenticated) {
     return { ...getProviderRuntime(getActiveProvider()), source: "owner" };
+  }
+
+  // Anonymous visitor with no key: fall back to the rate-limited free tier if enabled.
+  if (freeTierEnabled()) {
+    return getFreeRuntime();
   }
 
   throw new HttpError(401, "Add your own API key, or log in as the owner to use the shared key.");

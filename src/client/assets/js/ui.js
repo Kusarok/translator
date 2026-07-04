@@ -2,7 +2,15 @@ import { hasRtlText, languages, languageMap } from "./constants.js";
 import { elements } from "./dom.js";
 import { state } from "./state.js";
 import { translations, t, setLang, getLang } from "./i18n.js";
-import { getRuntime, hasUsableKey } from "./byok.js";
+import { getRuntime, hasUsableKey, isFreeMode } from "./byok.js";
+
+// The one model the free tier exposes, resolved from the server-reported catalog.
+export const freeModelList = () => {
+  const provider = state.catalog.find((entry) => entry.id === state.free?.provider);
+  const model = provider?.models.find((m) => m.id === state.free?.model);
+  const fallback = { id: state.free?.model || "gemma-4-31b", label: "Gemma 4", vision: true };
+  return [model || fallback];
+};
 
 const formatTime = (ms) =>
   ms == null ? null : (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`);
@@ -156,6 +164,10 @@ export const populateModelSelect = (models, selected) => {
 };
 
 const effectiveModels = () => {
+  if (isFreeMode()) {
+    const models = freeModelList();
+    return { models, selected: models[0].id };
+  }
   const runtime = getRuntime();
   const catalogEntry = runtime ? state.catalog.find((provider) => provider.id === runtime.provider) : null;
   if (!catalogEntry) return { models: state.models, selected: state.selectedModel };

@@ -9,11 +9,15 @@ const buildRequestBody = ({ model, messages, systemPrompt, settings, runtime }) 
   const cfg = chatConfig.defaultSettings;
   const s = settings || {};
 
+  // On the free tier the model is locked server-side and output tokens are capped.
+  const requestedTokens = Number(s.maxCompletionTokens ?? cfg.maxCompletionTokens);
+  const tokenCap = runtime.maxCompletionTokens ?? Infinity;
+
   const body = {
-    model: model || runtime.model,
+    model: runtime.lockModel ? runtime.model : (model || runtime.model),
     messages: [],
     temperature: clamp(Number(s.temperature ?? cfg.temperature), 0, 2),
-    max_completion_tokens: Number(s.maxCompletionTokens ?? cfg.maxCompletionTokens),
+    max_completion_tokens: Math.min(requestedTokens, tokenCap),
     top_p: clamp(Number(s.topP ?? cfg.topP), 0, 1)
   };
 
@@ -44,7 +48,7 @@ const buildRequestBody = ({ model, messages, systemPrompt, settings, runtime }) 
   return body;
 };
 
-const validateMessages = (messages) => {
+const validateMessages = (messages, maxImages = chatConfig.maxImages) => {
   if (!Array.isArray(messages) || messages.length === 0) {
     throw new HttpError(400, "Messages array is required");
   }
@@ -69,15 +73,14 @@ const validateMessages = (messages) => {
     }
   }
 
-  if (imageCount > chatConfig.maxImages) {
-    throw new HttpError(413, `Too many images (max ${chatConfig.maxImages})`);
+  if (imageCount > maxImages) {
+    throw new HttpError(413, `Too many images (max ${maxImages})`);
   }
 };
 
 export const sendChat = async ({ model, messages, systemPrompt, settings, provider, apiKey, authenticated }) => {
-  validateMessages(messages);
-
   const runtime = resolveRuntime({ provider, apiKey, model, authenticated });
+  validateMessages(messages, runtime.maxImages ?? chatConfig.maxImages);
   const body = buildRequestBody({ model, messages, systemPrompt, settings, runtime });
   const { data, elapsedMs, provider: providerId } = await providerRequest(body, runtime);
 

@@ -27,6 +27,11 @@ const parseTrustProxy = (value) => {
   return Number.isFinite(number) ? number : value;
 };
 
+const parseBool = (value, fallback) => {
+  if (value === undefined || value === "") return fallback;
+  return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+};
+
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
 const port = toPositiveInt(process.env.PORT, 8080);
@@ -41,5 +46,18 @@ export const env = {
   dataDir: path.join(rootDir, "data"),
   ownerUsername: process.env.OWNER_USERNAME || "",
   ownerPassword: process.env.OWNER_PASSWORD || "",
-  sessionTtlHours: toPositiveInt(process.env.SESSION_TTL_HOURS, 720)
+  sessionTtlHours: toPositiveInt(process.env.SESSION_TTL_HOURS, 720),
+  // Free tier: let anonymous visitors use one server-funded model without a key.
+  // Defaults to ON so a deployment that configures FREE_PROVIDER's key gets it out of the box;
+  // set FREE_TIER_ENABLED=false to turn it off entirely.
+  freeTierEnabled: parseBool(process.env.FREE_TIER_ENABLED, true),
+  freeProvider: process.env.FREE_PROVIDER || "cerebras",
+  freeModel: process.env.FREE_MODEL || "gemma-4-31b",
+  // How many free requests each visitor gets per minute (translate + chat combined).
+  freeRateLimit: toPositiveInt(process.env.FREE_RATE_LIMIT, 5),
+  freeWindowMs: 60 * 1000,
+  // Hard cap on output tokens for free requests, so the shared key can't be drained.
+  freeMaxTokens: toPositiveInt(process.env.FREE_MAX_TOKENS, 2048),
+  // Hard cap on images per free chat request (vision is expensive).
+  freeMaxImages: toPositiveInt(process.env.FREE_MAX_IMAGES, 2)
 };

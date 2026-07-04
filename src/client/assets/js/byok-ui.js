@@ -13,7 +13,23 @@ const savedBadge = (providerId) => {
     : `<span class="provider-badge missing">${t("providerNotConfigured")}</span>`;
 };
 
+const updateFreeNote = () => {
+  const note = document.getElementById("freeTierNote");
+  if (!note) return;
+  // Show the free-tier note only while it actually applies: free tier is on and the
+  // visitor has not selected their own key yet.
+  if (byok.freeTierAvailable() && !byok.getRuntime()) {
+    note.hidden = false;
+    note.textContent = t("freeTierNote")
+      .replace("{model}", state.free?.model || "Gemma")
+      .replace("{limit}", String(state.free?.rateLimit ?? 5));
+  } else {
+    note.hidden = true;
+  }
+};
+
 const render = () => {
+  updateFreeNote();
   if (!elements.byokList) return;
   const activeProvider = byok.getActiveProvider();
 

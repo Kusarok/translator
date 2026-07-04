@@ -106,12 +106,13 @@ export const extractContent = (data) => stripReasoning(data.choices?.[0]?.messag
 
 export const createChatCompletion = async (messages, model, runtime) => {
   const selectedModel = model || runtime.model;
+  const maxTokens = Math.min(4000, runtime.maxCompletionTokens ?? 4000);
 
   const { data, elapsedMs, provider } = await providerRequest({
     model: selectedModel,
     messages,
     temperature: 0.2,
-    max_completion_tokens: 4000
+    max_completion_tokens: maxTokens
   }, runtime);
 
   const content = extractContent(data);

@@ -68,6 +68,30 @@ SESSION_TTL_HOURS=720
 
 With both set, the **API Providers** section always shows 🔒 locked badges and a login form until someone enters that exact username + password. A successful login sets a signed, `HttpOnly` session cookie (default 30 days); **Logout** ends it early. Visitors can still use their own key from **Your API Key** at any time. Leave both empty to keep the simple no-login behavior for local/private use.
 
+## Free tier: let every visitor try it, without leaking your key
+
+You can offer visitors a **free, no-key** experience on one server-funded model while keeping everything else behind the owner login. By default this is **Gemma 4 on Cerebras, 5 requests per minute per visitor**.
+
+When free tier is on, an anonymous visitor (no owner login, no key of their own) can translate and chat right away. Every free request is hardened so the shared key can't be abused or drained:
+
+- 🔒 **The key never reaches the browser.** Free requests are proxied server-side; only `configured: true/false` is ever exposed to the client.
+- 🎯 **The model is locked.** A client can't swap in a bigger/more expensive model — the server ignores the requested model and always uses `FREE_MODEL`.
+- ⏱️ **Per-visitor rate limit.** Translate and chat share one budget (default **5/min**), keyed by client IP.
+- ✂️ **Output & input capped.** Free responses are capped at `FREE_MAX_TOKENS`, input at `MAX_TEXT_LENGTH`, and images at `FREE_MAX_IMAGES`.
+
+Owner and BYOK traffic bypass the free limit entirely — they use their own key with full model choice.
+
+```text
+FREE_TIER_ENABLED=true      # master switch (needs FREE_PROVIDER's key set)
+FREE_PROVIDER=cerebras
+FREE_MODEL=gemma-4-31b
+FREE_RATE_LIMIT=5           # free requests per visitor per minute
+FREE_MAX_TOKENS=2048        # max output tokens per free request
+FREE_MAX_IMAGES=2           # max images per free chat request
+```
+
+> **Behind a reverse proxy, set `TRUST_PROXY`** (e.g. `TRUST_PROXY=1`) so the rate limit is counted per real visitor IP. Without it, everyone shares the proxy's IP and the 5/min budget becomes global.
+
 ## Environment variables (optional)
 
 Copy `.env.example` to `.env` and fill in what you need. Keys added in the UI take priority over these.
@@ -85,6 +109,13 @@ GOOGLE_API_KEY=
 OWNER_USERNAME=
 OWNER_PASSWORD=
 SESSION_TTL_HOURS=720
+
+FREE_TIER_ENABLED=true
+FREE_PROVIDER=cerebras
+FREE_MODEL=gemma-4-31b
+FREE_RATE_LIMIT=5
+FREE_MAX_TOKENS=2048
+FREE_MAX_IMAGES=2
 ```
 
 ## Live Translate (voice)
@@ -175,6 +206,30 @@ SESSION_TTL_HOURS=720
 ```
 
 با تنظیم هر دو، بخش **API Providers** همیشه قفل (🔒) نشان داده می‌شود تا زمانی که همان نام‌کاربری و رمز درست وارد شود. اگر خالی بمانند، برنامه بدون لاگین کار می‌کند (مناسب استفاده‌ی شخصی/محلی).
+
+## استفاده‌ی رایگان برای هر بازدیدکننده، بدون لو رفتن کلید
+
+می‌توانید به هر بازدیدکننده اجازه دهید بدون کلید و بدون لاگین، با **یک مدل رایگان روی سرور** کار کند و بقیه‌ی امکانات پشت لاگین مالک بماند. به‌صورت پیش‌فرض این یعنی **مدل Gemma 4 روی Cerebras، ۵ درخواست در دقیقه برای هر بازدیدکننده**.
+
+هر درخواست رایگان طوری محدود می‌شود که نتوان از کلید مشترک سوءاستفاده کرد یا آن را تخلیه کرد:
+
+- 🔒 **کلید هرگز به مرورگر فرستاده نمی‌شود.** درخواست‌های رایگان سمت سرور پروکسی می‌شوند.
+- 🎯 **مدل قفل است.** کاربر نمی‌تواند مدل گران‌تری انتخاب کند؛ سرور همیشه `FREE_MODEL` را استفاده می‌کند.
+- ⏱️ **محدودیت به‌ازای هر بازدیدکننده.** ترجمه و چت روی یک سقف مشترک (پیش‌فرض ۵ در دقیقه) بر اساس IP.
+- ✂️ **سقف خروجی و ورودی.** پاسخ رایگان تا `FREE_MAX_TOKENS`، ورودی تا `MAX_TEXT_LENGTH` و تصویر تا `FREE_MAX_IMAGES`.
+
+کاربرانی که کلید خودشان را وارد می‌کنند یا مالک لاگین‌کرده، اصلاً مشمول این محدودیت رایگان نیستند.
+
+```text
+FREE_TIER_ENABLED=true
+FREE_PROVIDER=cerebras
+FREE_MODEL=gemma-4-31b
+FREE_RATE_LIMIT=5
+FREE_MAX_TOKENS=2048
+FREE_MAX_IMAGES=2
+```
+
+> **پشت پروکسی حتماً `TRUST_PROXY` را تنظیم کنید** (مثلاً `TRUST_PROXY=1`) تا محدودیت بر اساس IP واقعی هر کاربر شمرده شود، نه IP پروکسی.
 
 ## امنیت
 
