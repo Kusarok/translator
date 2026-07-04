@@ -24,5 +24,7 @@ export const chatEl = {
   seed: document.querySelector("#chatSeed"),
   stream: document.querySelector("#chatStream"),
   stop: document.querySelector("#chatStop"),
-  functions: document.querySelector("#chatFunctions")
+  functions: document.querySelector("#chatFunctions"),
+  keyBanner: document.querySelector("#chatKeyBanner"),
+  keyBannerButton: document.querySelector("#chatKeyBannerBtn")
 };

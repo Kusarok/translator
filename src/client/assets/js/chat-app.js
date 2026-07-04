@@ -16,6 +16,7 @@ import {
   showImagePreview,
   clearImagePreview,
   setChatLoading as setUILoading,
+  updateChatKeyGate,
   clearMessages,
   showSettings,
   hideSettings,
@@ -27,6 +28,8 @@ import {
   applyChatTranslations
 } from "./chat-ui.js";
 import { t, getLang } from "./i18n.js";
+import { state } from "./state.js";
+import { getRuntime, getRequestPayload, updateModel } from "./byok.js";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 5;
@@ -74,12 +77,13 @@ const handleImageSelect = async (files) => {
     return;
   }
 
-  const visionModel = chatState.config?.models?.find((m) => m.vision);
-  if (visionModel && chatState.config?.models) {
-    const currentModel = chatState.config.models.find((m) => m.id === chatState.model);
+  const { models } = effectiveChatModels();
+  const visionModel = models.find((m) => m.vision);
+  if (visionModel) {
+    const currentModel = models.find((m) => m.id === chatState.model);
     if (currentModel && !currentModel.vision) {
       chatState.model = visionModel.id;
-      populateChatModelSelect(chatState.config.models, chatState.model);
+      populateChatModelSelect(models, chatState.model);
     }
   }
 
@@ -125,7 +129,8 @@ const handleSend = async () => {
       model: chatState.model,
       messages: apiMessages,
       systemPrompt: chatState.systemPrompt,
-      settings: chatState.settings
+      settings: chatState.settings,
+      ...getRequestPayload()
     }, chatState.sessionId);
 
     removeLoadingBubble();
@@ -156,13 +161,33 @@ const handleSettingsSave = () => {
   hideSettings();
 };
 
-export const initChat = (chatConfig) => {
-  setChatConfig(chatConfig);
+const effectiveChatModels = () => {
+  const runtime = getRuntime();
+  const catalogEntry = runtime ? state.catalog.find((provider) => provider.id === runtime.provider) : null;
 
-  if (chatConfig?.models) {
-    populateChatModelSelect(chatConfig.models, chatState.model);
+  if (catalogEntry) {
+    const selected = runtime.model && catalogEntry.models.some((m) => m.id === runtime.model)
+      ? runtime.model
+      : catalogEntry.models[0]?.id;
+    return { models: catalogEntry.models, selected };
   }
 
+  const models = chatState.config?.models || [];
+  const hasModel = models.some((m) => m.id === chatState.model);
+  const selected = hasModel ? chatState.model : (chatState.config?.defaultModel || chatState.model);
+  return { models, selected };
+};
+
+const applyChatModels = () => {
+  const { models, selected } = effectiveChatModels();
+  chatState.model = selected;
+  populateChatModelSelect(models, selected);
+  updateChatKeyGate();
+};
+
+export const initChat = (chatConfig) => {
+  setChatConfig(chatConfig);
+  applyChatModels();
   applySettingsToForm();
   applyChatTranslations();
   bindChatEvents();
@@ -183,7 +208,17 @@ const bindChatEvents = () => {
     chatEl.input.style.height = `${Math.min(chatEl.input.scrollHeight, 120)}px`;
   });
 
-  chatEl.modelSelect.addEventListener("change", updateChatBotName);
+  chatEl.modelSelect.addEventListener("change", () => {
+    updateChatBotName();
+    const runtime = getRuntime();
+    if (runtime) updateModel(runtime.provider, chatEl.modelSelect.value);
+  });
+
+  if (chatEl.keyBannerButton) {
+    chatEl.keyBannerButton.addEventListener("click", () => {
+      document.querySelector("#settingsToggle")?.click();
+    });
+  }
 
   chatEl.imageButton.addEventListener("click", () => {
     chatEl.imageInput.click();
@@ -211,6 +246,15 @@ const bindChatEvents = () => {
   chatEl.settingsPanel.addEventListener("click", (e) => {
     if (e.target === chatEl.settingsPanel) hideSettings();
   });
+};
+
+export const refreshChatConfig = (chatConfig) => {
+  setChatConfig(chatConfig);
+  applyChatModels();
+};
+
+export const refreshChatAccess = () => {
+  applyChatModels();
 };
 
 export const onLanguageChange = () => {

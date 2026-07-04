@@ -1,15 +1,16 @@
-import { cerebrasRequest, buildStats } from "./cerebras.service.js";
+import { providerRequest, buildStats, extractContent } from "./provider.service.js";
+import { resolveRuntime } from "./runtime.service.js";
 import { chatConfig } from "../config/chat.config.js";
 import { HttpError } from "../utils/http-error.js";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const buildRequestBody = ({ model, messages, systemPrompt, settings }) => {
+const buildRequestBody = ({ model, messages, systemPrompt, settings, runtime }) => {
   const cfg = chatConfig.defaultSettings;
   const s = settings || {};
 
   const body = {
-    model: model || chatConfig.defaultModel,
+    model: model || runtime.model,
     messages: [],
     temperature: clamp(Number(s.temperature ?? cfg.temperature), 0, 2),
     max_completion_tokens: Number(s.maxCompletionTokens ?? cfg.maxCompletionTokens),
@@ -73,19 +74,20 @@ const validateMessages = (messages) => {
   }
 };
 
-export const sendChat = async ({ model, messages, systemPrompt, settings }) => {
+export const sendChat = async ({ model, messages, systemPrompt, settings, provider, apiKey, authenticated }) => {
   validateMessages(messages);
 
-  const body = buildRequestBody({ model, messages, systemPrompt, settings });
-  const { data, elapsedMs } = await cerebrasRequest(body);
+  const runtime = resolveRuntime({ provider, apiKey, model, authenticated });
+  const body = buildRequestBody({ model, messages, systemPrompt, settings, runtime });
+  const { data, elapsedMs, provider: providerId } = await providerRequest(body, runtime);
 
-  const content = data.choices?.[0]?.message?.content;
+  const content = extractContent(data);
 
   if (!content) {
     throw new HttpError(502, "Model returned an empty response");
   }
 
-  const stats = buildStats(data, elapsedMs, body.model);
+  const stats = buildStats(data, elapsedMs, body.model, providerId);
 
   return {
     message: {

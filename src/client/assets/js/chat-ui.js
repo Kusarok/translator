@@ -1,6 +1,7 @@
 import { chatEl } from "./chat-dom.js";
 import { chatState } from "./chat-state.js";
 import { t, translations, getLang } from "./i18n.js";
+import { hasUsableKey } from "./byok.js";
 
 const escapeHtml = (text) => {
   const div = document.createElement("div");
@@ -107,9 +108,15 @@ export const clearImagePreview = () => {
   chatEl.imagePreview.hidden = true;
 };
 
+export const updateChatKeyGate = () => {
+  const available = hasUsableKey();
+  if (chatEl.keyBanner) chatEl.keyBanner.hidden = available;
+  chatEl.sendButton.disabled = !available || chatState.loading;
+};
+
 export const setChatLoading = (loading) => {
-  chatEl.sendButton.disabled = loading;
   chatEl.input.disabled = loading;
+  updateChatKeyGate();
 };
 
 export const clearMessages = () => {
@@ -122,11 +129,11 @@ export const clearMessages = () => {
 
 export const showSettings = () => {
   applySettingsToForm();
-  chatEl.settingsPanel.hidden = false;
+  chatEl.settingsPanel.classList.add("open");
 };
 
 export const hideSettings = () => {
-  chatEl.settingsPanel.hidden = true;
+  chatEl.settingsPanel.classList.remove("open");
 };
 
 export const populateChatModelSelect = (models, selected) => {

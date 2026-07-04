@@ -1,12 +1,37 @@
 import { env } from "../config/env.js";
-import { createChatCompletion } from "./cerebras.service.js";
+import { createChatCompletion } from "./provider.service.js";
+import { resolveRuntime } from "./runtime.service.js";
 import { HttpError } from "../utils/http-error.js";
 import { cacheKey, getCached, setCached } from "../utils/cache.js";
 
 const languages = {
   auto: "Auto detect",
+  en: "English",
   fa: "Persian",
-  en: "English"
+  ar: "Arabic",
+  he: "Hebrew",
+  ur: "Urdu",
+  fr: "French",
+  de: "German",
+  es: "Spanish",
+  it: "Italian",
+  pt: "Portuguese",
+  ru: "Russian",
+  tr: "Turkish",
+  nl: "Dutch",
+  pl: "Polish",
+  uk: "Ukrainian",
+  sv: "Swedish",
+  hi: "Hindi",
+  bn: "Bengali",
+  zh: "Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  id: "Indonesian",
+  vi: "Vietnamese",
+  th: "Thai",
+  el: "Greek",
+  az: "Azerbaijani"
 };
 
 const toneInstructions = {
@@ -19,9 +44,9 @@ const toneInstructions = {
 const normalizeTone = (value) =>
   Object.hasOwn(toneInstructions, value) ? value : "default";
 
-const translationPrompt = `You are a professional Persian ↔ English translator.
+const translationPrompt = `You are a professional translator fluent in every language.
 
-Your job is to translate text accurately between Persian and English, depending on the language of the user's message.
+Your job is to translate text accurately from the source language into the target language.
 
 Translation requirements:
 
@@ -32,10 +57,7 @@ Translation requirements:
 - Preserve paragraph structure, lists, quotation marks, Markdown, and line breaks where possible.
 - When the source text is ambiguous, choose the most natural interpretation based on context.
 - Do not add explanations, notes, summaries, corrections, or extra commentary unless the user explicitly asks for them.
-- Return only the translated text.
-
-If the user writes in Persian, translate it into natural English.
-If the user writes in English, translate it into fluent, natural Persian.`;
+- Return only the translated text.`;
 
 const normalizeText = (value) => String(value || "").trim();
 
@@ -54,13 +76,13 @@ const createInstruction = ({ sourceLanguage, targetLanguage, tone }) => {
     `Selected target language: ${target}.`,
     toneText ? `Tone: ${toneText}` : "",
     `Translate the user's text into ${target}.`,
-    "If source language is auto detect, detect whether the text is Persian or English before translating.",
-    "If selected source and target are the same, rewrite the text naturally in the selected language without changing its meaning.",
+    "If the source language is auto detect, identify the language of the text before translating.",
+    "If the selected source and target are the same, rewrite the text naturally in that language without changing its meaning.",
     "Return only the final translated text."
   ].filter(Boolean).join("\n");
 };
 
-export const translateText = async ({ text, sourceLanguage, targetLanguage, model, tone }) => {
+export const translateText = async ({ text, sourceLanguage, targetLanguage, model, tone, provider, apiKey, authenticated }) => {
   const cleanText = normalizeText(text);
   const source = normalizeLanguage(sourceLanguage, "auto");
   const target = normalizeLanguage(targetLanguage, "en");
@@ -75,10 +97,13 @@ export const translateText = async ({ text, sourceLanguage, targetLanguage, mode
   }
 
   if (target === "auto") {
-    throw new HttpError(400, "Target language must be Persian or English");
+    throw new HttpError(400, "Target language must be a specific language");
   }
 
-  const key = cacheKey({ model, sourceLanguage: source, targetLanguage: target, tone: selectedTone, text: cleanText });
+  const runtime = resolveRuntime({ provider, apiKey, model, authenticated });
+  const selectedModel = model || runtime.model;
+
+  const key = cacheKey({ provider: runtime.id, model: selectedModel, sourceLanguage: source, targetLanguage: target, tone: selectedTone, text: cleanText });
   const cached = getCached(key);
 
   if (cached) {
@@ -94,7 +119,7 @@ export const translateText = async ({ text, sourceLanguage, targetLanguage, mode
       role: "user",
       content: cleanText
     }
-  ], model);
+  ], selectedModel, runtime);
 
   setCached(key, result);
   return result;

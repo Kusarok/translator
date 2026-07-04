@@ -1,19 +1,57 @@
 import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { chatConfig } from "./config/chat.config.js";
+import { providerCatalog, publicModels } from "./config/providers.js";
+import { getPublicState } from "./services/settings.store.js";
+import { gateEnabled, isOwnerAuthenticated } from "./services/auth.service.js";
 import { translateRouter } from "./routes/translate.routes.js";
 import { chatRouter } from "./routes/chat.routes.js";
+import { settingsRouter } from "./routes/settings.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientPath = path.resolve(__dirname, "../client");
+const indexPath = path.join(clientPath, "index.html");
+const assetVersion = String(Date.now());
+
+const sendIndex = (res) => {
+  const html = fs.readFileSync(indexPath, "utf8").replaceAll("__ASSET_VERSION__", assetVersion);
+  res.set("Cache-Control", "no-cache");
+  res.type("html").send(html);
+};
+
+const jsDir = path.join(clientPath, "assets", "js");
+
+const versionImports = (code) =>
+  code.replace(/((?:from|import)\s*\(?\s*)(["'])(\.\.?\/[^"']+?\.js)\2/g,
+    (_match, prefix, quote, spec) => `${prefix}${quote}${spec}?v=${assetVersion}${quote}`);
+
+const serveModule = (req, res, next) => {
+  const filePath = path.join(clientPath, req.path);
+  if (!filePath.startsWith(jsDir)) {
+    return next();
+  }
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      return next();
+    }
+    res.set("Cache-Control", "no-cache");
+    res.type("application/javascript").send(versionImports(data));
+  });
+};
 
 export const createApp = () => {
   const app = express();
+
+  if (env.trustProxy !== false) {
+    app.set("trust proxy", env.trustProxy);
+  }
 
   app.use(helmet({
     strictTransportSecurity: false,
@@ -36,17 +74,32 @@ export const createApp = () => {
   }));
 
   app.use(express.json({ limit: "15mb" }));
-  app.use(express.static(clientPath));
+  app.get("/", (_req, res) => sendIndex(res));
+  app.get(/^\/assets\/js\/.+\.js$/, serveModule);
+  app.use(express.static(clientPath, { index: false }));
 
-  app.get("/api/health", (_req, res) => {
+  app.get("/api/health", (req, res) => {
+    const state = getPublicState();
+    const active = state.providers.find((provider) => provider.id === state.activeProvider);
+    const google = state.providers.find((provider) => provider.id === "google");
+    const authenticated = isOwnerAuthenticated(req);
+
     res.json({
       ok: true,
-      model: env.cerebrasModel,
-      models: env.availableModels,
+      provider: state.activeProvider,
+      providers: state.providers.map(({ id, label, configured }) => ({ id, label, configured })),
+      model: active.selectedModel,
+      models: active.models,
       maxTextLength: env.maxTextLength,
-      chat: chatConfig
+      chat: { ...chatConfig, models: active.models, defaultModel: active.selectedModel },
+      live: { available: Boolean(google?.configured) && authenticated, model: "gemini-3.5-live-translate-preview" },
+      catalog: providerCatalog.map((provider) => ({ id: provider.id, label: provider.label, models: publicModels(provider) })),
+      auth: { gateEnabled: gateEnabled(), authenticated }
     });
   });
+
+  app.use("/api/auth", authRouter);
+  app.use("/api/settings", settingsRouter);
 
   app.use("/api/translate", rateLimit({
     windowMs: 60 * 1000,
@@ -62,9 +115,7 @@ export const createApp = () => {
     legacyHeaders: false
   }), chatRouter);
 
-  app.use((_req, res) => {
-    res.sendFile(path.join(clientPath, "index.html"));
-  });
+  app.use((_req, res) => sendIndex(res));
 
   app.use((err, _req, res, _next) => {
     const status = Number.isInteger(err.status) ? err.status : 500;

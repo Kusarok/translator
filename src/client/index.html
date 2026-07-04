@@ -2,8 +2,16 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Translator</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0c0e10">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Translator">
+    <link rel="icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
     <script>
       (function() {
         var theme = localStorage.getItem("theme") || "dark";
@@ -13,153 +21,222 @@
         document.documentElement.dir = lang === "fa" ? "rtl" : "ltr";
       })();
     </script>
-    <style>body{visibility:hidden}body.ready{visibility:visible}</style>
-    <link rel="stylesheet" href="/assets/css/base.css">
-    <link rel="stylesheet" href="/assets/css/layout.css">
-    <link rel="stylesheet" href="/assets/css/components.css">
-    <link rel="stylesheet" href="/assets/css/chat.css">
+    <link rel="stylesheet" href="/assets/css/base.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/layout.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/components.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/chat.css?v=__ASSET_VERSION__">
   </head>
   <body>
     <main class="app-shell">
       <section class="workspace" aria-label="App">
         <header class="topbar">
-          <div class="topbar-left">
-            <nav class="app-menu">
-              <button class="menu-tab active" data-view="translator" data-i18n="appName">مترجم</button>
-              <button class="menu-tab" data-view="chat" data-i18n="chat">چت</button>
-            </nav>
+          <div class="mode-wrap">
+            <button class="mode-btn" id="modeBtn" type="button" aria-haspopup="true" aria-expanded="false">
+              <span class="mode-icon" id="modeIcon">🔤</span>
+              <span class="mode-label" id="modeLabel" data-i18n="appName">Translator</span>
+              <span class="mode-chev" aria-hidden="true">▾</span>
+            </button>
+            <div class="mode-menu" id="modeMenu" role="menu">
+              <button class="menu-tab mode-option active" data-view="translator" data-icon="🔤" role="menuitem">
+                <span aria-hidden="true">🔤</span><span data-i18n="appName">Translator</span>
+              </button>
+              <button class="menu-tab mode-option" data-view="chat" data-icon="💬" role="menuitem">
+                <span aria-hidden="true">💬</span><span data-i18n="chat">Chat</span>
+              </button>
+              <button class="menu-tab mode-option" data-view="live" data-icon="🎙️" role="menuitem">
+                <span aria-hidden="true">🎙️</span><span data-i18n="liveTab">Live</span>
+              </button>
+            </div>
           </div>
-          <div class="topbar-right">
-            <button class="lang-toggle" id="langToggle" type="button" data-i18n-aria="switchLang" aria-label="English">EN</button>
-            <button class="theme-toggle" id="themeToggle" type="button" data-i18n-aria="toggleTheme" aria-label="تغییر تم">🌙</button>
-            <div class="status-pill" id="serverStatus" data-i18n="checkingStatus">در حال بررسی</div>
+          <div class="top-right">
+            <button class="status-pill" id="serverStatus" type="button" data-i18n-aria="checkStatus" aria-label="Server status">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="status-text" data-i18n="checkingStatus">Checking</span>
+            </button>
+            <button class="icon-btn" id="settingsToggle" type="button" data-i18n-aria="openSettings" aria-label="Settings">⚙️</button>
           </div>
         </header>
 
-        <div class="view-section" id="translatorView">
-          <div class="sub-header">
-            <label class="model-field">
-              <select id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="انتخاب مدل"></select>
-            </label>
-            <label class="model-field">
-              <select id="toneSelect" data-i18n-aria="selectTone" aria-label="انتخاب لحن">
-                <option value="default">پیش‌فرض</option>
-                <option value="formal">رسمی</option>
-                <option value="informal">غیررسمی</option>
-                <option value="technical">تخصصی</option>
-              </select>
-            </label>
-          </div>
-
-          <form class="translator" id="translatorForm">
-            <div class="language-row">
-              <label class="field">
-                <span data-i18n="sourceLanguage">زبان ورودی</span>
-                <select id="sourceLanguage" name="sourceLanguage">
-                  <option value="auto">تشخیص خودکار</option>
-                  <option value="fa">فارسی</option>
-                  <option value="en">انگلیسی</option>
-                </select>
-              </label>
-
-              <button class="icon-button" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="جابجایی زبان‌ها" aria-label="جابجایی زبان‌ها">
-                <span aria-hidden="true">⇄</span>
-              </button>
-
-              <label class="field">
-                <span data-i18n="targetLanguage">زبان خروجی</span>
-                <select id="targetLanguage" name="targetLanguage">
-                  <option value="en">انگلیسی</option>
-                  <option value="fa">فارسی</option>
-                </select>
-              </label>
+        <main class="content">
+          <section class="view" id="translatorView">
+            <div class="lang-strip">
+              <span class="lang-dir" id="translatorDirection" dir="ltr">Auto detect → English</span>
+              <span class="strip-actions">
+                <button class="icon-btn small ghost" id="copyLastButton" type="button" data-i18n-aria="copyLast" aria-label="Copy last translation">📋</button>
+                <button class="icon-btn small ghost" id="clearButton" type="button" data-i18n-aria="clearTranslations" aria-label="Clear translations">🗑️</button>
+              </span>
             </div>
-
-            <div class="panes">
-              <section class="pane" aria-label="Input text">
-                <div class="pane-header">
-                  <span data-i18n="inputText">متن ورودی</span>
-                  <span id="characterCount">0 / 8000</span>
-                </div>
-                <textarea id="inputText" name="text" data-i18n-placeholder="inputPlaceholder" placeholder="متن فارسی یا انگلیسی را بنویسید یا paste کنید..." spellcheck="true"></textarea>
-                <div class="pane-actions">
-                  <button class="ghost-button" id="pasteButton" type="button" data-i18n="paste">Paste</button>
-                  <button class="ghost-button" id="clearButton" type="button" data-i18n="clear">پاک کردن</button>
-                </div>
-              </section>
-
-              <section class="pane output-pane" aria-label="Translated text">
-                <div class="pane-header">
-                  <span data-i18n="translation">ترجمه</span>
-                  <span id="modelName" data-i18n="ready">آماده</span>
-                </div>
-                <textarea id="outputText" readonly data-i18n-placeholder="outputPlaceholder" placeholder="ترجمه اینجا نمایش داده می‌شود..."></textarea>
-                <div class="pane-actions">
-                  <button class="ghost-button" id="copyButton" type="button" data-i18n="copy">کپی</button>
-                </div>
-              </section>
+            <div class="messages" id="translatorMessages">
+              <div class="chat-empty" id="translatorEmptyState" data-i18n="trEmpty">Type below and press Enter to translate…</div>
             </div>
-
-            <div class="stats-bar" id="statsBar" hidden>
-              <span class="stat"><b id="statModel">—</b> <span data-i18n="statModel">مدل</span></span>
-              <span class="stat"><b id="statInput">—</b> <span data-i18n="statInput">توکن ورودی</span></span>
-              <span class="stat"><b id="statOutput">—</b> <span data-i18n="statOutput">توکن خروجی</span></span>
-              <span class="stat"><b id="statSpeed">—</b> <span data-i18n="statSpeed">توکن/ثانیه</span></span>
-              <span class="stat"><b id="statTime">—</b> <span data-i18n="statTime">زمان</span></span>
-            </div>
-
-            <div class="footer-row">
-              <p class="message" id="message" role="status" aria-live="polite"></p>
-              <button class="primary-button" id="translateButton" type="submit">
-                <span class="spinner" id="spinner" aria-hidden="true"></span>
-                <span id="translateButtonText" data-i18n="translate">ترجمه</span>
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div class="view-section" id="chatView" hidden>
-          <div class="chat-header">
-            <div class="chat-bot-info">
-              <div class="chat-bot-avatar">AI</div>
-              <div class="chat-bot-meta">
-                <span class="chat-bot-name" id="chatBotName">AI Assistant</span>
-                <span class="chat-bot-status" data-chat-i18n="online">آنلاین</span>
+            <div class="composer">
+              <div class="key-banner" id="translatorKeyBanner" hidden>
+                <span data-i18n="keyBannerText">Add your own API key or log in as the owner to start translating.</span>
+                <button type="button" class="key-banner-btn" id="translatorKeyBannerBtn" data-i18n="keyBannerButton">Open Settings</button>
+              </div>
+              <div class="composer-meta">
+                <p class="message" id="message" role="status" aria-live="polite"></p>
+                <span id="characterCount">0 / 8000</span>
+              </div>
+              <div class="input-pill">
+                <textarea id="inputText" name="text" rows="1" data-i18n-placeholder="inputPlaceholder" placeholder="Type or paste text…" spellcheck="true"></textarea>
+                <button class="send-btn" id="translateButton" type="button" data-i18n-aria="translate" aria-label="Translate">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
               </div>
             </div>
-            <div class="chat-header-actions">
-              <button id="chatSettingsButton" type="button" data-chat-i18n-aria="chatSettings" aria-label="Settings">⚙</button>
-              <button id="chatClearButton" type="button" data-chat-i18n-aria="chatClear" aria-label="Clear chat">🗑</button>
+          </section>
+
+          <section class="view" id="chatView" hidden>
+            <div class="lang-strip">
+              <span class="chat-bot-info">
+                <span class="chat-bot-avatar">AI</span>
+                <span class="chat-bot-meta">
+                  <span class="chat-bot-name" id="chatBotName">AI Assistant</span>
+                  <span class="chat-bot-status" data-chat-i18n="online">online</span>
+                </span>
+              </span>
+              <span class="strip-actions">
+                <button class="icon-btn small ghost" id="chatSettingsButton" type="button" data-chat-i18n-aria="chatSettings" aria-label="Settings">⚙️</button>
+                <button class="icon-btn small ghost" id="chatClearButton" type="button" data-chat-i18n-aria="chatClear" aria-label="Clear chat">🗑️</button>
+              </span>
+              <label class="model-field" hidden>
+                <select id="chatModelSelect" data-i18n-aria="selectModel" aria-label="Select model"></select>
+              </label>
             </div>
-            <label class="model-field" hidden>
-              <select id="chatModelSelect" data-i18n-aria="selectModel" aria-label="Select model"></select>
-            </label>
-          </div>
-          <div class="chat-messages" id="chatMessages">
-            <div class="chat-empty" id="chatEmptyState">شروع گفتگو...</div>
-          </div>
-          <div class="chat-input-area">
-            <div class="chat-image-preview" id="chatImagePreview" hidden></div>
-            <div class="chat-input-container">
-              <button class="chat-attach-btn" id="chatImageButton" type="button" data-i18n-aria="chatUploadImage" aria-label="Upload image">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              </button>
-              <input type="file" id="chatImageInput" accept="image/png,image/jpeg" hidden multiple>
-              <textarea id="chatInput" placeholder="پیام خود را بنویسید..." rows="1"></textarea>
-              <button class="chat-send-btn" id="chatSendButton" type="button" aria-label="Send">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-              </button>
+            <div class="messages" id="chatMessages">
+              <div class="chat-empty" id="chatEmptyState">شروع گفتگو...</div>
+            </div>
+            <div class="composer">
+              <div class="key-banner" id="chatKeyBanner" hidden>
+                <span data-chat-i18n="keyBannerText">Add your own API key or log in as the owner to start chatting.</span>
+                <button type="button" class="key-banner-btn" id="chatKeyBannerBtn" data-chat-i18n="keyBannerButton">Open Settings</button>
+              </div>
+              <div class="chat-image-preview" id="chatImagePreview" hidden></div>
+              <div class="input-pill">
+                <button class="attach-btn" id="chatImageButton" type="button" data-i18n-aria="chatUploadImage" aria-label="Upload image">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                </button>
+                <input type="file" id="chatImageInput" accept="image/png,image/jpeg" hidden multiple>
+                <textarea id="chatInput" placeholder="پیام خود را بنویسید..." rows="1"></textarea>
+                <button class="send-btn" id="chatSendButton" type="button" aria-label="Send">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="liveView" hidden>
+            <div class="lang-strip">
+              <span class="lang-dir" data-i18n="liveTargetLabel">Translate speech to</span>
+              <select class="select mini" id="liveTargetLanguage" data-i18n-aria="targetLanguage" aria-label="Target language"></select>
+            </div>
+            <div class="messages" id="liveTranscript">
+              <div class="chat-empty" id="liveEmptyState" data-i18n="liveHint">Tap the mic and speak. The translation is spoken back and shown here.</div>
+            </div>
+            <div class="live-center">
+              <p class="live-notice" id="liveNotice" hidden></p>
+              <span class="live-status-text" id="liveStatus" data-i18n="liveIdle">Ready</span>
+              <div class="mic-ring">
+                <button class="mic-btn" id="liveMicButton" type="button" data-i18n-aria="liveMic" aria-label="Start speaking">
+                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+              </div>
+              <span class="live-mic-label" id="liveMicLabel" data-i18n="liveStart">Tap to speak</span>
+              <button class="icon-btn small ghost" id="liveClearButton" type="button" data-i18n-aria="liveClear" aria-label="Clear transcript">🗑️</button>
+            </div>
+          </section>
+        </main>
+
+        <div class="overlay" id="appSettingsPanel">
+          <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-header">
+              <h3 data-i18n="settingsTitle">Settings</h3>
+              <button class="icon-btn small" id="appSettingsClose" type="button" aria-label="Close">✕</button>
+            </div>
+
+            <div class="sheet-section section-translator">
+              <label class="setting-label" data-i18n="sourceLanguage">Language</label>
+              <div class="lang-row">
+                <select class="select" id="sourceLanguage" name="sourceLanguage" data-i18n-aria="sourceLanguage" aria-label="Source language"></select>
+                <button class="icon-btn small" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="Swap languages" aria-label="Swap languages">⇄</button>
+                <select class="select" id="targetLanguage" name="targetLanguage" data-i18n-aria="targetLanguage" aria-label="Target language"></select>
+              </div>
+            </div>
+
+            <div class="sheet-section section-translator" id="modelSection">
+              <label class="setting-label" data-i18n="selectModel">Model</label>
+              <select class="select full" id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="Select model"></select>
+            </div>
+
+            <div class="sheet-section section-translator">
+              <label class="setting-label" data-i18n="selectTone">Preset</label>
+              <select class="select full" id="toneSelect" data-i18n-aria="selectTone" aria-label="Select tone">
+                <option value="default">Default</option>
+                <option value="formal">Formal</option>
+                <option value="informal">Informal</option>
+                <option value="technical">Technical</option>
+              </select>
+            </div>
+
+            <div class="sheet-section row-between">
+              <label class="setting-label" data-i18n="themeSection">Theme</label>
+              <div class="segmented" id="themeSeg">
+                <button class="seg-btn" type="button" data-theme-val="light">☀️ <span data-i18n="themeLight">Light</span></button>
+                <button class="seg-btn" type="button" data-theme-val="dark">🌙 <span data-i18n="themeDark">Dark</span></button>
+              </div>
+            </div>
+
+            <div class="sheet-section row-between">
+              <label class="setting-label" data-i18n="interfaceSection">Interface</label>
+              <div class="segmented" id="langSeg">
+                <button class="seg-btn" type="button" data-lang-val="en">EN</button>
+                <button class="seg-btn" type="button" data-lang-val="fa">فا</button>
+              </div>
+            </div>
+
+            <div class="sheet-section">
+              <label class="setting-label" data-i18n="byokTitle">Your API Key</label>
+              <p class="settings-hint" data-i18n="byokHint">Add your own key to translate and chat without logging in. It stays only in this browser and is sent with each request; it is never saved on the server.</p>
+              <div id="byokList" class="provider-list"></div>
+            </div>
+
+            <div class="sheet-section" id="ownerSection">
+              <div class="owner-section-head">
+                <label class="setting-label" data-i18n="providerSettings">API Providers</label>
+                <span class="provider-inuse" id="ownerLoggedInBadge" data-i18n="ownerLoggedIn" hidden>Logged in as owner</span>
+                <button type="button" class="provider-use ghost" id="ownerLogoutButton" data-i18n="ownerLogout" hidden>Logout</button>
+              </div>
+              <p class="settings-hint" id="providerHint" data-i18n="providerHint">Add and save an API key for one provider, then press Use.</p>
+
+              <form class="owner-login" id="ownerLoginForm">
+                <div class="owner-login-row">
+                  <input type="text" class="owner-login-input" id="ownerUsernameInput" autocomplete="username" data-i18n-placeholder="ownerUsernamePh" placeholder="Username">
+                  <input type="password" class="owner-login-input" id="ownerPasswordInput" autocomplete="current-password" data-i18n-placeholder="ownerPasswordPh" placeholder="Password">
+                  <button type="submit" class="provider-save" id="ownerLoginButton" data-i18n="ownerLoginButton">Login</button>
+                </div>
+                <p class="provider-status" id="ownerLoginStatus" role="status"></p>
+              </form>
+
+              <div id="providerList" class="provider-list"></div>
+            </div>
+
+            <div class="sheet-section row-between">
+              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
+              <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
             </div>
           </div>
         </div>
 
-        <div class="settings-overlay" id="chatSettingsPanel" hidden>
-          <div class="settings-panel">
-            <div class="settings-header">
-              <h2 data-chat-i18n="chatSettings">تنظیمات</h2>
-              <button class="settings-close-btn" id="chatSettingsClose" type="button">✕</button>
+        <div class="overlay" id="chatSettingsPanel">
+          <div class="sheet" role="dialog" aria-modal="true" aria-label="Chat settings">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-header">
+              <h3 data-chat-i18n="chatSettings">تنظیمات</h3>
+              <button class="icon-btn small" id="chatSettingsClose" type="button">✕</button>
             </div>
-            <div class="settings-body">
+            <div class="sheet-body">
               <label class="settings-field">
                 <span data-chat-i18n="chatSystemPrompt">پرامپت سیستمی</span>
                 <textarea id="chatSystemPrompt" rows="3"></textarea>
@@ -200,7 +277,7 @@
                 <textarea id="chatFunctions" rows="3"></textarea>
               </label>
             </div>
-            <div class="settings-footer">
+            <div class="sheet-footer">
               <button class="primary-button" id="chatSettingsSave" type="button" data-chat-i18n="chatSave">ذخیره</button>
             </div>
           </div>
@@ -208,6 +285,6 @@
       </section>
     </main>
 
-    <script type="module" src="/assets/js/app.js"></script>
+    <script type="module" src="/assets/js/app.js?v=__ASSET_VERSION__"></script>
   </body>
 </html>

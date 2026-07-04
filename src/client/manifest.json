@@ -1,0 +1,27 @@
+{
+  "name": "Translator",
+  "short_name": "Translator",
+  "description": "Multilingual translator, AI chat, and live voice translation.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0e10",
+  "theme_color": "#0c0e10",
+  "lang": "en",
+  "dir": "auto",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
