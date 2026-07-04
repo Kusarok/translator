@@ -9,6 +9,7 @@ import { chatConfig } from "./config/chat.config.js";
 import { providerCatalog, publicModels } from "./config/providers.js";
 import { getPublicState } from "./services/settings.store.js";
 import { gateEnabled, isOwnerAuthenticated } from "./services/auth.service.js";
+import { freeTierEnabled, freeTierInfo } from "./services/free-tier.service.js";
 import { translateRouter } from "./routes/translate.routes.js";
 import { chatRouter } from "./routes/chat.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
@@ -94,21 +95,52 @@ export const createApp = () => {
       chat: { ...chatConfig, models: active.models, defaultModel: active.selectedModel },
       live: { available: Boolean(google?.configured) && authenticated, model: "gemini-3.5-live-translate-preview" },
       catalog: providerCatalog.map((provider) => ({ id: provider.id, label: provider.label, models: publicModels(provider) })),
-      auth: { gateEnabled: gateEnabled(), authenticated }
+      auth: { gateEnabled: gateEnabled(), authenticated },
+      free: freeTierInfo()
     });
   });
 
   app.use("/api/auth", authRouter);
   app.use("/api/settings", settingsRouter);
 
-  app.use("/api/translate", rateLimit({
+  // A request is BYOK only when BOTH provider and key are present — this mirrors
+  // resolveRuntime() exactly. Checking the key alone would let `{ apiKey: "x" }` (no
+  // provider) skip the free limiter while still falling through to the free server key.
+  const isByokRequest = (req) =>
+    Boolean(String(req.body?.provider || "").trim() && String(req.body?.apiKey || "").trim());
+
+  // A request falls back to the shared free tier only when the visitor is not the owner
+  // and did not bring their own key. BYOK and owner traffic must not be counted against
+  // (or blocked by) the free quota, so we skip them here.
+  const isFreeRequest = (req) =>
+    freeTierEnabled() &&
+    !isOwnerAuthenticated(req) &&
+    !isByokRequest(req);
+
+  // One shared limiter instance mounted on both routes => translate + chat draw from the
+  // same per-visitor budget (default 5/min), keyed by IP. Requires TRUST_PROXY to be set
+  // correctly behind a proxy, otherwise every visitor shares the proxy's IP.
+  const freeTierLimiter = rateLimit({
+    windowMs: env.freeWindowMs,
+    limit: env.freeRateLimit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => !isFreeRequest(req),
+    handler: (_req, res) => {
+      res.status(429).json({
+        error: `Free limit reached (${env.freeRateLimit} requests/minute). Wait a minute, or add your own API key in Settings for unlimited use.`
+      });
+    }
+  });
+
+  app.use("/api/translate", freeTierLimiter, rateLimit({
     windowMs: 60 * 1000,
     limit: 30,
     standardHeaders: true,
     legacyHeaders: false
   }), translateRouter);
 
-  app.use("/api/chat", rateLimit({
+  app.use("/api/chat", freeTierLimiter, rateLimit({
     windowMs: 60 * 1000,
     limit: 20,
     standardHeaders: true,
