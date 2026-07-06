@@ -8,6 +8,8 @@ export const translate = async (req, res) => {
     translation: result.text,
     model: result.model,
     usage: result.usage,
-    timing: result.timing
+    timing: result.timing,
+    detectedLanguage: result.detected || null,
+    targetLanguage: result.resolvedTarget || null
   });
 };

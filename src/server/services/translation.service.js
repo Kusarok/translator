@@ -96,12 +96,63 @@ const createInstruction = ({ sourceLanguage, targetLanguage, tone, mode }) => {
   ].filter(Boolean).join("\n");
 };
 
-export const translateText = async ({ text, sourceLanguage, targetLanguage, model, tone, mode, provider, apiKey, authenticated }) => {
+// Only accept language codes we actually know (never "auto"); anything else becomes "".
+const normalizeCode = (value) => {
+  const code = String(value || "").trim().toLowerCase();
+  return Object.hasOwn(languages, code) && code !== "auto" ? code : "";
+};
+
+// Two-way "conversation" mode: the interpreter detects the message language and translates it
+// toward whichever of the two poles it is NOT, so a reply typed in the target language is sent
+// back in the other party's language automatically — no settings change needed.
+const createConversationInstruction = ({ targetLanguage, counterpart }) => {
+  const target = languages[targetLanguage];
+  const other = counterpart && languages[counterpart] ? languages[counterpart] : null;
+
+  const rule = other
+    ? `Detect the language of the message. If the message is written in ${target} (${targetLanguage}), translate it into ${other} (${counterpart}). Otherwise translate it into ${target} (${targetLanguage}).`
+    : `Detect the language of the message and translate it into ${target} (${targetLanguage}). If the message is already written in ${target}, translate it into English (en) instead.`;
+
+  return [
+    "You are a live interpreter standing between two people in a back-and-forth conversation.",
+    rule,
+    "Produce a fluent, natural, faithful translation — not word-for-word. Preserve meaning, tone, nuance, and line breaks. Do not add notes, labels, or commentary.",
+    "Reply in EXACTLY this format and nothing else:",
+    "- The FIRST line is two ISO 639-1 codes joined by '>': the detected source code, then the code you translated INTO. Example: fa>en",
+    "- From the SECOND line onward, output ONLY the translated text.",
+    "Use standard ISO codes such as en, fa, ar, he, ur, fr, de, es, it, pt, ru, tr, zh, ja, ko, hi."
+  ].join("\n");
+};
+
+// Parses the "<src>>​<tgt>\n<translation>" reply. Falls back to treating the whole reply as the
+// translation if the model didn't emit the code header, so output is never lost.
+const parseRoutedOutput = (raw, fallbackTarget) => {
+  const text = String(raw || "");
+  const newline = text.indexOf("\n");
+  const header = (newline === -1 ? text : text.slice(0, newline)).trim();
+  const match = header.match(/^([a-z]{2})\s*>\s*([a-z]{2})$/i);
+
+  if (match) {
+    const body = newline === -1 ? "" : text.slice(newline + 1).trim();
+    return {
+      detected: normalizeCode(match[1]),
+      target: normalizeCode(match[2]) || fallbackTarget,
+      text: body || text.trim()
+    };
+  }
+  return { detected: "", target: fallbackTarget, text: text.trim() };
+};
+
+export const translateText = async ({ text, sourceLanguage, targetLanguage, model, tone, mode, conversation, counterpart, provider, apiKey, authenticated }) => {
   const cleanText = normalizeText(text);
   const source = normalizeLanguage(sourceLanguage, "auto");
   const target = normalizeLanguage(targetLanguage, "en");
   const selectedTone = normalizeTone(tone);
   const isAudio = mode === "audio";
+  const isConversation = Boolean(conversation) && !isAudio;
+  // Only a real, different counterpart is useful for routing.
+  const counterpartCode = normalizeCode(counterpart);
+  const validCounterpart = counterpartCode && counterpartCode !== target ? counterpartCode : "";
 
   if (!cleanText) {
     throw new HttpError(400, "Text is required");
@@ -122,11 +173,31 @@ export const translateText = async ({ text, sourceLanguage, targetLanguage, mode
   // On the free tier the model is locked server-side; a client-supplied model is ignored.
   const selectedModel = runtime.lockModel ? runtime.model : (model || runtime.model);
 
-  const key = cacheKey({ provider: runtime.id, model: selectedModel, sourceLanguage: source, targetLanguage: target, tone: selectedTone, mode: isAudio ? "audio" : "text", text: cleanText });
+  const modeKey = isAudio ? "audio" : (isConversation ? "conv" : "text");
+  const key = cacheKey({ provider: runtime.id, model: selectedModel, sourceLanguage: source, targetLanguage: target, tone: selectedTone, mode: modeKey, counterpart: validCounterpart, text: cleanText });
   const cached = getCached(key);
 
   if (cached) {
     return cached;
+  }
+
+  if (isConversation) {
+    const raw = await createChatCompletion([
+      { role: "system", content: createConversationInstruction({ targetLanguage: target, counterpart: validCounterpart }) },
+      { role: "user", content: cleanText }
+    ], selectedModel, runtime);
+
+    const parsed = parseRoutedOutput(raw.text, target);
+    const result = {
+      text: parsed.text || raw.text,
+      detected: parsed.detected,
+      resolvedTarget: parsed.target,
+      model: raw.model,
+      usage: raw.usage,
+      timing: raw.timing
+    };
+    setCached(key, result);
+    return result;
   }
 
   const result = await createChatCompletion([
