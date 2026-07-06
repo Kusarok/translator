@@ -43,6 +43,12 @@ export const env = {
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   defaultProvider: process.env.DEFAULT_PROVIDER || "",
   maxTextLength: toPositiveInt(process.env.MAX_TEXT_LENGTH, 8000),
+  // Groq speech-to-text (Whisper). Powers /api/transcribe for audio/song transcription.
+  // The key is server-side only; whisper-large-v3-turbo is the cheapest/fastest model and
+  // translation of the transcript is handled downstream by the normal LLM pipeline.
+  groqApiKey: process.env.GROQ_API_KEY || "",
+  groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
+  groqSttModel: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
   dataDir: path.join(rootDir, "data"),
   ownerUsername: process.env.OWNER_USERNAME || "",
   ownerPassword: process.env.OWNER_PASSWORD || "",

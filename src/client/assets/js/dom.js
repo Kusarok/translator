@@ -4,6 +4,8 @@ export const elements = {
   sourceLanguage: document.querySelector("#sourceLanguage"),
   targetLanguage: document.querySelector("#targetLanguage"),
   inputText: document.querySelector("#inputText"),
+  audioButton: document.querySelector("#audioButton"),
+  audioInput: document.querySelector("#audioInput"),
   translateButton: document.querySelector("#translateButton"),
   clearButton: document.querySelector("#clearButton"),
   copyLastButton: document.querySelector("#copyLastButton"),
