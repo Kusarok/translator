@@ -23,6 +23,35 @@ export const translate = (payload) => request("/api/translate", {
   body: JSON.stringify(payload)
 });
 
+// fetch() can't report upload progress, so transcription (which sends a large base64 audio
+// body) uses XMLHttpRequest to surface xhr.upload progress events to the caller.
+export const transcribeWithProgress = (payload, onUploadProgress) =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/transcribe");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.responseType = "json";
+
+    if (onUploadProgress) {
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) onUploadProgress(event.loaded, event.total);
+      });
+    }
+
+    xhr.addEventListener("load", () => {
+      const data = xhr.response || {};
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+      } else {
+        reject(new Error(data.error || "Request failed"));
+      }
+    });
+    xhr.addEventListener("error", () => reject(new Error("Network error")));
+    xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
+
+    xhr.send(JSON.stringify(payload));
+  });
+
 export const getSettings = () => request("/api/settings");
 
 export const updateSettings = (payload) => request("/api/settings", {

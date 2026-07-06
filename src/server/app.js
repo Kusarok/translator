@@ -11,6 +11,7 @@ import { getPublicState } from "./services/settings.store.js";
 import { gateEnabled, isOwnerAuthenticated } from "./services/auth.service.js";
 import { freeTierEnabled, freeTierInfo } from "./services/free-tier.service.js";
 import { translateRouter } from "./routes/translate.routes.js";
+import { transcribeRouter } from "./routes/transcribe.routes.js";
 import { chatRouter } from "./routes/chat.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -73,6 +74,11 @@ export const createApp = () => {
       }
     }
   }));
+
+  // Transcription carries base64 audio (up to 20 MB raw -> ~27 MB encoded), so give just this
+  // route a larger body parser, mounted before the 15 MB global parser. body-parser sets
+  // req._body once parsed, so the global parser below skips it and other routes stay at 15 MB.
+  app.use("/api/transcribe", express.json({ limit: "30mb" }));
 
   app.use(express.json({ limit: "15mb" }));
   app.get("/", (_req, res) => sendIndex(res));
@@ -146,6 +152,16 @@ export const createApp = () => {
     standardHeaders: true,
     legacyHeaders: false
   }), chatRouter);
+
+  // Audio/song transcription via Groq Whisper. Owner uses the server GROQ_API_KEY; anonymous
+  // visitors share it through the same free-tier limiter, plus a tighter per-route cap since
+  // each request spends real audio-minutes on the shared key.
+  app.use("/api/transcribe", freeTierLimiter, rateLimit({
+    windowMs: 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false
+  }), transcribeRouter);
 
   app.use((_req, res) => sendIndex(res));
 

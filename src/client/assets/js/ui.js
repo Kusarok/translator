@@ -267,6 +267,40 @@ export const removeLoadingBubble = () => {
   if (el?.parentElement) el.parentElement.remove();
 };
 
+// A determinate/indeterminate progress bubble used for audio upload + processing. It shares the
+// loading-bubble id, so removeLoadingBubble() clears it. Starts indeterminate.
+export const addProgressBubble = (label) => {
+  hideEmptyState();
+
+  const bubble = document.createElement("div");
+  bubble.className = "msg-bubble msg-assistant msg-loading msg-progress indeterminate";
+  bubble.id = "translatorLoadingBubble";
+  bubble.innerHTML =
+    `<span class="progress-label">${escapeHtml(label || "")}</span>` +
+    '<span class="progress-track"><span class="progress-fill"></span></span>';
+
+  return appendRow("assistant", bubble);
+};
+
+// ratio null => indeterminate (animated); a 0..1 number => determinate fill.
+export const setProgress = (label, ratio) => {
+  const bubble = document.getElementById("translatorLoadingBubble");
+  if (!bubble) return;
+
+  const labelEl = bubble.querySelector(".progress-label");
+  const fillEl = bubble.querySelector(".progress-fill");
+  if (labelEl && label != null) labelEl.textContent = label;
+  if (!fillEl) return;
+
+  if (ratio == null) {
+    bubble.classList.add("indeterminate");
+    fillEl.style.width = "";
+  } else {
+    bubble.classList.remove("indeterminate");
+    fillEl.style.width = `${Math.round(Math.max(0, Math.min(1, ratio)) * 100)}%`;
+  }
+};
+
 export const clearMessages = () => {
   elements.messages.innerHTML = "";
   if (elements.emptyState) {

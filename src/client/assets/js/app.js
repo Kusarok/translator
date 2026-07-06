@@ -1,4 +1,4 @@
-import { getHealth, translate } from "./api.js";
+import { getHealth, translate, transcribeWithProgress } from "./api.js";
 import { elements } from "./dom.js";
 import { languages } from "./constants.js";
 import { setHealth, setLoading, state } from "./state.js";
@@ -21,6 +21,8 @@ import {
   addErrorBubble,
   addLoadingBubble,
   removeLoadingBubble,
+  addProgressBubble,
+  setProgress,
   clearMessages,
   hasMessages,
   flashCopied
@@ -153,6 +155,115 @@ const translateText = async () => {
   }
 };
 
+// ---- Audio / song transcription (Groq Whisper) ----
+
+// The /api/transcribe route accepts a 30 MB JSON body; 20 MB of audio base64-encodes to ~27 MB.
+const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+
+const readFileAsDataURL = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const formatTimestamp = (sec) => {
+  if (sec == null || !Number.isFinite(sec)) return "";
+  const total = Math.max(0, Math.floor(sec));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+};
+
+const withTimestamps = (segments) =>
+  segments.map((seg) => `[${formatTimestamp(seg.start)}] ${seg.text}`).join("\n");
+
+// Re-attach each segment's timestamp to the matching translated line. Falls back to the raw
+// translation if the model didn't return one line per input line.
+const pairTranslation = (segments, translation) => {
+  const lines = String(translation || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  if (segments.length && lines.length === segments.length) {
+    return segments.map((seg, i) => `[${formatTimestamp(seg.start)}] ${lines[i]}`).join("\n");
+  }
+  return String(translation || "").trim();
+};
+
+const handleAudioFile = async (file) => {
+  if (!file) return;
+
+  if (!file.type.startsWith("audio/")) {
+    setMessage(t("audioTypeError"), "error");
+    return;
+  }
+  if (file.size > MAX_AUDIO_SIZE) {
+    setMessage(t("audioTooLarge"), "error");
+    return;
+  }
+
+  setLoading(true);
+  setLoadingView(true);
+  setMessage("");
+
+  addBubble("user", `\u{1F3B5} ${file.name}`);
+  addProgressBubble(t("audioPreparing"));
+
+  try {
+    const dataUri = await readFileAsDataURL(file);
+    // Transcription uses the server-side Groq key (owner/free tier); do NOT forward the chat
+    // BYOK key here — it belongs to a different provider and Groq would reject it. Upload
+    // progress is surfaced live; once the body is fully sent we wait on Groq (indeterminate).
+    const stt = await transcribeWithProgress(
+      { audio: dataUri, filename: file.name, mimeType: file.type },
+      (loaded, total) => {
+        if (!total) return;
+        if (loaded >= total) {
+          setProgress(t("audioTranscribing"), null);
+        } else {
+          setProgress(t("audioUploading", { percent: Math.round((loaded / total) * 100) }), loaded / total);
+        }
+      }
+    );
+    removeLoadingBubble();
+
+    const segments = stt.segments || [];
+    const transcript = segments.length ? withTimestamps(segments) : (stt.text || "");
+
+    if (!transcript.trim()) {
+      addErrorBubble(t("audioEmpty"));
+      return;
+    }
+
+    const sttMeta = [t("audioTranscript"), stt.language, formatTimestamp(stt.duration)].filter(Boolean).join(" · ");
+    addBubble("assistant", transcript, sttMeta);
+
+    // Translate the transcript with the song/audio prompt, defaulting to Gemma 4.
+    const source = segments.length ? segments.map((s) => s.text).join("\n") : stt.text;
+    addProgressBubble(t("audioTranslating"));
+    const result = await translate({
+      text: source,
+      sourceLanguage: "auto",
+      targetLanguage: elements.targetLanguage.value,
+      model: elements.modelSelect.value,
+      tone: elements.toneSelect.value,
+      mode: "audio",
+      ...getRequestPayload()
+    });
+    removeLoadingBubble();
+
+    const paired = pairTranslation(segments, result.translation);
+    lastTranslation = paired;
+    addBubble("assistant", paired, buildResultMeta(result));
+  } catch (error) {
+    removeLoadingBubble();
+    addErrorBubble(error.message || t("msgError"));
+  } finally {
+    setLoading(false);
+    setLoadingView(false);
+    elements.audioInput.value = "";
+  }
+};
+
 const writeClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -245,6 +356,14 @@ const bindEvents = () => {
     const runtime = getRuntime();
     if (runtime) updateModel(runtime.provider, elements.modelSelect.value);
   });
+
+  if (elements.audioButton && elements.audioInput) {
+    elements.audioButton.addEventListener("click", () => elements.audioInput.click());
+    elements.audioInput.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) handleAudioFile(file);
+    });
+  }
 
   if (elements.keyBannerButton) {
     elements.keyBannerButton.addEventListener("click", () => elements.settingsToggle.click());
