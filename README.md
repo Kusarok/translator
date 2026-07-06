@@ -32,6 +32,7 @@ Get a free key from any of these providers:
 | **Cerebras** | [cloud.cerebras.ai](https://cloud.cerebras.ai) | Very fast inference |
 | **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) | Free models are auto-selected for you |
 | **Google AI Studio** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Gemma & Gemini; required for Live voice |
+| **Groq** | [console.groq.com/keys](https://console.groq.com/keys) | Very fast; also powers voice-to-text (Whisper). Bring your own key to use it |
 
 Steps: pick a provider → paste the key → **Save key** → **Test** → **Use**.
 
@@ -101,11 +102,15 @@ Copy `.env.example` to `.env` and fill in what you need. Keys added in the UI ta
 HOST=0.0.0.0
 PORT=8080
 MAX_TEXT_LENGTH=8000
-DEFAULT_PROVIDER=cerebras
+DEFAULT_PROVIDER=cerebras   # groq is also valid (DEFAULT_PROVIDER=groq)
 
 CEREBRAS_API_KEY=
 OPENROUTER_API_KEY=
 GOOGLE_API_KEY=
+
+GROQ_API_KEY=                                     # owner-only; also powers voice-to-text
+GROQ_BASE_URL=https://api.groq.com/openai/v1     # OpenAI-compatible endpoint
+GROQ_STT_MODEL=whisper-large-v3-turbo            # or whisper-large-v3
 
 OWNER_USERNAME=
 OWNER_PASSWORD=
@@ -127,6 +132,27 @@ The **Live** tab does real-time speech-to-speech translation using Google's Live
 - Needs a **Google AI Studio** key: your own (from **Your API Key**) or, if you're the logged-in owner, the server's Google key.
 - The microphone only works on a **secure origin**: `localhost` or an `https://` URL. Over plain `http://` on a public IP, browsers block mic access.
 - Audio streams to the server, which proxies to Google, so the key stays server-side when using the owner key.
+
+## Groq (fast chat, translation & voice-to-text)
+
+Groq adds very fast translation/chat models and powers the 🎙️ audio transcription (voice-to-text) feature via Whisper.
+
+**Owner key vs. bring-your-own.** The server's `GROQ_API_KEY` in `.env` is owner-only — it sits behind the same owner login gate as your other configured keys, so anonymous and free-tier visitors can never spend it (neither for chat/translation nor for Whisper transcription). Everyone else brings their own Groq key from ⚙ **Settings → Your API Key** (pick **Groq**, **Save** → **Test** → **Use**). Get a free key at [console.groq.com/keys](https://console.groq.com/keys). Note: owner-only enforcement requires `OWNER_USERNAME` / `OWNER_PASSWORD` to be set; on a deploy with the gate disabled every visitor counts as the owner (single-user/trusted mode).
+
+**When audio & Groq turn on.** The Groq models and the 🎙️ audio button appear only when Groq is available to you — you're the logged-in owner with `GROQ_API_KEY` set, or you've added your own Groq key in Settings. Otherwise the audio button stays hidden and Groq isn't offered.
+
+**Chat & translation models:**
+
+| Model | Notes |
+| --- | --- |
+| `llama-3.3-70b-versatile` | Meta, strong general-purpose (default), 131k ctx |
+| `llama-3.1-8b-instant` | Meta, fastest, 131k ctx |
+| `meta-llama/llama-4-scout-17b-16e-instruct` | Meta, multimodal (vision), 131k ctx |
+| `qwen/qwen3-32b` | Alibaba, strong multilingual |
+| `openai/gpt-oss-120b` | OpenAI open-weight, 131k ctx |
+| `openai/gpt-oss-20b` | OpenAI open-weight, smaller/faster |
+
+**Voice-to-text (Whisper):** `whisper-large-v3-turbo` (default, fast/cheap) or `whisper-large-v3` (highest accuracy). Tune with the `GROQ_STT_MODEL` / `GROQ_BASE_URL` knobs in the env block above.
 
 ## Security
 
@@ -173,6 +199,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 - **Cerebras** — از [cloud.cerebras.ai](https://cloud.cerebras.ai) (بسیار سریع)
 - **OpenRouter** — از [openrouter.ai/keys](https://openrouter.ai/keys) (مدل‌های رایگان به‌صورت خودکار انتخاب می‌شوند)
 - **Google AI Studio** — از [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (برای ترجمه‌ی زنده‌ی صدا لازم است)
+- **Groq** — از [console.groq.com/keys](https://console.groq.com/keys) (بسیار سریع؛ همچنین قابلیت تبدیل صدا به متن با Whisper را فراهم می‌کند؛ با کلید خودتان قابل استفاده است)
 
 مراحل: انتخاب سرویس ← وارد کردن کلید ← **ذخیره کلید** ← **تست** ← **استفاده**.
 
@@ -238,6 +265,7 @@ FREE_MAX_INPUT_CHARS=16000
 
 - فایل‌های `.env` و `data/` در گیت نادیده گرفته می‌شوند — هیچ کلیدی هرگز کامیت نمی‌شود.
 - کلید BYOK فقط در مرورگر بازدیدکننده می‌ماند و روی سرور ذخیره نمی‌شود.
+- کلید `GROQ_API_KEY` روی سرور فقط برای مالکِ لاگین‌کرده است؛ بازدیدکننده‌های رایگان هرگز از آن استفاده نمی‌کنند و باید کلید Groq خودشان را در تنظیمات وارد کنند. دکمه‌ی صدا فقط وقتی ظاهر می‌شود که Groq در دسترس شما باشد.
 - قبل از انتشار عمومی، حتماً `OWNER_USERNAME` و `OWNER_PASSWORD` را تنظیم کنید.
 
 ## مجوز

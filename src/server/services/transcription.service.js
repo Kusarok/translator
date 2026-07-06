@@ -4,13 +4,16 @@ import { HttpError } from "../utils/http-error.js";
 // Groq's free tier caps uploads at 25 MB; we also bound decoded size defensively.
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
-const friendly = (status, raw) => {
+const friendly = (status, raw, usedClientKey) => {
   const message = String(raw || "");
   if (status === 429 || /quota|rate.?limit|exceeded/i.test(message)) {
     return "Groq rate limit or quota reached. Wait a moment and try again.";
   }
   if (status === 401 || status === 403 || /api key|unauthor|permission/i.test(message)) {
-    return "The Groq API key was rejected. Check GROQ_API_KEY on the server.";
+    // Point BYOK users at their own key; only the owner's server key is theirs to fix.
+    return usedClientKey
+      ? "Your Groq API key was rejected. Check the key in Settings."
+      : "The Groq API key was rejected. Check GROQ_API_KEY on the server.";
   }
   if (status === 413 || /too large|maximum|file size/i.test(message)) {
     return "The audio file is too large for transcription (max 25 MB).";
@@ -18,15 +21,15 @@ const friendly = (status, raw) => {
   return message.length > 200 ? `${message.slice(0, 200)}…` : (message || "Transcription failed");
 };
 
-const parseErrorMessage = async (response) => {
+const parseErrorMessage = async (response, usedClientKey) => {
   const text = await response.text();
-  if (!text) return friendly(response.status, response.statusText || "Transcription failed");
+  if (!text) return friendly(response.status, response.statusText || "Transcription failed", usedClientKey);
   try {
     const data = JSON.parse(text);
     const raw = data?.error?.message || data?.error || data?.message || text;
-    return friendly(response.status, typeof raw === "string" ? raw : JSON.stringify(raw));
+    return friendly(response.status, typeof raw === "string" ? raw : JSON.stringify(raw), usedClientKey);
   } catch {
-    return friendly(response.status, text);
+    return friendly(response.status, text, usedClientKey);
   }
 };
 
@@ -51,16 +54,20 @@ export const transcribeAudio = async ({ audio, filename, mimeType, apiKey, authe
     throw new HttpError(413, "The audio file is too large (max 25 MB).");
   }
 
-  // Key resolution mirrors the app's philosophy: a caller-supplied Groq key wins; otherwise
-  // the server-side GROQ_API_KEY is used for the owner, and for anonymous visitors only when
-  // the free tier is switched on (route-level rate limiting bounds abuse of the shared key).
+  // A caller-supplied Groq key (BYOK) may be used by anyone. Otherwise the server-side
+  // GROQ_API_KEY is spent ONLY for the authenticated owner. Anonymous/free-tier visitors
+  // get NO server key and must bring their own Groq key. (No free-tier branch here.)
   const clientKey = String(apiKey || "").trim();
-  if (!clientKey && !authenticated && (!env.freeTierEnabled || !env.groqApiKey)) {
-    throw new HttpError(401, "Log in as the owner or provide a Groq API key to transcribe audio.");
-  }
-  const key = clientKey || env.groqApiKey;
-  if (!key) {
-    throw new HttpError(401, "Transcription is not configured (no Groq API key on the server).");
+  let key;
+  if (clientKey) {
+    key = clientKey;
+  } else if (authenticated) {
+    key = env.groqApiKey;
+    if (!key) {
+      throw new HttpError(503, "Transcription is not configured (no GROQ_API_KEY on the server).");
+    }
+  } else {
+    throw new HttpError(401, "Log in as the owner or add your own Groq API key in Settings to transcribe audio.");
   }
 
   const form = new FormData();
@@ -78,7 +85,7 @@ export const transcribeAudio = async ({ audio, filename, mimeType, apiKey, authe
   });
 
   if (!response.ok) {
-    throw new HttpError(response.status, await parseErrorMessage(response));
+    throw new HttpError(response.status, await parseErrorMessage(response, Boolean(clientKey)));
   }
 
   const data = await response.json();

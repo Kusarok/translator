@@ -32,7 +32,7 @@ import { initLangPicker } from "./langpicker.js";
 import { initChat, onLanguageChange, refreshChatConfig, refreshChatAccess } from "./chat-app.js";
 import { initSettings, refreshOwnerSection } from "./settings.js";
 import { initByokUi, refreshByokUi } from "./byok-ui.js";
-import { getRuntime, getRequestPayload, updateModel } from "./byok.js";
+import { getRuntime, getRequestPayload, updateModel, getGroqKey } from "./byok.js";
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
 import { initViewportSizing } from "./viewport.js";
 
@@ -241,11 +241,12 @@ const handleAudioFile = async (file) => {
 
   try {
     const dataUri = await readFileAsDataURL(file);
-    // Transcription uses the server-side Groq key (owner/free tier); do NOT forward the chat
-    // BYOK key here — it belongs to a different provider and Groq would reject it. Upload
-    // progress is surfaced live; once the body is fully sent we wait on Groq (indeterminate).
+    // Transcription runs on the server-side Groq key only for the authenticated owner. A visitor
+    // who brought their own Groq key forwards it as `apiKey` so anonymous BYOK-Groq users can
+    // transcribe. Upload progress is surfaced live; once the body is fully sent we wait on Groq.
+    const groqKey = getGroqKey();
     const stt = await transcribeWithProgress(
-      { audio: dataUri, filename: file.name, mimeType: file.type },
+      { audio: dataUri, filename: file.name, mimeType: file.type, ...(groqKey ? { apiKey: groqKey } : {}) },
       (loaded, total) => {
         if (!total) return;
         if (loaded >= total) {

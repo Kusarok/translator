@@ -44,6 +44,23 @@ export const providerCatalog = [
       { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", vision: true },
       { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", vision: true }
     ]
+  },
+  {
+    id: "groq",
+    label: "Groq",
+    baseUrl: "https://api.groq.com/openai/v1",
+    envKey: "GROQ_API_KEY",
+    envBaseUrl: "GROQ_BASE_URL",
+    tokenParam: "max_completion_tokens",
+    defaultModel: "llama-3.3-70b-versatile",
+    models: [
+      { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile", vision: false },
+      { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant", vision: false },
+      { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B (vision)", vision: true },
+      { id: "qwen/qwen3-32b", label: "Qwen3 32B", vision: false },
+      { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", vision: false },
+      { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B", vision: false }
+    ]
   }
 ];
 
