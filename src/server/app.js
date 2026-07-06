@@ -100,6 +100,7 @@ export const createApp = () => {
       maxTextLength: env.maxTextLength,
       chat: { ...chatConfig, models: active.models, defaultModel: active.selectedModel },
       live: { available: Boolean(google?.configured) && authenticated, model: "gemini-3.5-live-translate-preview" },
+      transcription: { available: authenticated && Boolean(env.groqApiKey), model: env.groqSttModel },
       catalog: providerCatalog.map((provider) => ({ id: provider.id, label: provider.label, models: publicModels(provider) })),
       auth: { gateEnabled: gateEnabled(), authenticated },
       free: freeTierInfo()
@@ -153,10 +154,11 @@ export const createApp = () => {
     legacyHeaders: false
   }), chatRouter);
 
-  // Audio/song transcription via Groq Whisper. Owner uses the server GROQ_API_KEY; anonymous
-  // visitors share it through the same free-tier limiter, plus a tighter per-route cap since
-  // each request spends real audio-minutes on the shared key.
-  app.use("/api/transcribe", freeTierLimiter, rateLimit({
+  // Audio/song transcription via Groq Whisper. The server GROQ_API_KEY is owner-only (see
+  // transcription.service.js); anonymous visitors can only transcribe with their own BYOK Groq
+  // key, so no free-tier limiter here — just a tighter per-route cap bounding the owner key,
+  // since each request spends real audio-minutes.
+  app.use("/api/transcribe", rateLimit({
     windowMs: 60 * 1000,
     limit: 10,
     standardHeaders: true,

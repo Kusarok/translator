@@ -65,6 +65,8 @@ export const getRequestPayload = () => {
 
 export const getGoogleKey = () => getEntry("google")?.apiKey || "";
 
+export const getGroqKey = () => getEntry("groq")?.apiKey || "";
+
 // The shared free tier is offered to anonymous visitors who have not brought their own key.
 export const freeTierAvailable = () => Boolean(state.free?.enabled);
 

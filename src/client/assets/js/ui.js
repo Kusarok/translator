@@ -2,7 +2,7 @@ import { hasRtlText, languages, languageMap } from "./constants.js";
 import { elements } from "./dom.js";
 import { state } from "./state.js";
 import { translations, t, setLang, getLang } from "./i18n.js";
-import { getRuntime, hasUsableKey, isFreeMode } from "./byok.js";
+import { getRuntime, hasUsableKey, isFreeMode, getGroqKey } from "./byok.js";
 
 // The one model the free tier exposes, resolved from the server-reported catalog.
 export const freeModelList = () => {
@@ -141,6 +141,15 @@ export const updateKeyGate = () => {
   elements.translateButton.disabled = !available || state.loading;
 };
 
+// Audio transcription is available when the server reports the owner Groq key (health signal)
+// or the visitor has brought their own Groq key. Mirrors the live-availability pattern.
+export const transcriptionAvailable = () =>
+  Boolean(state.transcription?.available) || Boolean(getGroqKey());
+
+export const updateAudioAvailability = () => {
+  if (elements.audioButton) elements.audioButton.hidden = !transcriptionAvailable();
+};
+
 // AC07: the composer pill signals when there is something to send.
 const syncHasText = () => {
   const pill = elements.inputText.closest(".input-pill");
@@ -213,6 +222,7 @@ export const applyHealth = () => {
   populateModelSelect(models, selected);
   updateCharacterCount();
   updateKeyGate();
+  updateAudioAvailability();
 };
 
 // ---- Conversation bubbles ----

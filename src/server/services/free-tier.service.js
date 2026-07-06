@@ -6,6 +6,10 @@ import { getProviderRuntime } from "./settings.store.js";
 // server-funded model. To keep the shared key safe it is locked to one provider/model,
 // the output tokens are capped, and every request is rate limited per visitor.
 
+// Providers that may never fund anonymous free-tier traffic, even if set as FREE_PROVIDER.
+// Groq's server key is owner-only (it also powers Whisper transcription).
+const FREE_BLOCKED = new Set(["groq"]);
+
 const freeProvider = () => providerMap[env.freeProvider];
 
 const freeModelId = () => {
@@ -22,7 +26,7 @@ const freeModelId = () => {
 export const freeTierEnabled = () => {
   if (!env.freeTierEnabled) return false;
   const provider = freeProvider();
-  if (!provider) return false;
+  if (!provider || FREE_BLOCKED.has(provider.id)) return false;   // groq is never a free provider
   return Boolean(getProviderRuntime(provider.id).apiKey);
 };
 

@@ -9,6 +9,7 @@ export const state = {
   auth: { gateEnabled: false, authenticated: true },
   catalog: [],
   free: { enabled: false, provider: "cerebras", model: "gemma-4-31b", rateLimit: 5 },
+  transcription: { available: false, model: "" },
   // Two-way "conversation" translation: when the source is Auto-detect, this holds the other
   // party's language (learned from the first non-target message) so replies in the target
   // language are auto-translated back. Empty until learned; reset on clear / manual changes.
@@ -19,7 +20,7 @@ export const setLoading = (value) => {
   state.loading = Boolean(value);
 };
 
-export const setHealth = ({ model, models, maxTextLength, auth, catalog, free }) => {
+export const setHealth = ({ model, models, maxTextLength, auth, catalog, free, transcription }) => {
   state.model = model || state.model;
   state.models = Array.isArray(models) ? models : state.models;
   state.selectedModel = model || state.selectedModel;
@@ -27,4 +28,5 @@ export const setHealth = ({ model, models, maxTextLength, auth, catalog, free })
   if (auth) state.auth = auth;
   if (Array.isArray(catalog)) state.catalog = catalog;
   if (free) state.free = free;
+  if (transcription) state.transcription = transcription;
 };
