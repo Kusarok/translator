@@ -1,17 +1,19 @@
 .app-shell {
   width: 100%;
   max-width: 460px;
-  /* Pin to the dynamic viewport height (not min-height): in an installed PWA
-     the layout viewport (height:100%) and 100dvh can differ, and min-height
-     let the shell grow taller than the visible area, pushing the composer
-     below the fold. A fixed height keeps everything on screen. */
+  /* JS updates --app-height from visualViewport because standalone Android PWAs
+     can report 100vh/100dvh taller than the touchable viewport. */
   height: 100vh;
   height: 100dvh;
+  height: var(--app-height);
   display: flex;
+  min-height: 0;
 }
 
 .workspace {
   width: 100%;
+  height: 100%;
+  min-height: 0;
   background: var(--page);
   display: flex;
   flex-direction: column;
@@ -258,6 +260,7 @@
   z-index: 50;
   max-height: 86vh;
   max-height: 86dvh;
+  max-height: min(86dvh, calc(var(--app-height) - 24px));
   overflow-y: auto;
 }
 
@@ -334,10 +337,8 @@
   }
 
   .workspace {
-    min-height: min(880px, calc(100vh - 40px));
-    min-height: min(880px, calc(100dvh - 40px));
-    height: min(880px, calc(100vh - 40px));
-    height: min(880px, calc(100dvh - 40px));
+    min-height: min(880px, calc(var(--app-height) - 40px));
+    height: min(880px, calc(var(--app-height) - 40px));
     border: 1px solid var(--line);
     border-radius: 26px;
     box-shadow: var(--shadow);
