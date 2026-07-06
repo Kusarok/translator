@@ -39,7 +39,8 @@ const buildLangOptions = (select, includeAuto) => {
     if (lang.code === "auto" && !includeAuto) continue;
     const option = document.createElement("option");
     option.value = lang.code;
-    option.textContent = lang.code === "auto" ? t("autoDetect") : lang.native;
+    const name = lang.code === "auto" ? t("autoDetect") : lang.native;
+    option.textContent = `${lang.flag} ${name}`;
     select.appendChild(option);
   }
 };
@@ -66,13 +67,29 @@ const updateSelectOptions = (lang) => {
 };
 
 const languageLabel = (code) => {
-  if (code === "auto") return translations[getLang()].autoDetect;
-  return languageMap[code]?.native ?? code;
+  const entry = languageMap[code];
+  const name = code === "auto" ? translations[getLang()].autoDetect : (entry?.native ?? code);
+  const flag = entry?.flag ? `${entry.flag} ` : "";
+  return `${flag}${name}`;
 };
 
 export const updateDirectionLabel = () => {
-  elements.direction.textContent =
-    `${languageLabel(elements.sourceLanguage.value)} → ${languageLabel(elements.targetLanguage.value)}`;
+  const source = elements.sourceLanguage.value;
+  const target = elements.targetLanguage.value;
+  // In two-way conversation mode (auto source + a learned counterpart) show "A ⇄ B".
+  const twoWay = source === "auto" && state.conversationCounterpart && state.conversationCounterpart !== target;
+  const left = twoWay ? languageLabel(state.conversationCounterpart) : languageLabel(source);
+  const arrow = twoWay
+    ? '<span class="lang-arrow lang-arrow--two" aria-hidden="true">⇄</span>'
+    : '<span class="lang-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="13 5 20 12 13 19"/></svg></span>';
+  elements.direction.innerHTML =
+    `<span class="lang-chip">${escapeDir(left)}</span>${arrow}<span class="lang-chip">${escapeDir(languageLabel(target))}</span>`;
+};
+
+const escapeDir = (value) => {
+  const div = document.createElement("div");
+  div.textContent = value;
+  return div.innerHTML;
 };
 
 export const setLanguage = (lang) => {
@@ -124,8 +141,16 @@ export const updateKeyGate = () => {
   elements.translateButton.disabled = !available || state.loading;
 };
 
+// AC07: the composer pill signals when there is something to send.
+const syncHasText = () => {
+  const pill = elements.inputText.closest(".input-pill");
+  if (pill) pill.classList.toggle("has-text", elements.inputText.value.trim().length > 0);
+};
+
 export const setLoadingView = (loading) => {
   elements.inputText.disabled = loading;
+  // AC07: spinner on the send plane while a translation is in flight.
+  elements.translateButton.classList.toggle("is-loading", loading);
   updateKeyGate();
 };
 
@@ -133,6 +158,10 @@ export const updateCharacterCount = () => {
   const length = elements.inputText.value.length;
   elements.characterCount.textContent = `${length} / ${state.maxTextLength}`;
   elements.characterCount.classList.toggle("over-limit", length > state.maxTextLength);
+  // AC22: progressive counter — reveal only as the input nears the cap.
+  const near = length > state.maxTextLength * 0.8;
+  elements.characterCount.classList.toggle("visible", length > 0 && near);
+  syncHasText();
 };
 
 export const updateDirection = (element) => {
@@ -143,6 +172,7 @@ export const updateDirection = (element) => {
 export const autoGrowInput = () => {
   elements.inputText.style.height = "auto";
   elements.inputText.style.height = `${Math.min(elements.inputText.scrollHeight, 120)}px`;
+  syncHasText();
 };
 
 export const populateModelSelect = (models, selected) => {
@@ -199,8 +229,12 @@ const nowTime = () =>
     minute: "2-digit"
   });
 
-export const buildResultMeta = ({ model, timing }) => {
+export const buildResultMeta = ({ model, timing }, direction) => {
   const parts = [];
+  // In conversation mode, lead with which way this message was translated (flag → flag).
+  const from = direction?.detected && languageMap[direction.detected]?.flag;
+  const to = direction?.target && languageMap[direction.target]?.flag;
+  if (from && to) parts.push(`${from} → ${to}`);
   if (model) parts.push(model);
   if (timing?.tokens_per_second != null) parts.push(`${timing.tokens_per_second} ${t("statSpeed")}`);
   const time = formatTime(timing?.elapsed_ms);
@@ -232,7 +266,12 @@ export const addBubble = (role, text, meta) => {
   bubble.setAttribute("tabindex", "0");
   bubble.title = t("clickToCopy");
 
-  let inner = `<p class="msg-text">${escapeHtml(text).replace(/\n/g, "<br>")}</p>`;
+  // AC20: turn transcript [mm:ss] markers into an aligned caption rail. Runs on already-escaped
+  // text, so the digit pattern can never straddle an HTML entity.
+  const body = escapeHtml(text)
+    .replace(/\[(\d{2}:\d{2})\]/g, '<span class="msg-ts">$1</span>')
+    .replace(/\n/g, "<br>");
+  let inner = `<p class="msg-text">${body}</p>`;
   if (meta) inner += `<span class="msg-meta">${escapeHtml(meta)}</span>`;
   inner += `<span class="msg-time">${nowTime()}</span>`;
   bubble.innerHTML = inner;
@@ -315,4 +354,16 @@ export const flashCopied = (bubble) => {
   if (!bubble) return;
   bubble.classList.add("msg-copied");
   setTimeout(() => bubble.classList.remove("msg-copied"), 1000);
+};
+
+// AC27: give the glass topbar a scroll-aware edge once any transcript is pushed past the top.
+export const initScrollAwareTopbar = () => {
+  const topbar = document.querySelector(".topbar");
+  if (!topbar) return;
+  const onScroll = (event) => {
+    topbar.classList.toggle("scrolled", (event.target.scrollTop || 0) > 4);
+  };
+  document.querySelectorAll(".messages").forEach((list) => {
+    list.addEventListener("scroll", onScroll, { passive: true });
+  });
 };

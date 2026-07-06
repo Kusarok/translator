@@ -1,0 +1,210 @@
+/* Deep-Luxe iOS-wheel language picker. Geometry constants MUST match langpicker.js:
+   ITEM_H=40, VISIBLE=5, WHEEL_H=200, PAD=(200-40)/2=80. */
+
+/* ===== 5. Glass popup (same entrance grammar as .sheet) ===== */
+.lp-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--glass-scrim);
+  -webkit-backdrop-filter: var(--scrim-blur);
+  backdrop-filter: var(--scrim-blur);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-enter) var(--ease-out);
+}
+.lp-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lp-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line-soft);
+  border-bottom: none;
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+  padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  transform: translateY(101%);
+  transition: transform var(--dur-sheet) var(--ease-spring);
+}
+.lp-overlay.open .lp-sheet {
+  transform: translateY(0);
+}
+
+.lp-handle {
+  width: 38px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin: 6px auto 12px;
+}
+
+.lp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 2px 6px;
+}
+.lp-title {
+  font-size: var(--fs-base);
+  font-weight: 800;
+}
+.lp-done {
+  border: none;
+  background: var(--grad-accent);
+  color: var(--accent-ink);
+  font-weight: 800;
+  font-size: var(--fs-small);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--accent-glow);
+  cursor: pointer;
+}
+
+/* ===== 4. Stage + center selection band ===== */
+.lp-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 6px;
+  padding: 6px 4px 4px;
+}
+.lp-band {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 40px;
+  transform: translateY(calc(-50% + 9px)); /* +9px offsets the col-label row above the wheels */
+  border-top: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: linear-gradient(180deg, var(--accent-soft), transparent 40%, transparent 60%, var(--accent-soft));
+  border-radius: var(--radius-m);
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--line-soft), 0 0 22px -8px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: transform 90ms var(--ease-spring);
+}
+.lp-band--tick {
+  transform: translateY(calc(-50% + 9px)) scaleY(1.06);
+}
+
+.lp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.lp-col-label {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+.lp-swap {
+  align-self: center;
+  margin-bottom: 80px; /* ride the center band row */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--accent-strong);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring),
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.lp-swap:hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+.lp-swap.spin {
+  transform: rotate(180deg);
+}
+
+/* ===== 2. Wheel geometry + iOS physics ===== */
+.lp-wheel {
+  position: relative;
+  height: 200px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  perspective: 700px;
+  perspective-origin: 50% 50%;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+  outline: none;
+}
+.lp-wheel:focus-visible {
+  box-shadow: var(--ring);
+  border-radius: var(--radius-m);
+}
+.lp-wheel::-webkit-scrollbar {
+  display: none;
+}
+.lp-list {
+  list-style: none;
+  margin: 0;
+  padding: 80px 0;
+  transform-style: preserve-3d;
+}
+.lp-item {
+  height: 40px;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 14px;
+  transform-origin: center center;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+  transition: none;
+}
+.lp-flag {
+  font-size: var(--fs-lg);
+  line-height: 1;
+}
+.lp-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: isolate;
+}
+
+/* ===== 7. Reduced motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  .lp-wheel {
+    scroll-behavior: auto;
+  }
+  .lp-band,
+  .lp-band--tick {
+    transition: none;
+    transform: translateY(calc(-50% + 9px));
+  }
+  .lp-swap.spin {
+    transform: none;
+  }
+}

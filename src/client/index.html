@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="/assets/css/layout.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/components.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/chat.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/langpicker.css?v=__ASSET_VERSION__">
   </head>
   <body>
     <main class="app-shell">
@@ -34,7 +35,7 @@
             <button class="mode-btn" id="modeBtn" type="button" aria-haspopup="true" aria-expanded="false">
               <span class="mode-icon" id="modeIcon">🔤</span>
               <span class="mode-label" id="modeLabel" data-i18n="appName">Translator</span>
-              <span class="mode-chev" aria-hidden="true">▾</span>
+              <span class="mode-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
             </button>
             <div class="mode-menu" id="modeMenu" role="menu">
               <button class="menu-tab mode-option active" data-view="translator" data-icon="🔤" role="menuitem">
@@ -53,17 +54,20 @@
               <span class="dot" aria-hidden="true"></span>
               <span class="status-text" data-i18n="checkingStatus">Checking</span>
             </button>
-            <button class="icon-btn" id="settingsToggle" type="button" data-i18n-aria="openSettings" aria-label="Settings">⚙️</button>
+            <button class="icon-btn" id="settingsToggle" type="button" data-i18n-aria="openSettings" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
           </div>
         </header>
 
         <main class="content">
           <section class="view" id="translatorView">
             <div class="lang-strip">
-              <span class="lang-dir" id="translatorDirection" dir="ltr">Auto detect → English</span>
+              <button class="lang-pill" id="langPickerTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria="chooseLanguages" aria-label="Choose languages">
+                <span class="lang-dir" id="translatorDirection"></span>
+                <span class="lang-pill-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
               <span class="strip-actions">
-                <button class="icon-btn small ghost" id="copyLastButton" type="button" data-i18n-aria="copyLast" aria-label="Copy last translation">📋</button>
-                <button class="icon-btn small ghost" id="clearButton" type="button" data-i18n-aria="clearTranslations" aria-label="Clear translations">🗑️</button>
+                <button class="icon-btn small ghost" id="copyLastButton" type="button" data-i18n-aria="copyLast" aria-label="Copy last translation"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button class="icon-btn small ghost" id="clearButton" type="button" data-i18n-aria="clearTranslations" aria-label="Clear translations"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
               </span>
             </div>
             <div class="messages" id="translatorMessages">
@@ -101,8 +105,8 @@
                 </span>
               </span>
               <span class="strip-actions">
-                <button class="icon-btn small ghost" id="chatSettingsButton" type="button" data-chat-i18n-aria="chatSettings" aria-label="Settings">⚙️</button>
-                <button class="icon-btn small ghost" id="chatClearButton" type="button" data-chat-i18n-aria="chatClear" aria-label="Clear chat">🗑️</button>
+                <button class="icon-btn small ghost" id="chatSettingsButton" type="button" data-chat-i18n-aria="chatSettings" aria-label="Settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+                <button class="icon-btn small ghost" id="chatClearButton" type="button" data-chat-i18n-aria="chatClear" aria-label="Clear chat"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
               </span>
               <label class="model-field" hidden>
                 <select id="chatModelSelect" data-i18n-aria="selectModel" aria-label="Select model"></select>
@@ -147,7 +151,7 @@
                 </button>
               </div>
               <span class="live-mic-label" id="liveMicLabel" data-i18n="liveStart">Tap to speak</span>
-              <button class="icon-btn small ghost" id="liveClearButton" type="button" data-i18n-aria="liveClear" aria-label="Clear transcript">🗑️</button>
+              <button class="icon-btn small ghost" id="liveClearButton" type="button" data-i18n-aria="liveClear" aria-label="Clear transcript"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
             </div>
           </section>
         </main>
@@ -167,11 +171,6 @@
                 <button class="icon-btn small" id="swapButton" type="button" data-i18n-title="swapLanguages" data-i18n-aria="swapLanguages" title="Swap languages" aria-label="Swap languages">⇄</button>
                 <select class="select" id="targetLanguage" name="targetLanguage" data-i18n-aria="targetLanguage" aria-label="Target language"></select>
               </div>
-            </div>
-
-            <div class="sheet-section section-translator" id="modelSection">
-              <label class="setting-label" data-i18n="selectModel">Model</label>
-              <select class="select full" id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="Select model"></select>
             </div>
 
             <div class="sheet-section section-translator">
@@ -201,6 +200,37 @@
             </div>
 
             <div class="sheet-section">
+              <button class="settings-row" id="apiSettingsTrigger" type="button" aria-haspopup="dialog">
+                <span class="settings-row-icon" aria-hidden="true">🔑</span>
+                <span class="settings-row-text">
+                  <span class="settings-row-title" data-i18n="apiSectionTitle">API &amp; Providers</span>
+                  <span class="settings-row-sub" id="apiSettingsSummary" data-i18n="apiSectionSub">Keys, provider &amp; model</span>
+                </span>
+                <span class="settings-row-chev" aria-hidden="true">›</span>
+              </button>
+            </div>
+
+            <div class="sheet-section row-between">
+              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
+              <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="apiPanel">
+          <div class="sheet" role="dialog" aria-modal="true" aria-label="API and providers">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-header">
+              <h3 data-i18n="apiSectionTitle">API &amp; Providers</h3>
+              <button class="icon-btn small" id="apiPanelClose" type="button" aria-label="Close">✕</button>
+            </div>
+
+            <div class="sheet-section section-translator" id="modelSection">
+              <label class="setting-label" data-i18n="selectModel">Model</label>
+              <select class="select full" id="modelSelect" name="model" data-i18n-aria="selectModel" aria-label="Select model"></select>
+            </div>
+
+            <div class="sheet-section">
               <label class="setting-label" data-i18n="byokTitle">Your API Key</label>
               <p class="settings-hint" id="freeTierNote" hidden></p>
               <p class="settings-hint" data-i18n="byokHint">Add your own key to translate and chat without logging in. It stays only in this browser and is sent with each request; it is never saved on the server.</p>
@@ -225,11 +255,6 @@
               </form>
 
               <div id="providerList" class="provider-list"></div>
-            </div>
-
-            <div class="sheet-section row-between">
-              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
-              <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
             </div>
           </div>
         </div>
@@ -284,6 +309,28 @@
             </div>
             <div class="sheet-footer">
               <button class="primary-button" id="chatSettingsSave" type="button" data-chat-i18n="chatSave">ذخیره</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lp-overlay" id="langPicker" role="dialog" aria-modal="true" aria-label="Choose languages" aria-hidden="true">
+          <div class="lp-sheet" role="document">
+            <div class="lp-handle" aria-hidden="true"></div>
+            <div class="lp-header">
+              <span class="lp-title" data-i18n="languages">Languages</span>
+              <button class="lp-done" id="lpDone" type="button" data-i18n="done">Done</button>
+            </div>
+            <div class="lp-stage">
+              <div class="lp-band" aria-hidden="true"></div>
+              <div class="lp-col">
+                <span class="lp-col-label" data-i18n="fromLabel">From</span>
+                <div class="lp-wheel" id="lpWheelSource" role="listbox" tabindex="0" data-i18n-aria="sourceLanguage" aria-label="Source language"><ul class="lp-list"></ul></div>
+              </div>
+              <button class="lp-swap" id="lpSwap" type="button" data-i18n-aria="swapLanguages" aria-label="Swap languages">⇄</button>
+              <div class="lp-col">
+                <span class="lp-col-label" data-i18n="toLabel">To</span>
+                <div class="lp-wheel" id="lpWheelTarget" role="listbox" tabindex="0" data-i18n-aria="targetLanguage" aria-label="Target language"><ul class="lp-list"></ul></div>
+              </div>
             </div>
           </div>
         </div>

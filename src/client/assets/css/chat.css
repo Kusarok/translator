@@ -3,19 +3,94 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line-soft);
   flex-shrink: 0;
+  background: var(--glass-2);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+  backdrop-filter: saturate(150%) blur(14px);
+}
+
+/* AC02 — direction pill becomes a real, affordant button */
+.lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 10px 7px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+
+.lang-pill:hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.lang-pill:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) var(--ease-spring);
+}
+
+.lang-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.lang-pill-chev {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.lang-pill[aria-expanded="true"] .lang-pill-chev {
+  transform: rotate(180deg);
 }
 
 .lang-dir {
-  color: var(--accent-strong);
-  font-size: 13px;
+  color: var(--text);
+  font-size: var(--fs-body);
   font-weight: 700;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* AC03 — two-chip direction label (own ellipsis) + RTL-correct SVG arrow */
+.lang-chip {
+  display: inline-block;
+  max-width: min(38vw, 160px);
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.lang-arrow {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.lang-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+[dir="rtl"] .lang-arrow {
+  transform: scaleX(-1);
 }
 
 .strip-actions {
@@ -25,6 +100,7 @@
   flex-shrink: 0;
 }
 
+/* AC19 — scroll containment + custom Deep-Luxe scrollbar */
 .messages {
   flex: 1;
   min-height: 0;
@@ -32,21 +108,77 @@
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent;
 }
 
+.messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--muted) 35%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+
+/* AC25 — deeper, differentiated empty state */
 .chat-empty {
   margin: auto;
+  max-width: 260px;
   color: var(--muted);
-  font-size: 14.5px;
+  font-size: var(--fs-base);
   text-align: center;
   padding: 0 24px;
   line-height: 1.6;
 }
 
+#translatorEmptyState::before,
+#liveEmptyState::before {
+  display: block;
+  font-size: 34px;
+  margin: 0 auto 14px;
+  filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent));
+  animation: soft-pop 0.5s var(--ease-spring) both;
+}
+
+#translatorEmptyState::before {
+  content: "🔤";
+}
+
+#liveEmptyState::before {
+  content: "🎙️";
+}
+
+@keyframes soft-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .msg-row {
   display: flex;
   width: 100%;
+  animation: rise-in 0.3s var(--ease-spring) both;
 }
 
 .msg-row-user {
@@ -57,52 +189,129 @@
   justify-content: flex-start;
 }
 
+/* AC08 — message grouping via :has() (graceful where unsupported) */
+.msg-row + .msg-row {
+  margin-top: 2px;
+}
+
+.msg-row-user + .msg-row-assistant,
+.msg-row-assistant + .msg-row-user {
+  margin-top: 10px;
+}
+
+@supports selector(:has(*)) {
+  /* suppress the tail on a bubble followed by a same-sender row */
+  .msg-row-user:has(+ .msg-row-user) .msg-bubble {
+    border-bottom-right-radius: 20px;
+  }
+  .msg-row-assistant:has(+ .msg-row-assistant) .msg-bubble {
+    border-bottom-left-radius: 20px;
+  }
+  /* tighten the leading corner of a continued bubble */
+  .msg-row-user + .msg-row-user .msg-bubble {
+    border-top-right-radius: 8px;
+  }
+  .msg-row-assistant + .msg-row-assistant .msg-bubble {
+    border-top-left-radius: 8px;
+  }
+}
+
+/* AC21 — crisper bubble material + narrower column */
 .msg-bubble {
-  max-width: 82%;
-  padding: 9px 13px;
-  border-radius: 18px;
-  font-size: 14.5px;
+  max-width: 76%;
+  padding: 10px 14px;
+  border-radius: 20px;
+  font-size: var(--fs-base);
   line-height: 1.55;
   position: relative;
   word-break: break-word;
+  box-shadow: var(--shadow-sm);
 }
 
 .msg-user {
-  background: var(--accent);
+  background: var(--grad-accent);
   color: var(--accent-ink);
-  border-bottom-right-radius: 5px;
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 2px 10px -4px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .msg-assistant {
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  background-image: var(--grad-sheen);
+  background-blend-mode: overlay;
+  border: 1px solid var(--line-soft);
   color: var(--text);
-  border-bottom-left-radius: 5px;
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), var(--shadow-sm);
 }
 
 .msg-copyable {
   cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring),
+    filter var(--dur-fast) var(--ease-standard);
 }
 
 .msg-copyable:hover {
-  filter: brightness(1.04);
+  filter: brightness(1.05);
+  transform: translateY(-1px);
 }
 
+/* AC28 — springy copy-flash */
 .msg-copied {
   outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  animation: copy-flash 0.3s var(--ease-spring);
 }
 
+@keyframes copy-flash {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* AC20 — aligned transcript [mm:ss] caption rail */
+.msg-ts {
+  display: inline-block;
+  min-width: 3.4em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.8em;
+  color: var(--accent-strong);
+  opacity: 0.85;
+  margin-inline-end: 6px;
+}
+
+.msg-user .msg-ts {
+  color: var(--accent-ink);
+  opacity: 0.6;
+}
+
+/* AC09 — compact inline tabular timestamp/meta footer */
 .msg-text {
-  margin: 0;
+  margin: 0 0 3px;
   white-space: pre-wrap;
 }
 
 .msg-meta,
 .msg-time {
-  display: block;
-  font-size: 10.5px;
-  margin-top: 4px;
-  opacity: 0.7;
+  display: inline;
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  opacity: 0.5;
+  margin-top: 0;
+}
+
+.msg-meta + .msg-time,
+.msg-text + .msg-time {
+  margin-inline-start: 8px;
 }
 
 .msg-user .msg-meta,
@@ -115,6 +324,16 @@
   color: var(--muted);
 }
 
+@media (hover: hover) {
+  .msg-time {
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-standard);
+  }
+  .msg-row:hover .msg-time {
+    opacity: 0.5;
+  }
+}
+
 .msg-error {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
   border-color: color-mix(in srgb, var(--danger) 40%, transparent);
@@ -124,10 +343,11 @@
 .msg-image {
   display: block;
   max-width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   margin: 4px 0;
 }
 
+/* AC28 — typing accent dots */
 .chat-typing {
   display: inline-flex;
   gap: 4px;
@@ -138,7 +358,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--muted);
+  background: var(--accent-strong);
   animation: typing 1.2s infinite ease-in-out;
 }
 
@@ -169,7 +389,7 @@
 }
 
 .msg-progress .progress-label {
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -181,13 +401,15 @@
   overflow: hidden;
 }
 
+/* AC24 — brand-gradient upload progress fill */
 .msg-progress .progress-fill {
   display: block;
   height: 100%;
   width: 0%;
   border-radius: 999px;
-  background: var(--accent);
-  transition: width 0.15s ease;
+  background: var(--grad-accent);
+  box-shadow: 0 0 8px -1px var(--accent);
+  transition: width 0.3s var(--ease-spring);
 }
 
 .msg-progress.indeterminate .progress-fill {
@@ -217,7 +439,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -237,9 +459,36 @@
   white-space: nowrap;
 }
 
+/* AC26 — chat header presence dot comes alive */
 .chat-bot-status {
-  font-size: 11.5px;
+  font-size: var(--fs-small);
   color: var(--accent-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-bot-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0;
+  animation: presence-fade 2.4s ease-in-out infinite;
+}
+
+/* Renamed from presence-pulse: components.css owns the canonical box-shadow-breathing
+   presence-pulse for the status-pill dot, and chat.css loads later — a same-named opacity-only
+   copy here would override and downgrade it. */
+@keyframes presence-fade {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .model-field {
@@ -263,7 +512,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-s);
   border: 1px solid var(--line);
 }
 
@@ -277,7 +526,7 @@
   background: var(--danger);
   color: #fff;
   border: none;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -295,14 +544,14 @@
 
 .live-notice {
   margin: 0 0 2px;
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--danger);
   text-align: center;
   line-height: 1.6;
 }
 
 .live-status-text {
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   color: var(--muted);
   font-weight: 600;
 }
@@ -327,7 +576,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform var(--dur-press) var(--ease-spring),
+    background var(--dur-fast) var(--ease-standard);
 }
 
 .mic-btn:hover {
@@ -350,7 +600,7 @@
 }
 
 .live-mic-label {
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--muted);
 }
@@ -361,7 +611,7 @@
   gap: 4px;
   padding: 11px 13px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-m);
   background: var(--surface-2);
 }
 
@@ -371,7 +621,7 @@
 }
 
 .live-arrow {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--accent);
 }
 

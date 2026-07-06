@@ -8,7 +8,11 @@ export const state = {
   selectedModel: "gemma-4-31b",
   auth: { gateEnabled: false, authenticated: true },
   catalog: [],
-  free: { enabled: false, provider: "cerebras", model: "gemma-4-31b", rateLimit: 5 }
+  free: { enabled: false, provider: "cerebras", model: "gemma-4-31b", rateLimit: 5 },
+  // Two-way "conversation" translation: when the source is Auto-detect, this holds the other
+  // party's language (learned from the first non-target message) so replies in the target
+  // language are auto-translated back. Empty until learned; reset on clear / manual changes.
+  conversationCounterpart: ""
 };
 
 export const setLoading = (value) => {

@@ -25,8 +25,10 @@ import {
   setProgress,
   clearMessages,
   hasMessages,
-  flashCopied
+  flashCopied,
+  initScrollAwareTopbar
 } from "./ui.js";
+import { initLangPicker } from "./langpicker.js";
 import { initChat, onLanguageChange, refreshChatConfig, refreshChatAccess } from "./chat-app.js";
 import { initSettings, refreshOwnerSection } from "./settings.js";
 import { initByokUi, refreshByokUi } from "./byok-ui.js";
@@ -58,6 +60,11 @@ const switchView = (view) => {
     if (el) el.hidden = name !== view;
   }
   document.body.dataset.mode = view;
+
+  // Recompute the scroll-aware topbar shadow from the now-visible list (scroll events alone
+  // never fire on a view switch, so the shadow would otherwise go stale across tabs).
+  const activeList = views[view]?.querySelector(".messages");
+  document.querySelector(".topbar")?.classList.toggle("scrolled", (activeList?.scrollTop || 0) > 4);
 
   let activeTab = null;
   menuTabs.forEach((tab) => {
@@ -132,19 +139,36 @@ const translateText = async () => {
   updateCharacterCount();
   addLoadingBubble();
 
+  const source = elements.sourceLanguage.value;
+  const target = elements.targetLanguage.value;
+  // Two-way conversation mode is on whenever the source is Auto-detect: a reply typed in the
+  // target language is translated back into the other party's language automatically.
+  const conversation = source === "auto";
+
   try {
     const result = await translate({
       text,
-      sourceLanguage: elements.sourceLanguage.value,
-      targetLanguage: elements.targetLanguage.value,
+      sourceLanguage: source,
+      targetLanguage: target,
       model: elements.modelSelect.value,
       tone: elements.toneSelect.value,
+      ...(conversation ? { conversation: true, counterpart: state.conversationCounterpart } : {}),
       ...getRequestPayload()
     });
 
     removeLoadingBubble();
     lastTranslation = result.translation;
-    addBubble("assistant", result.translation, buildResultMeta(result));
+
+    // Learn the other party's language from the first non-target message, so their subsequent
+    // target-language replies route back to it without any settings change.
+    if (conversation && result.detectedLanguage && result.detectedLanguage !== target &&
+        state.conversationCounterpart !== result.detectedLanguage) {
+      state.conversationCounterpart = result.detectedLanguage;
+      updateDirectionLabel();
+    }
+
+    const direction = conversation ? { detected: result.detectedLanguage, target: result.targetLanguage } : null;
+    addBubble("assistant", result.translation, buildResultMeta(result, direction));
   } catch (error) {
     removeLoadingBubble();
     addErrorBubble(error.message || t("msgError"));
@@ -153,6 +177,13 @@ const translateText = async () => {
     setLoadingView(false);
     elements.inputText.focus();
   }
+};
+
+// The counterpart pole is only valid for the current language pairing; forget it whenever the
+// user changes the languages or clears the conversation.
+const resetConversation = () => {
+  state.conversationCounterpart = "";
+  updateDirectionLabel();
 };
 
 // ---- Audio / song transcription (Groq Whisper) ----
@@ -299,6 +330,7 @@ const copyLast = async () => {
 const clearAll = () => {
   if (hasMessages() && !confirm(t("trClearConfirm"))) return;
   clearMessages();
+  resetConversation();
   lastTranslation = "";
   elements.inputText.value = "";
   updateDirection(elements.inputText);
@@ -346,9 +378,18 @@ const bindEvents = () => {
     }
   });
 
-  elements.sourceLanguage.addEventListener("change", syncTargetWithSource);
-  elements.targetLanguage.addEventListener("change", updateDirectionLabel);
-  elements.swapButton.addEventListener("click", swapLanguages);
+  elements.sourceLanguage.addEventListener("change", () => {
+    syncTargetWithSource();
+    resetConversation();
+  });
+  elements.targetLanguage.addEventListener("change", () => {
+    updateDirectionLabel();
+    resetConversation();
+  });
+  elements.swapButton.addEventListener("click", () => {
+    swapLanguages();
+    resetConversation();
+  });
   elements.clearButton.addEventListener("click", clearAll);
   elements.copyLastButton.addEventListener("click", copyLast);
 
@@ -416,6 +457,8 @@ initViewportSizing();
 bindEvents();
 initTheme();
 populateLanguageSelects();
+initLangPicker(elements);
+initScrollAwareTopbar();
 setLanguage(localStorage.getItem("lang") || "en");
 switchView("translator");
 initSettings(loadHealth);

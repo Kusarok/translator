@@ -185,6 +185,16 @@ const close = () => {
   elements.settingsPanel.classList.remove("open");
 };
 
+// The API/provider config lives in its own nested popup to keep the main settings uncluttered.
+const openApi = () => {
+  refreshOwnerSection();
+  elements.apiPanel.classList.add("open");
+};
+
+const closeApi = () => {
+  elements.apiPanel.classList.remove("open");
+};
+
 export const initSettings = (onChangeCallback) => {
   onChange = typeof onChangeCallback === "function" ? onChangeCallback : () => {};
 
@@ -193,6 +203,13 @@ export const initSettings = (onChangeCallback) => {
   elements.settingsPanel.addEventListener("click", (event) => {
     if (event.target === elements.settingsPanel) close();
   });
+
+  elements.apiSettingsTrigger.addEventListener("click", openApi);
+  elements.apiPanelClose.addEventListener("click", closeApi);
+  elements.apiPanel.addEventListener("click", (event) => {
+    if (event.target === elements.apiPanel) closeApi();
+  });
+
   elements.providerList.addEventListener("click", handleListClick);
   elements.ownerLoginForm.addEventListener("submit", handleOwnerLogin);
   elements.ownerLogoutButton.addEventListener("click", handleOwnerLogout);

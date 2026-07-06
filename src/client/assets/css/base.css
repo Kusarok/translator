@@ -1,24 +1,70 @@
 :root {
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --bg-outer: #000000;
-  --page: #0c0e10;
-  --surface: #16191c;
-  --surface-2: #1e2226;
-  --line: #262b30;
-  --text: #f4f6f6;
+
+  /* Deep Luxe — near-black graphite glass with one emerald-teal jewel accent. */
+  --bg-outer: #050607;
+  --page: #0a0b0d;
+  --surface: #131619;
+  --surface-2: #1c2126;
+  --surface-3: #232a31;
+  --line: #262c33;
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --text: #f5f7f7;
   --muted: #8b949a;
-  --accent: #22d6b5;
-  --accent-strong: #3ee7c6;
-  --accent-soft: rgba(34, 214, 181, 0.14);
+  --accent: #2fe0bd;
+  --accent-strong: #4ff0d0;
+  --accent-soft: rgba(47, 224, 189, 0.13);
   --accent-ink: #04231d;
-  --warning: #e59b53;
+  --warning: #e7a35a;
   --danger: #ff6b6b;
+
+  --radius-xl: 26px;
   --radius-l: 22px;
   --radius-m: 14px;
+  --radius-control: 12px;
   --radius-s: 10px;
-  --shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  --radius-pill: 999px;
+
+  /* Type ramp — no half-pixels */
+  --fs-caption: 11px;
+  --fs-small: 12px;
+  --fs-body: 13px;
+  --fs-base: 15px;
+  --fs-input: 16px;
+  --fs-title: 17px;
+  --fs-lg: 20px;
+
+  /* Glass + depth */
+  --glass: rgba(16, 19, 22, 0.72);
+  --glass-2: rgba(22, 26, 31, 0.66);
+  --glass-blur: saturate(160%) blur(28px);
+  --glass-scrim: rgba(3, 5, 7, 0.62);
+  --scrim-blur: blur(10px) saturate(115%);
+  --grad-accent: linear-gradient(135deg, #2fe0bd 0%, #23bfd6 100%);
+  --grad-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+
+  /* Elevation ladder: control → popover → modal */
+  --elev-1: 0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 12px 32px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-soft);
+  --elev-3: 0 24px 60px -18px rgba(0, 0, 0, 0.66);
+  --shadow: var(--elev-3);
+  --shadow-sm: 0 6px 20px -8px rgba(0, 0, 0, 0.55);
+  --accent-glow: 0 10px 34px -10px rgba(47, 224, 189, 0.5);
+  --ring: 0 0 0 3px rgba(47, 224, 189, 0.26);
+
+  /* Motion — three named durations + easing family */
+  --dur-press: 120ms;
+  --dur-fast: 180ms;
+  --dur-enter: 240ms;
+  --dur-sheet: 340ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* JS updates --app-height from visualViewport; these are the pre-JS fallbacks. */
   --app-height: 100vh;
+
   background: var(--bg-outer);
   color: var(--text);
 }
@@ -31,20 +77,33 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg-outer: #e7e9ea;
-  --page: #f5f6f7;
+  --bg-outer: #e9ebee;
+  --page: #f6f7f8;
   --surface: #ffffff;
-  --surface-2: #eef0f1;
-  --line: #dfe3e5;
-  --text: #14171a;
-  --muted: #667077;
+  --surface-2: #eef1f3;
+  --surface-3: #e5e9ec;
+  --line: #dde2e6;
+  --line-soft: rgba(15, 25, 35, 0.06);
+  --text: #14181b;
+  --muted: #5f6b73;
   --accent: #0ea88c;
   --accent-strong: #0b8a72;
   --accent-soft: rgba(14, 168, 140, 0.12);
   --accent-ink: #ffffff;
   --warning: #b4530a;
-  --danger: #c02626;
-  --shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  --danger: #c53030;
+
+  --glass: rgba(255, 255, 255, 0.74);
+  --glass-2: rgba(248, 250, 251, 0.7);
+  --glass-scrim: rgba(20, 28, 36, 0.42);
+  --grad-accent: linear-gradient(135deg, #12b394 0%, #0e9fb0 100%);
+  --grad-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  --elev-1: 0 4px 12px -6px rgba(23, 33, 43, 0.16);
+  --elev-2: 0 12px 32px -14px rgba(23, 33, 43, 0.22), 0 0 0 1px var(--line-soft);
+  --elev-3: 0 24px 60px -20px rgba(23, 33, 43, 0.24);
+  --shadow-sm: 0 6px 20px -10px rgba(23, 33, 43, 0.18);
+  --accent-glow: 0 10px 30px -10px rgba(14, 168, 140, 0.4);
+  --ring: 0 0 0 3px rgba(14, 168, 140, 0.22);
 }
 
 * {
@@ -52,21 +111,37 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   height: 100%;
   height: var(--app-height);
-  /* Standalone PWA: keep the page itself from scrolling so only the inner
-     .messages list scrolls and the composer stays pinned at the bottom. */
   overflow: hidden;
 }
 
 body {
   margin: 0;
-  background: var(--bg-outer);
   color: var(--text);
   display: flex;
   justify-content: center;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Layered depth: two faint accent auras over a near-black base. */
+  background:
+    radial-gradient(120% 80% at 15% -10%, rgba(47, 224, 189, 0.10), transparent 60%),
+    radial-gradient(120% 90% at 100% 110%, rgba(58, 150, 214, 0.08), transparent 55%),
+    var(--bg-outer);
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(120% 80% at 15% -10%, rgba(14, 168, 140, 0.10), transparent 60%),
+    radial-gradient(120% 90% at 100% 110%, rgba(58, 150, 214, 0.07), transparent 55%),
+    var(--bg-outer);
 }
 
 button,
@@ -88,8 +163,18 @@ button:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* AC04 — text inputs energize on tap (:focus, not just :focus-visible). */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background-color: var(--surface-3);
+  box-shadow: var(--ring);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -99,10 +184,26 @@ input:focus-visible {
   }
 }
 
+/* ---- Motion primitives ---- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* soft-pop lives in chat.css (its only consumer); the duplicate here was dead after the token
+   migration and would only risk drift. */
+
+/* AC28 — directional entrance for the user's own (trailing-edge) bubbles. */
+@keyframes rise-in-user {
+  from { opacity: 0; transform: translateY(8px) translateX(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) translateX(0) scale(1); }
+}
+
+/* ---- Buttons / controls ---- */
 .icon-btn {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
+  border-radius: 12px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--text);
@@ -111,44 +212,76 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), transform var(--dur-press) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+/* AC10 — monochrome stroked chrome icons inherit sizing here; markup swaps live in index.html. */
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-btn.small svg {
+  width: 16px;
+  height: 16px;
 }
 
 .icon-btn:hover {
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   background: var(--accent-soft);
+  transform: translateY(-1px);
 }
 
 .icon-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
 .icon-btn.small {
   width: 32px;
   height: 32px;
+  border-radius: 10px;
   font-size: 14px;
 }
 
 .icon-btn.ghost {
   background: none;
-  border: none;
+  border-color: transparent;
 }
 
 .icon-btn.ghost:hover {
   background: var(--accent-soft);
+  border-color: transparent;
 }
 
 .select {
   width: auto;
-  height: 42px;
+  height: 44px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text);
   border-radius: var(--radius-s);
-  padding: 0 12px;
+  padding: 0 34px 0 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: right 15px center, right 10px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+
+.select:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+/* AC04 — brighten the caret glyph from muted to the jewel accent on hover/focus.
+   Sets background-image only, so the global :focus energize (background-color) keeps the caret. */
+.select:hover,
+.select:focus {
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent-strong) 50%), linear-gradient(135deg, var(--accent-strong) 50%, transparent 50%);
 }
 
 .select.full {
@@ -156,33 +289,67 @@ input:focus-visible {
 }
 
 .select.mini {
-  height: 34px;
+  height: 36px;
   font-size: 13px;
-  padding: 0 10px;
-  max-width: 55%;
+  padding: 0 30px 0 12px;
+  max-width: 60%;
+}
+
+[dir="rtl"] .select {
+  padding: 0 12px 0 34px;
+  background-position: left 15px center, left 10px center;
 }
 
 .segmented {
+  position: relative;
   display: inline-flex;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px;
   gap: 2px;
+  /* Inset track so the neutral thumb reads as a raised element. */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* AC15 — optional true-glide thumb, JS-positioned to the active button's offset (ui.js). */
+.seg-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line-soft);
+  transition: transform var(--dur-enter) var(--ease-spring), width var(--dur-enter) var(--ease-spring);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .seg-btn {
+  position: relative;
+  z-index: 1;
   border: none;
   background: none;
   color: var(--muted);
-  padding: 7px 14px;
-  border-radius: 999px;
-  font-size: 12.5px;
+  padding: 7px 15px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small);
   font-weight: 700;
   white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.seg-btn:hover {
+  color: var(--text);
+}
+
+.seg-btn:not(.active):hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
 }
 
 .seg-btn.active {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line-soft);
 }

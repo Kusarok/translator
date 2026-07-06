@@ -5,11 +5,24 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   padding: 7px 11px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    transform var(--dur-press) var(--ease-spring);
+}
+
+.status-pill:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: var(--surface-3);
+}
+
+.status-pill:active {
+  transform: scale(0.96);
 }
 
 .status-pill .dot {
@@ -22,6 +35,13 @@
 .status-pill.online .dot {
   background: var(--accent);
   box-shadow: 0 0 7px var(--accent);
+  animation: presence-pulse 2.4s var(--ease-standard) infinite;
+}
+
+.status-pill.checking .dot {
+  background: var(--accent);
+  box-shadow: 0 0 7px var(--accent);
+  animation: presence-pulse 1s var(--ease-standard) infinite;
 }
 
 .status-pill.online .status-text {
@@ -37,10 +57,22 @@
   color: var(--danger);
 }
 
+@keyframes presence-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 7px var(--accent);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 3px var(--accent);
+  }
+}
+
 .message {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-body);
   flex: 1;
   min-width: 0;
 }
@@ -54,7 +86,7 @@
 }
 
 .settings-hint {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
   line-height: 1.6;
   margin: 0 0 12px;
@@ -68,7 +100,7 @@
 }
 
 .settings-field > span {
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   font-weight: 700;
   color: var(--muted);
 }
@@ -87,7 +119,20 @@
   color: var(--text);
   border-radius: var(--radius-s);
   padding: 9px 11px;
-  font-size: 13.5px;
+  font-size: var(--fs-input);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.settings-field input[type="number"]:focus,
+.settings-field input[type="text"]:focus,
+.settings-field select:focus,
+.settings-field textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: var(--surface-3);
+  box-shadow: var(--ring);
 }
 
 .settings-field textarea {
@@ -150,12 +195,17 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--surface-2);
+  background: var(--glass-2);
+  box-shadow: var(--elev-1);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 .provider-item.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface-2));
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent) inset;
+  box-shadow: inset 0 0 0 1px var(--accent), var(--accent-glow);
 }
 
 .provider-head {
@@ -179,10 +229,10 @@
 }
 
 .provider-badge {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   color: var(--muted);
   white-space: nowrap;
@@ -223,24 +273,35 @@
 }
 
 .provider-key {
-  flex: 1 1 150px;
+  flex: 1 1 100%;
   min-width: 0;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--text);
   border-radius: var(--radius-s);
   padding: 9px 11px;
-  font-size: 13px;
+  font-size: var(--fs-input);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.provider-key:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: var(--surface-3);
+  box-shadow: var(--ring);
 }
 
 .provider-save,
 .provider-test {
+  flex: 1 1 0;
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--text);
   border-radius: var(--radius-s);
   padding: 9px 13px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
@@ -269,7 +330,7 @@
   color: var(--accent-strong);
   border-radius: var(--radius-s);
   padding: 7px 13px;
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
@@ -297,13 +358,13 @@
 }
 
 .provider-inuse {
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 800;
   color: var(--accent-strong);
 }
 
 .provider-status {
-  font-size: 12px;
+  font-size: var(--fs-small);
   margin: 0;
   flex: 1;
   text-align: end;
@@ -342,14 +403,36 @@
 }
 
 .owner-login-input {
-  flex: 1 1 120px;
+  flex: 1 1 calc(50% - 4px);
   min-width: 0;
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text);
   border-radius: var(--radius-s);
   padding: 9px 11px;
-  font-size: 13.5px;
+  font-size: var(--fs-input);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard);
+}
+
+.owner-login-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: var(--surface-3);
+  box-shadow: var(--ring);
+}
+
+#ownerLoginButton {
+  flex: 1 1 100%;
+  min-height: 40px;
+  margin-top: 8px;
+}
+
+@media (max-width: 380px) {
+  .owner-login-input {
+    flex: 1 1 100%;
+  }
 }
 
 .key-banner {
@@ -363,7 +446,7 @@
   border-radius: var(--radius-s);
   padding: 9px 12px;
   margin: 0 2px 8px;
-  font-size: 12.5px;
+  font-size: var(--fs-body);
   color: var(--text);
 }
 .key-banner[hidden] {
@@ -376,7 +459,7 @@
   color: var(--accent-strong);
   border-radius: var(--radius-s);
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
@@ -395,7 +478,7 @@
   color: var(--accent-strong);
   border-radius: var(--radius-s);
   padding: 7px 13px;
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 700;
   text-decoration: none;
 }
