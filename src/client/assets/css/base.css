@@ -18,8 +18,15 @@
   --radius-m: 14px;
   --radius-s: 10px;
   --shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  --app-height: 100vh;
   background: var(--bg-outer);
   color: var(--text);
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh;
+  }
 }
 
 :root[data-theme="light"] {
@@ -48,6 +55,7 @@
 html,
 body {
   height: 100%;
+  height: var(--app-height);
   /* Standalone PWA: keep the page itself from scrolling so only the inner
      .messages list scrolls and the composer stays pinned at the bottom. */
   overflow: hidden;

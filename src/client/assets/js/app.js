@@ -30,6 +30,7 @@ import { initSettings, refreshOwnerSection } from "./settings.js";
 import { initByokUi, refreshByokUi } from "./byok-ui.js";
 import { getRuntime, getRequestPayload, updateModel } from "./byok.js";
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
+import { initViewportSizing } from "./viewport.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
@@ -292,6 +293,7 @@ const bindEvents = () => {
   });
 };
 
+initViewportSizing();
 bindEvents();
 initTheme();
 populateLanguageSelects();
