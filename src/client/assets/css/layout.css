@@ -1,8 +1,12 @@
 .app-shell {
   width: 100%;
   max-width: 460px;
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* Pin to the dynamic viewport height (not min-height): in an installed PWA
+     the layout viewport (height:100%) and 100dvh can differ, and min-height
+     let the shell grow taller than the visible area, pushing the composer
+     below the fold. A fixed height keeps everything on screen. */
+  height: 100vh;
+  height: 100dvh;
   display: flex;
 }
 

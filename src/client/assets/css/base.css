@@ -48,6 +48,9 @@
 html,
 body {
   height: 100%;
+  /* Standalone PWA: keep the page itself from scrolling so only the inner
+     .messages list scrolls and the composer stays pinned at the bottom. */
+  overflow: hidden;
 }
 
 body {

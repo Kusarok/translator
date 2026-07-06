@@ -4,3 +4,4 @@ data/
 settings.json
 npm-debug.log*
 .DS_Store
+server.log
