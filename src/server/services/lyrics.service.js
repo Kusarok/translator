@@ -1,5 +1,6 @@
 import { HttpError } from "../utils/http-error.js";
 import { translateText } from "./translation.service.js";
+import { cacheLessonTranslation, cacheTrackLyrics, getCachedLesson } from "./media-worker.service.js";
 
 const SPOTIFY_TRACK = /^https:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})(?:[/?#]|$)/i;
 const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
@@ -52,6 +53,12 @@ export const findSpotifyLyrics = async (input) => {
   const sourceUrl = clean(input).split(/[?#]/)[0];
   const match = sourceUrl.match(SPOTIFY_TRACK);
   if (!match) throw new HttpError(400, "Only Spotify track links are supported");
+  try {
+    const cached = await getCachedLesson(match[1]);
+    if (cached?.data?.lines?.length) return { ...cached.data, cacheHit: true };
+  } catch (error) {
+    if (error.status !== 404) console.warn("Lesson cache lookup failed:", error.message);
+  }
   const metadata = await spotifyMetadata(sourceUrl);
   if (!metadata.title) throw new HttpError(422, "Could not read this Spotify track's metadata");
 
@@ -64,15 +71,28 @@ export const findSpotifyLyrics = async (input) => {
   if (!best || best.score < minimumScore || !best.record.syncedLyrics) throw new HttpError(404, "No synchronized lyrics matching this exact Spotify track were found");
   const lines = parseLrc(best.record.syncedLyrics);
   if (!lines.some((line) => line.text)) throw new HttpError(404, "Synchronized lyrics are unavailable for this track");
-  return {
+  const result = {
     spotifyId: match[1], sourceUrl, title: best.record.trackName, artist: best.record.artistName,
     album: best.record.albumName, duration: Number(best.record.duration), artwork: metadata.artwork,
     lrclibId: best.record.id, lines
   };
+  let cacheIds = {};
+  try { cacheIds = (await cacheTrackLyrics(result)).data || {}; } catch (error) { console.warn("Could not cache lyrics:", error.message); }
+  return { ...result, ...cacheIds, cacheHit: false };
 };
 
-export const translateLyrics = async ({ lines, provider, apiKey, model, authenticated }) => {
+export const translateLyrics = async ({ spotifyId, lines, provider, apiKey, model, authenticated }) => {
   if (!Array.isArray(lines) || !lines.length || lines.length > 500) throw new HttpError(400, "Lyrics lines are required");
+  if (spotifyId) {
+    try {
+      const cached = await getCachedLesson(spotifyId);
+      if (cached?.data?.translationCached) {
+        return { translations: cached.data.lines.map((line) => line.translation || ""), model: "cached", cacheHit: true };
+      }
+    } catch (error) {
+      if (error.status !== 404) console.warn("Translation cache lookup failed:", error.message);
+    }
+  }
   const populated = lines.map((line, index) => ({ text: clean(line), index })).filter((line) => line.text);
   if (!populated.length) return { translations: lines.map(() => ""), model: null };
   const source = populated.map((line) => line.text).join("\n");
@@ -81,5 +101,10 @@ export const translateLyrics = async ({ lines, provider, apiKey, model, authenti
   if (translated.length !== populated.length) throw new HttpError(502, `Translation returned ${translated.length} lines instead of ${populated.length}; timestamps were not changed`);
   const translations = lines.map(() => "");
   populated.forEach((line, index) => { translations[line.index] = translated[index]; });
-  return { translations, model: result.model };
+  if (spotifyId) {
+    try {
+      await cacheLessonTranslation({ spotifyId, translations, targetLanguage: "fa", provider: provider || (authenticated ? "owner" : "free"), model: result.model, promptVersion: "lyrics-v1" });
+    } catch (error) { console.warn("Could not cache translation:", error.message); }
+  }
+  return { translations, model: result.model, cacheHit: false };
 };

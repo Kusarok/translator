@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import process from "node:process";
 
 const children = [];
@@ -31,5 +31,23 @@ const shutdown = (code = 0) => {
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
-start("media-worker", "services/media-worker/server.js");
+// The media worker is managed by systemd (media-worker.service) and runs inside
+// the vpnns network namespace so all downloader traffic goes through the VPN.
+// If systemd is unavailable (e.g. local dev), start the media worker directly.
+const isMediaWorkerRunning = () => {
+  try {
+    const result = spawnSync("systemctl", ["is-active", "--quiet", "media-worker"]);
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+};
+
+if (!isMediaWorkerRunning()) {
+  console.log("media-worker.service is not running via systemd; starting it directly (no VPN namespace).");
+  start("media-worker", "services/media-worker/server.js");
+} else {
+  console.log("media-worker.service is active via systemd (VPN namespace).");
+}
+
 start("web", "src/server/index.js");

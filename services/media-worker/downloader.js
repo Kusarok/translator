@@ -18,7 +18,8 @@ export const capabilities = () => ({
   python: fs.existsSync(config.python),
   ytDlp: fs.existsSync(config.python),
   spotDl: fs.existsSync(config.python),
-  ffmpeg: true
+  ffmpeg: true,
+  vpn: true
 });
 
 export const inspectWithYtDlp = async (url) => {
@@ -69,6 +70,59 @@ export const downloadWithYtDlp = async ({ url, directory, onProgress }) => {
     }
   });
   return findLargestFile(directory);
+};
+
+export const searchAndDownloadWithYtDlp = async ({ query, directory, onProgress }) => {
+  requirePython();
+  const searchUrl = `ytsearch1:${query}`;
+  const output = path.join(directory, "%(title).120B [%(id)s].%(ext)s");
+  const { command, args } = moduleCommand("yt_dlp", [
+    "--no-playlist", "--newline", "--no-warnings", "--socket-timeout", "30",
+    "--max-filesize", String(config.maxBytes),
+    "--format", "ba[ext=m4a]/ba[ext=opus]/bestaudio/best",
+    "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0",
+    "--progress-template", "download:__PROGRESS__:%(progress.downloaded_bytes)s:%(progress.total_bytes_estimate)s",
+    "--output", output, ...ytDlpAuthArgs(),
+    searchUrl
+  ]);
+  await runProcess({
+    command, args, timeoutMs: config.timeoutMs,
+    onLine: (line) => {
+      const match = /^__PROGRESS__:(\d+|NA):(\d+|NA)/.exec(line.trim());
+      if (!match) return;
+      const downloaded = Number(match[1]);
+      const total = Number(match[2]);
+      if (Number.isFinite(downloaded) && Number.isFinite(total) && total > 0) {
+        onProgress(Math.min(95, Math.max(1, Math.round((downloaded / total) * 95))));
+      }
+    }
+  });
+  return findLargestFile(directory);
+};
+
+export const inspectSearchResult = async (query) => {
+  requirePython();
+  const { command, args } = moduleCommand("yt_dlp", [
+    "--dump-single-json", "--no-playlist", "--no-warnings", "--socket-timeout", "20",
+    ...ytDlpAuthArgs(), `ytsearch1:${query}`
+  ]);
+  const { stdout } = await runProcess({ command, args, timeoutMs: Math.min(config.timeoutMs, 120000) });
+  const entries = JSON.parse(stdout);
+  const raw = Array.isArray(entries?.entries) ? entries.entries[0] : entries;
+  if (!raw) throw new Error("No matching audio found for this track.");
+  const duration = Number(raw.duration) || null;
+  if (duration && duration > config.maxDurationSeconds) {
+    throw new Error(`Media is longer than the ${Math.round(config.maxDurationSeconds / 60)} minute limit.`);
+  }
+  return {
+    title: String(raw.title || raw.fulltitle || "Untitled media"),
+    creator: String(raw.uploader || raw.channel || raw.creator || ""),
+    duration,
+    thumbnail: String(raw.thumbnail || ""),
+    sourceId: String(raw.id || ""),
+    webpageUrl: String(raw.webpage_url || ""),
+    kind: "audio"
+  };
 };
 
 export const downloadWithSpotDl = async ({ url, directory, onProgress }) => {

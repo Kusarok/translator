@@ -36,6 +36,7 @@ import { getRuntime, getRequestPayload, updateModel, getGroqKey } from "./byok.j
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
 import { initViewportSizing } from "./viewport.js";
 import { initMedia } from "./media-app.js";
+import { checkAuth } from "./login.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
@@ -456,24 +457,31 @@ const bindEvents = () => {
   });
 };
 
-initViewportSizing();
-initMedia();
-bindEvents();
-initTheme();
-populateLanguageSelects();
-initLangPicker(elements);
-initScrollAwareTopbar();
-setLanguage(localStorage.getItem("lang") || "en");
-switchView("translator");
-initSettings(loadHealth);
-initByokUi(refreshAccessAfterKeyChange);
-initLive();
-loadHealth();
-updateCharacterCount();
-updateDirection(elements.inputText);
+const boot = async () => {
+  const authed = await checkAuth();
+  if (!authed) return;
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  });
-}
+  initViewportSizing();
+  initMedia();
+  bindEvents();
+  initTheme();
+  populateLanguageSelects();
+  initLangPicker(elements);
+  initScrollAwareTopbar();
+  setLanguage(localStorage.getItem("lang") || "en");
+  switchView("translator");
+  initSettings(loadHealth);
+  initByokUi(refreshAccessAfterKeyChange);
+  initLive();
+  loadHealth();
+  updateCharacterCount();
+  updateDirection(elements.inputText);
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+};
+
+boot();

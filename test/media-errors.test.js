@@ -15,7 +15,7 @@ test("explains Spotify metadata hash failures", () => {
     new Error("BaseClientError: Could not get general hashes"),
     { id: "spotify" }
   );
-  assert.match(result, /SPOTIFY_CLIENT_ID/);
+  assert.match(result, /VPN|YouTube Music API|temporarily unavailable/);
 });
 
 test("preserves unrelated extractor errors", () => {

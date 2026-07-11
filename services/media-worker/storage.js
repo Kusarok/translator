@@ -4,9 +4,13 @@ import crypto from "node:crypto";
 import { config } from "./config.js";
 
 fs.mkdirSync(config.storageDir, { recursive: true });
+for (const directory of [config.tempDir, config.databaseDir, config.tracksDir, config.lyricsDir,
+  config.translationsDir, config.artworkDir, config.jobsDir]) {
+  fs.mkdirSync(directory, { recursive: true });
+}
 
 export const createStorageTarget = () => {
-  const id = crypto.randomUUID();
+  const id = `med_${crypto.randomUUID()}`;
   const directory = path.join(config.storageDir, id);
   fs.mkdirSync(directory, { recursive: true });
   return { id, directory };

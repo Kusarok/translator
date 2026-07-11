@@ -2,9 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { config } from "./config.js";
+import { repositories } from "./persistence.js";
+import { findTrackForReference } from "./services/lesson-cache.service.js";
 import { resolvePlatform } from "./adapters/platforms.js";
+import searchPlatform from "./adapters/search.js";
 import { createStorageTarget, removeDirectory } from "./storage.js";
-import { inspectWithYtDlp, downloadWithSpotDl, downloadWithYtDlp } from "./downloader.js";
+import { inspectWithYtDlp, inspectSearchResult, downloadWithSpotDl, downloadWithYtDlp, searchAndDownloadWithYtDlp } from "./downloader.js";
 
 const jobs = new Map();
 const media = new Map();
@@ -53,15 +56,72 @@ const mimeFor = (filename, kind) => {
   return types[ext] || (kind === "audio" ? "audio/mpeg" : "video/mp4");
 };
 
-const touch = (job, patch) => Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+const checksumFile = (filePath) => new Promise((resolve, reject) => {
+  const digest = crypto.createHash("sha256");
+  const stream = fs.createReadStream(filePath);
+  stream.on("data", (chunk) => digest.update(chunk));
+  stream.on("end", () => resolve(digest.digest("hex")));
+  stream.on("error", reject);
+});
+
+const persistJob = (job) => {
+  const linkedTrack = findTrackForReference(job.url);
+  const current = repositories.jobs.findById(job.id);
+  const values = {
+    trackId: linkedTrack?.id || null,
+    jobType: job.platform?.engine || "media",
+    status: job.status,
+    progress: job.progress || 0,
+    attempts: current?.attempts || 0,
+    error: job.error || null,
+    resultId: job.media?.id || null
+  };
+  if (current) repositories.jobs.update(job.id, values);
+  else repositories.jobs.create({ id: job.id, ...values });
+  const directory = path.join(config.jobsDir, job.id);
+  fs.mkdirSync(directory, { recursive: true });
+  const target = path.join(directory, "status.json");
+  const temporary = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, `${JSON.stringify(publicJob(job), null, 2)}\n`, "utf8");
+  fs.renameSync(temporary, target);
+};
+
+const touch = (job, patch) => {
+  Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+  persistJob(job);
+  return job;
+};
+
+const mediaFromRow = (row) => row && ({
+  id: row.id,
+  filePath: path.resolve(config.dataDir, row.relative_path),
+  directory: path.dirname(path.resolve(config.dataDir, row.relative_path)),
+  title: "Cached audio",
+  creator: "",
+  platform: row.provider,
+  platformLabel: "YouTube Music",
+  duration: row.duration_seconds,
+  thumbnail: "",
+  kind: row.kind,
+  mimeType: row.mime_type,
+  filename: path.basename(row.relative_path),
+  size: row.size_bytes,
+  disclosure: "Cached audio",
+  sourceUrl: "",
+  createdAt: row.created_at,
+  expiresAt: null
+});
 
 export const friendlyMediaError = (error, platform) => {
   const message = error?.message || "Media processing failed";
-  if (platform.id === "youtube" && /sign in to confirm you.?re not a bot|confirm you.?re not a bot/i.test(message)) {
-    return "YouTube requires sign-in verification from this server. Configure MEDIA_YTDLP_COOKIES_FILE with an authorized cookies file, then try again.";
+  if (/sign in to confirm you.?re not a bot|confirm you.?re not a bot/i.test(message)) {
+    return "YouTube requires sign-in verification. Configure MEDIA_YTDLP_COOKIES_FILE with an authorized cookies file, then try again.";
   }
-  if (platform.id === "spotify" && /could not get general hashes/i.test(message)) {
-    return "Spotify metadata access failed. Configure SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET for the official Spotify API, then try again.";
+  if (/could not get general hashes/i.test(message)) {
+    return "Audio metadata access failed. The VPN or YouTube Music API may be temporarily unavailable.";
+  }
+  if (/exec vpnns|network namespace|netns/i.test(message)) {
+    return "The VPN service (vpnns) is not running. Start it with: systemctl start vpnns";
   }
   return message;
 };
@@ -76,17 +136,27 @@ const execute = async (job) => {
       touch(job, { status: "inspecting", stage: "Inspecting public media", progress: 2 });
       metadata = await inspectWithYtDlp(job.url);
       job.metadata = metadata;
+    } else if (job.platform.engine === "yt-dlp-search") {
+      touch(job, { status: "inspecting", stage: "Searching YouTube Music", progress: 3 });
+      metadata = await inspectSearchResult(job.query);
+      job.metadata = metadata;
     } else {
       metadata = { title: "Spotify track", creator: "", duration: null, thumbnail: "", kind: "audio", webpageUrl: job.url };
       job.metadata = metadata;
     }
 
     touch(job, { status: "downloading", stage: "Retrieving media", progress: 5 });
-    const result = job.platform.engine === "spotdl"
-      ? await downloadWithSpotDl({ url: job.url, directory: target.directory, onProgress: (progress) => touch(job, { progress }) })
-      : await downloadWithYtDlp({ url: job.url, directory: target.directory, onProgress: (progress) => touch(job, { progress }) });
+    let result;
+    if (job.platform.engine === "spotdl") {
+      result = await downloadWithSpotDl({ url: job.url, directory: target.directory, onProgress: (progress) => touch(job, { progress }) });
+    } else if (job.platform.engine === "yt-dlp-search") {
+      result = await searchAndDownloadWithYtDlp({ query: job.query, directory: target.directory, onProgress: (progress) => touch(job, { progress }) });
+    } else {
+      result = await downloadWithYtDlp({ url: job.url, directory: target.directory, onProgress: (progress) => touch(job, { progress }) });
+    }
     if (!result) throw new Error("The media tool completed without producing a playable file.");
     if (result.stat.size > config.maxBytes) throw new Error("The prepared media exceeds the server size limit.");
+    const checksum = await checksumFile(result.filePath);
 
     touch(job, { status: "processing", stage: "Preparing playback", progress: 97 });
     const item = {
@@ -104,11 +174,27 @@ const execute = async (job) => {
       filename: path.basename(result.filePath),
       size: result.stat.size,
       disclosure: job.platform.disclosure || "",
-      sourceUrl: job.url,
+      sourceUrl: job.url || metadata.webpageUrl || "",
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + config.retentionMs).toISOString()
     };
     media.set(item.id, item);
+    const linkedTrack = findTrackForReference(job.url);
+    if (linkedTrack) {
+      item.expiresAt = null;
+      repositories.media.upsert({
+        id: item.id, trackId: linkedTrack.id, provider: item.platform,
+        providerMediaId: null, kind: item.kind,
+        relativePath: path.relative(config.dataDir, item.filePath).split(path.sep).join("/"),
+        mimeType: item.mimeType, sizeBytes: item.size, durationSeconds: item.duration, checksum,
+        status: "ready", lastVerifiedAt: new Date().toISOString()
+      });
+      fs.writeFileSync(path.join(item.directory, "metadata.json"), `${JSON.stringify({
+        mediaId: item.id, trackId: linkedTrack.id, title: item.title, creator: item.creator,
+        sourceUrl: item.sourceUrl, mimeType: item.mimeType, size: item.size, duration: item.duration
+      }, null, 2)}\n`, "utf8");
+      fs.writeFileSync(path.join(item.directory, "checksum.sha256"), `${checksum}  ${item.filename}\n`, "utf8");
+    }
     touch(job, { status: "completed", stage: "Ready", progress: 100, media: item });
   } catch (error) {
     removeDirectory(target.directory);
@@ -126,15 +212,51 @@ const drain = () => {
 export const createJob = (url) => {
   const platform = resolvePlatform(url);
   const now = new Date().toISOString();
-  const job = { id: crypto.randomUUID(), url: platform.url, platform, status: "queued", stage: "Queued", progress: 0, metadata: null, media: null, error: null, createdAt: now, updatedAt: now };
+  const job = { id: `job_${crypto.randomUUID()}`, url: platform.url, platform, status: "queued", stage: "Queued", progress: 0, metadata: null, media: null, error: null, createdAt: now, updatedAt: now };
   jobs.set(job.id, job);
+  persistJob(job);
+  queue.push(job);
+  drain();
+  return publicJob(job);
+};
+
+export const createSearchJob = (query, referenceUrl = "") => {
+  const linkedTrack = findTrackForReference(referenceUrl);
+  const cachedMedia = linkedTrack && repositories.media.findReadyForTrack(linkedTrack.id);
+  if (cachedMedia) {
+    const item = mediaFromRow(cachedMedia);
+    if (item && fs.existsSync(item.filePath)) {
+      media.set(item.id, item);
+      const now = new Date().toISOString();
+      const job = { id: `job_${crypto.randomUUID()}`, url: referenceUrl, query, platform: searchPlatform,
+        status: "completed", stage: "Ready from cache", progress: 100, metadata: null, media: item,
+        error: null, createdAt: now, updatedAt: now };
+      jobs.set(job.id, job);
+      persistJob(job);
+      return publicJob(job);
+    }
+  }
+  const duplicate = [...jobs.values()].find((job) => job.url === referenceUrl && job.query === query &&
+    !["completed", "failed"].includes(job.status));
+  if (duplicate) return publicJob(duplicate);
+  const now = new Date().toISOString();
+  const job = { id: `job_${crypto.randomUUID()}`, url: referenceUrl, query, platform: searchPlatform, status: "queued", stage: "Queued", progress: 0, metadata: null, media: null, error: null, createdAt: now, updatedAt: now };
+  jobs.set(job.id, job);
+  persistJob(job);
   queue.push(job);
   drain();
   return publicJob(job);
 };
 
 export const getJob = (id) => publicJob(jobs.get(id));
-export const getMedia = (id) => media.get(id) || null;
+export const getMedia = (id) => {
+  const current = media.get(id);
+  if (current) return current;
+  const restored = mediaFromRow(repositories.media.findById(id));
+  if (!restored || !fs.existsSync(restored.filePath)) return null;
+  media.set(id, restored);
+  return restored;
+};
 export const deleteMedia = (id) => {
   const item = media.get(id);
   if (!item) return false;
@@ -146,6 +268,6 @@ export const deleteMedia = (id) => {
 export const cleanupExpired = () => {
   const now = Date.now();
   for (const [id, item] of media) {
-    if (Date.parse(item.expiresAt) <= now) deleteMedia(id);
+    if (item.expiresAt && Date.parse(item.expiresAt) <= now) deleteMedia(id);
   }
 };

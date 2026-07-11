@@ -37,10 +37,24 @@ const workerRequest = ({ method = "GET", pathname, body, headers = {}, stream = 
 
 export const mediaHealth = () => workerRequest({ pathname: "/health" });
 export const createMediaJob = (url) => workerRequest({ method: "POST", pathname: "/jobs", body: { url } });
+export const createSearchMediaJob = (query, referenceUrl = "") => workerRequest({ method: "POST", pathname: "/search-jobs", body: { query, referenceUrl } });
 export const getMediaJob = (id) => workerRequest({ pathname: `/jobs/${encodeURIComponent(id)}` });
+export const getCachedLesson = (spotifyId) => workerRequest({ pathname: `/cache/lessons/spotify/${encodeURIComponent(spotifyId)}` });
+export const cacheTrackLyrics = (track) => workerRequest({ method: "PUT", pathname: "/cache/lyrics", body: track });
+export const cacheLessonTranslation = (translation) => workerRequest({ method: "PUT", pathname: "/cache/translations", body: translation });
+export const getLibrary = () => workerRequest({ pathname: "/library" });
+export const createLibraryPlaylist = (payload) => workerRequest({ method: "POST", pathname: "/playlists", body: payload });
+export const getLibraryPlaylist = (id) => workerRequest({ pathname: `/playlists/${encodeURIComponent(id)}` });
+export const addLibraryPlaylistTrack = (id, payload) => workerRequest({ method: "POST", pathname: `/playlists/${encodeURIComponent(id)}/tracks`, body: payload });
+export const openCachedTrack = (id) => workerRequest({ method: "POST", pathname: `/library/tracks/${encodeURIComponent(id)}/open` });
+export const saveTrackProgress = (id, payload) => workerRequest({ method: "POST", pathname: `/library/tracks/${encodeURIComponent(id)}/progress`, body: payload });
+export const getSpotifyAccount = () => workerRequest({ pathname: "/spotify-account" });
+export const saveSpotifyAccount = (payload) => workerRequest({ method: "PUT", pathname: "/spotify-account", body: payload });
+export const importSpotifyPlaylistCache = (payload) => workerRequest({ method: "PUT", pathname: "/playlists/spotify", body: payload });
 export const removeMedia = (id) => workerRequest({ method: "DELETE", pathname: `/media/${encodeURIComponent(id)}` });
 export const mediaStream = (id, kind, range) => workerRequest({
   pathname: `/media/${encodeURIComponent(id)}/${kind}`,
   headers: range ? { Range: range } : {},
   stream: true
 });
+export const artworkStream = (id) => workerRequest({ pathname: `/artwork/${encodeURIComponent(id)}`, stream: true });

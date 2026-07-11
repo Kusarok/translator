@@ -78,16 +78,32 @@ export const createMediaJob = (url) => request("/api/media/jobs", {
   body: JSON.stringify({ url })
 });
 
-export const getMediaJob = (id) => request(`/api/media/jobs/${encodeURIComponent(id)}`);
+export const createSearchMediaJob = (query, referenceUrl = "", signal) => request("/api/media/search-jobs", {
+  method: "POST",
+  body: JSON.stringify({ query, referenceUrl }),
+  signal
+});
+
+export const getMediaJob = (id, signal) => request(`/api/media/jobs/${encodeURIComponent(id)}`, { signal });
 
 export const deleteMedia = (id) => request(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
 
-export const getSpotifyLyrics = (url) => request("/api/media/lyrics", {
+export const getSpotifyLyrics = (url, signal) => request("/api/media/lyrics", {
   method: "POST",
-  body: JSON.stringify({ url })
+  body: JSON.stringify({ url }),
+  signal
 });
 
-export const translateSpotifyLyrics = (payload) => request("/api/media/lyrics/translate", {
+export const translateSpotifyLyrics = (payload, signal) => request("/api/media/lyrics/translate", {
   method: "POST",
-  body: JSON.stringify(payload)
+  body: JSON.stringify(payload),
+  signal
 });
+
+export const getLearnLibrary = () => request("/api/media/library");
+export const createLearnPlaylist = (payload) => request("/api/media/library/playlists", { method: "POST", body: JSON.stringify(payload) });
+export const getLearnPlaylist = (id) => request(`/api/media/library/playlists/${encodeURIComponent(id)}`);
+export const addTrackToLearnPlaylist = (id, payload) => request(`/api/media/library/playlists/${encodeURIComponent(id)}/tracks`, { method: "POST", body: JSON.stringify(payload) });
+export const openLearnTrack = (id) => request(`/api/media/library/tracks/${encodeURIComponent(id)}/open`, { method: "POST" });
+export const saveLearnProgress = (id, payload) => request(`/api/media/library/tracks/${encodeURIComponent(id)}/progress`, { method: "POST", body: JSON.stringify(payload) });
+export const importSpotifyPlaylist = (url) => request("/api/media/spotify/import-playlist", { method: "POST", body: JSON.stringify({ url }) });

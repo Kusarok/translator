@@ -70,7 +70,6 @@ export const createApp = () => {
         frameSrc: [
           "'self'",
           "https://www.youtube-nocookie.com",
-          "https://open.spotify.com",
           "https://www.instagram.com",
           "https://www.tiktok.com",
           "https://platform.twitter.com",
@@ -78,7 +77,7 @@ export const createApp = () => {
         ],
         imgSrc: ["'self'", "data:", "https:"],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'", "https://open.spotify.com", "https://embed-cdn.spotifycdn.com"],
+        scriptSrc: ["'self'"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'"]
       }
@@ -96,11 +95,31 @@ export const createApp = () => {
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 
+  // ── Owner-only gate ──────────────────────────────────────────────
+  // When owner credentials are configured, block ALL API routes except
+  // /api/health (so the frontend can check auth status) and /api/auth/*
+  // (login/logout). Static files and the HTML page are always served so
+  // the login screen can render. This is a hard server-side gate — there
+  // is no client-side bypass.
+  const PUBLIC_API = /^\/(health|auth)/;
+  app.use("/api", (req, res, next) => {
+    if (!gateEnabled() || isOwnerAuthenticated(req)) return next();
+    if (PUBLIC_API.test(req.path)) return next();
+    return res.status(401).json({ error: "Authentication required." });
+  });
+
   app.get("/api/health", (req, res) => {
+    const authenticated = isOwnerAuthenticated(req);
+
+    // When the gate is active and the visitor is not the owner, only
+    // expose auth status — no provider configs, models, or capabilities.
+    if (gateEnabled() && !authenticated) {
+      return res.json({ ok: true, auth: { gateEnabled: true, authenticated: false } });
+    }
+
     const state = getPublicState();
     const active = state.providers.find((provider) => provider.id === state.activeProvider);
     const google = state.providers.find((provider) => provider.id === "google");
-    const authenticated = isOwnerAuthenticated(req);
 
     res.json({
       ok: true,

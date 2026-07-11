@@ -13,12 +13,12 @@ test("allows official media embeds while keeping scripts restricted", async (t) 
 
   assert.equal(response.status, 200);
   assert.match(policy, /frame-src[^;]*youtube-nocookie\.com/);
-  assert.match(policy, /frame-src[^;]*open\.spotify\.com/);
   assert.match(policy, /frame-src[^;]*instagram\.com/);
   assert.match(policy, /frame-src[^;]*tiktok\.com/);
   assert.match(policy, /frame-src[^;]*twitter\.com/);
   assert.match(policy, /frame-src[^;]*facebook\.com/);
   assert.match(policy, /script-src 'self'/);
-  assert.match(policy, /script-src[^;]*embed-cdn\.spotifycdn\.com/);
+  assert.doesNotMatch(policy, /open\.spotify\.com/);
+  assert.doesNotMatch(policy, /embed-cdn\.spotifycdn\.com/);
   assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
 });

@@ -3,8 +3,12 @@ import fs from "node:fs";
 import { config } from "./config.js";
 import { capabilities } from "./downloader.js";
 import { platformCatalog } from "./adapters/platforms.js";
-import { cleanupExpired, createJob, deleteMedia, getJob, getMedia } from "./jobs.js";
+import { cleanupExpired, createJob, createSearchJob, deleteMedia, getJob, getMedia } from "./jobs.js";
 import { safeMediaPath } from "./storage.js";
+import { cacheTrackLyrics, cacheTranslation, getCachedLesson } from "./services/lesson-cache.service.js";
+import { repositories } from "./persistence.js";
+import path from "node:path";
+import { addTrackToPlaylist, createLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, updateTrackProgress } from "./services/library.service.js";
 
 const json = (res, status, body) => {
   const data = Buffer.from(JSON.stringify(body));
@@ -17,7 +21,7 @@ const body = async (req) => {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 32 * 1024) throw new Error("Request body is too large.");
+    if (size > 1024 * 1024) throw new Error("Request body is too large.");
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
@@ -53,27 +57,84 @@ const serveFile = (req, res, item, download) => {
   fs.createReadStream(filePath, { start, end }).pipe(res);
 };
 
+const serveArtwork = (res, item) => {
+  const filePath = path.resolve(config.dataDir, item.relative_path);
+  const root = `${path.resolve(config.artworkDir)}${path.sep}`;
+  if (!filePath.startsWith(root) || !fs.existsSync(filePath)) return json(res, 404, { error: "Artwork not found." });
+  const stat = fs.statSync(filePath);
+  res.writeHead(200, { "Content-Type": item.mime_type || "image/jpeg", "Content-Length": stat.size,
+    "Cache-Control": "public, max-age=86400, immutable" });
+  fs.createReadStream(filePath).pipe(res);
+};
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   try {
     if (req.method === "GET" && url.pathname === "/health") {
       return json(res, 200, { ok: true, capabilities: capabilities(), platforms: platformCatalog() });
     }
+    if (req.method === "GET" && url.pathname === "/library") return json(res, 200, libraryOverview());
+    if (req.method === "GET" && url.pathname === "/playlists") return json(res, 200, { playlists: libraryOverview().playlists });
+    if (req.method === "POST" && url.pathname === "/playlists") return json(res, 201, createLearningPlaylist(await body(req)));
+    if (req.method === "PUT" && url.pathname === "/playlists/spotify") return json(res, 200, importSpotifyPlaylist(await body(req)));
+    if (req.method === "GET" && url.pathname === "/spotify-account") {
+      const account = repositories.spotifyAccounts.current();
+      return account ? json(res, 200, account) : json(res, 404, { error: "Spotify account is not connected." });
+    }
+    if (req.method === "PUT" && url.pathname === "/spotify-account") return json(res, 200, repositories.spotifyAccounts.upsert(await body(req)));
+    const playlistMatch = /^\/playlists\/(pls_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && playlistMatch) {
+      const playlist = getPlaylistDetail(playlistMatch[1]);
+      return playlist ? json(res, 200, playlist) : json(res, 404, { error: "Playlist not found." });
+    }
+    const playlistTrackMatch = /^\/playlists\/(pls_[A-Za-z0-9-]+)\/tracks$/.exec(url.pathname);
+    if (req.method === "POST" && playlistTrackMatch) {
+      const playlist = addTrackToPlaylist(playlistTrackMatch[1], await body(req));
+      return playlist ? json(res, 200, playlist) : json(res, 404, { error: "Playlist not found." });
+    }
+    const libraryTrackMatch = /^\/library\/tracks\/(trk_[A-Za-z0-9-]+)\/(open|progress)$/.exec(url.pathname);
+    if (req.method === "POST" && libraryTrackMatch) {
+      const result = libraryTrackMatch[2] === "open"
+        ? openLibraryTrack(libraryTrackMatch[1])
+        : updateTrackProgress(libraryTrackMatch[1], await body(req));
+      return result ? json(res, 200, result) : json(res, 404, { error: "Track not found." });
+    }
     if (req.method === "POST" && url.pathname === "/jobs") {
       const payload = await body(req);
       return json(res, 202, createJob(payload.url));
     }
-    const jobMatch = /^\/jobs\/([a-f0-9-]+)$/.exec(url.pathname);
+    if (req.method === "POST" && url.pathname === "/search-jobs") {
+      const payload = await body(req);
+      if (!payload.query) return json(res, 400, { error: "A search query is required." });
+      return json(res, 202, createSearchJob(payload.query, payload.referenceUrl || ""));
+    }
+    const lessonMatch = /^\/cache\/lessons\/spotify\/([A-Za-z0-9]{22})$/.exec(url.pathname);
+    if (req.method === "GET" && lessonMatch) {
+      const lesson = getCachedLesson(lessonMatch[1]);
+      return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Lesson is not cached." });
+    }
+    if (req.method === "PUT" && url.pathname === "/cache/lyrics") {
+      return json(res, 200, await cacheTrackLyrics(await body(req)));
+    }
+    if (req.method === "PUT" && url.pathname === "/cache/translations") {
+      return json(res, 200, cacheTranslation(await body(req)));
+    }
+    const artworkMatch = /^\/artwork\/(art_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && artworkMatch) {
+      const artwork = repositories.artwork.findById(artworkMatch[1]);
+      return artwork ? serveArtwork(res, artwork) : json(res, 404, { error: "Artwork not found." });
+    }
+    const jobMatch = /^\/jobs\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
     if (req.method === "GET" && jobMatch) {
       const job = getJob(jobMatch[1]);
       return job ? json(res, 200, job) : json(res, 404, { error: "Media job not found." });
     }
-    const mediaMatch = /^\/media\/([a-f0-9-]+)\/(stream|download)$/.exec(url.pathname);
+    const mediaMatch = /^\/media\/([A-Za-z0-9_-]+)\/(stream|download)$/.exec(url.pathname);
     if (req.method === "GET" && mediaMatch) {
       const item = getMedia(mediaMatch[1]);
       return item ? serveFile(req, res, item, mediaMatch[2] === "download") : json(res, 404, { error: "Media not found." });
     }
-    const deleteMatch = /^\/media\/([a-f0-9-]+)$/.exec(url.pathname);
+    const deleteMatch = /^\/media\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
     if (req.method === "DELETE" && deleteMatch) {
       return deleteMedia(deleteMatch[1]) ? json(res, 200, { ok: true }) : json(res, 404, { error: "Media not found." });
     }
