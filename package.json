@@ -5,8 +5,11 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "start": "node src/server/index.js",
-    "dev": "node --watch src/server/index.js"
+    "start": "node scripts/start-all.js",
+    "start:web": "node src/server/index.js",
+    "start:media": "node services/media-worker/server.js",
+    "media:install": "node scripts/install-media-tools.js",
+    "test": "node --test"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

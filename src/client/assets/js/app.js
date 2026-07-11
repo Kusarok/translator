@@ -35,6 +35,7 @@ import { initByokUi, refreshByokUi } from "./byok-ui.js";
 import { getRuntime, getRequestPayload, updateModel, getGroqKey } from "./byok.js";
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
 import { initViewportSizing } from "./viewport.js";
+import { initMedia } from "./media-app.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
@@ -44,7 +45,8 @@ const modeLabel = document.querySelector("#modeLabel");
 const views = {
   translator: document.querySelector("#translatorView"),
   chat: document.querySelector("#chatView"),
-  live: document.querySelector("#liveView")
+  live: document.querySelector("#liveView"),
+  media: document.querySelector("#mediaView")
 };
 
 let lastTranslation = "";
@@ -455,6 +457,7 @@ const bindEvents = () => {
 };
 
 initViewportSizing();
+initMedia();
 bindEvents();
 initTheme();
 populateLanguageSelects();

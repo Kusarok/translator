@@ -70,3 +70,24 @@ export const unlockOwner = (payload) => request("/api/auth/unlock", {
 });
 
 export const logoutOwner = () => request("/api/auth/logout", { method: "POST" });
+
+export const getMediaHealth = () => request("/api/media/health");
+
+export const createMediaJob = (url) => request("/api/media/jobs", {
+  method: "POST",
+  body: JSON.stringify({ url })
+});
+
+export const getMediaJob = (id) => request(`/api/media/jobs/${encodeURIComponent(id)}`);
+
+export const deleteMedia = (id) => request(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
+
+export const getSpotifyLyrics = (url) => request("/api/media/lyrics", {
+  method: "POST",
+  body: JSON.stringify({ url })
+});
+
+export const translateSpotifyLyrics = (payload) => request("/api/media/lyrics/translate", {
+  method: "POST",
+  body: JSON.stringify(payload)
+});

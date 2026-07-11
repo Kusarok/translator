@@ -5,3 +5,5 @@ settings.json
 npm-debug.log*
 .DS_Store
 server.log
+services/media-worker/.venv/
+media-worker.log

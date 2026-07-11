@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="/assets/css/components.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/chat.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/langpicker.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/media.css?v=__ASSET_VERSION__">
   </head>
   <body>
     <main class="app-shell">
@@ -46,6 +47,9 @@
               </button>
               <button class="menu-tab mode-option" data-view="live" data-icon="🎙️" role="menuitem">
                 <span aria-hidden="true">🎙️</span><span data-i18n="liveTab">Live</span>
+              </button>
+              <button class="menu-tab mode-option" data-view="media" data-icon="▶️" role="menuitem">
+                <span aria-hidden="true">▶️</span><span data-i18n="mediaTab">Learn</span>
               </button>
             </div>
           </div>
@@ -152,6 +156,62 @@
               </div>
               <span class="live-mic-label" id="liveMicLabel" data-i18n="liveStart">Tap to speak</span>
               <button class="icon-btn small ghost" id="liveClearButton" type="button" data-i18n-aria="liveClear" aria-label="Clear transcript"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+            </div>
+          </section>
+
+          <section class="view media-view" id="mediaView" hidden>
+            <div class="media-scroll">
+              <div class="media-hero">
+                <span class="media-kicker">LEARN WITH SPOTIFY</span>
+                <h1 data-i18n="mediaTitle">Learn a song, line by line</h1>
+                <p data-i18n="mediaIntro">Paste a Spotify track. We match synchronized lyrics and translate them into Persian.</p>
+              </div>
+
+              <form class="media-import" id="mediaImportForm">
+                <label class="media-url-label" for="mediaUrl" data-i18n="mediaUrlLabel">Spotify track link</label>
+                <div class="media-url-row">
+                  <input id="mediaUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://open.spotify.com/track/…" required>
+                  <button id="mediaSubmit" type="submit" data-i18n="mediaPrepare">Start</button>
+                </div>
+                <div class="media-platforms" aria-label="Supported platforms">
+                  <span class="spotify-only">● Spotify</span>
+                </div>
+              </form>
+
+              <div class="media-status-card" id="mediaStatusCard" hidden aria-live="polite">
+                <div class="media-status-top">
+                  <span class="media-source-badge" id="mediaSourceBadge">Media</span>
+                  <span class="media-status-label" id="mediaStatusLabel">Queued</span>
+                </div>
+                <div class="media-progress-track"><span id="mediaProgressBar"></span></div>
+                <p id="mediaStatusText"></p>
+              </div>
+
+              <article class="media-card" id="mediaResult" hidden>
+                <div class="media-details media-song-head">
+                  <img id="mediaArtwork" alt="" hidden>
+                  <div>
+                  <span class="media-source-badge" id="mediaResultSource">Media</span>
+                  <h2 id="mediaResultTitle"></h2>
+                  <p id="mediaResultMeta"></p>
+                  </div>
+                </div>
+                <button class="media-start-learning" id="mediaStartLearning" type="button">Start to learn</button>
+                <div class="media-lesson" id="mediaLesson" hidden>
+                  <header class="lesson-header">
+                    <button id="mediaLessonClose" type="button" aria-label="Close player">‹</button>
+                    <div><strong id="mediaLessonTitle"></strong><span id="mediaLessonArtist"></span></div>
+                    <span class="lesson-spotify-mark" aria-label="Spotify">●</span>
+                  </header>
+                  <div class="media-lyrics" id="mediaLyrics" aria-live="polite"></div>
+                  <div class="media-player-wrap" id="mediaPlayerWrap"></div>
+                </div>
+                <p class="media-disclosure" id="mediaDisclosure" hidden></p>
+                <div class="media-actions">
+                  <a class="media-primary-action" id="mediaOriginal" href="#" target="_blank" rel="noopener noreferrer" data-i18n="mediaOpenOriginal">Open original</a>
+                  <button class="media-secondary-action" id="mediaRemove" type="button" data-i18n="mediaRemove">Remove</button>
+                </div>
+              </article>
             </div>
           </section>
         </main>

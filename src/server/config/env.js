@@ -49,6 +49,7 @@ export const env = {
   groqApiKey: process.env.GROQ_API_KEY || "",
   groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
   groqSttModel: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
+  mediaWorkerUrl: process.env.MEDIA_WORKER_URL || "http://127.0.0.1:8090",
   dataDir: path.join(rootDir, "data"),
   ownerUsername: process.env.OWNER_USERNAME || "",
   ownerPassword: process.env.OWNER_PASSWORD || "",

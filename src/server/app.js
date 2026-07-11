@@ -15,6 +15,7 @@ import { transcribeRouter } from "./routes/transcribe.routes.js";
 import { chatRouter } from "./routes/chat.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
+import { mediaRouter } from "./routes/media.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,13 +67,23 @@ export const createApp = () => {
         fontSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'self'"],
-        imgSrc: ["'self'", "data:"],
+        frameSrc: [
+          "'self'",
+          "https://www.youtube-nocookie.com",
+          "https://open.spotify.com",
+          "https://www.instagram.com",
+          "https://www.tiktok.com",
+          "https://platform.twitter.com",
+          "https://www.facebook.com"
+        ],
+        imgSrc: ["'self'", "data:", "https:"],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://open.spotify.com", "https://embed-cdn.spotifycdn.com"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'"]
       }
-    }
+    },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" }
   }));
 
   // Transcription carries base64 audio (up to 20 MB raw -> ~27 MB encoded), so give just this
@@ -164,6 +175,15 @@ export const createApp = () => {
     standardHeaders: true,
     legacyHeaders: false
   }), transcribeRouter);
+
+  app.use("/api/media", rateLimit({
+    windowMs: 60 * 1000,
+    // The client polls once per second while a background job is active. This ceiling still
+    // bounds abusive traffic without causing legitimate long-running downloads to self-block.
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false
+  }), mediaRouter);
 
   app.use((_req, res) => sendIndex(res));
 
