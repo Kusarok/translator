@@ -1,13 +1,14 @@
-import { addTrackToLearnPlaylist, createLearnPlaylist, getLearnLibrary, getLearnPlaylist, openLearnTrack } from "./api.js";
+import { addTrackToLearnPlaylist, createLearnPlaylist, deleteLearnPlaylist, getLearnLibrary, getLearnPlaylist, openLearnTrack, removeTrackFromLearnPlaylist, updateLearnPlaylist } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
 const nodes = {
   library: $("learnLibrary"), continueSection: $("learnContinueSection"), continueList: $("learnContinue"),
+  artistsSection: $("learnArtistsSection"), artists: $("learnArtists"),
   playlists: $("learnPlaylists"), playlistsEmpty: $("learnPlaylistsEmpty"), recent: $("learnRecent"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
   playlistsNav: $("learnPlaylistsNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
-  playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), spotifyNote: $("learnSpotifyNote"),
+  playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
   connectSpotify: $("learnConnectSpotify")
   ,libraryNav: $("learnLibraryNav"), libraryTitle: $("learnLibraryTitle"), scroll: document.querySelector("#mediaView .media-scroll")
 };
@@ -15,6 +16,22 @@ const nodes = {
 let openTrackHandler = null;
 let prepareTrackHandler = null;
 let snapshot = null;
+let activePlaylist = null;
+let artistRefreshTimer = 0;
+const PLAYLIST_HISTORY_KEY = "learnPlaylist";
+const LIBRARY_TAB_HISTORY_KEY = "learnLibraryTab";
+
+const announce = (message) => {
+  if (!message) return;
+  let toast = document.querySelector(".learn-toast");
+  if (!toast) {
+    toast = document.createElement("div"); toast.className = "learn-toast";
+    toast.setAttribute("role", "status"); toast.setAttribute("aria-live", "polite");
+    document.body.append(toast);
+  }
+  toast.textContent = message; toast.classList.add("is-visible");
+  clearTimeout(announce.timer); announce.timer = setTimeout(() => toast.classList.remove("is-visible"), 3200);
+};
 
 const artwork = (track, className = "") => {
   if (track.artwork) {
@@ -33,7 +50,17 @@ const openTrack = async (track) => {
     openTrackHandler?.(lesson);
   } catch (error) {
     if (track.sourceUrl && /not found|not cached/i.test(error.message)) return prepareTrackHandler?.(track);
-    throw error;
+    announce(error.message || "This song could not be opened. Try again.");
+  }
+};
+
+const performRowAction = async (row, state, track) => {
+  if (row.dataset.busy === "true") return;
+  row.dataset.busy = "true"; row.setAttribute("aria-busy", "true");
+  const previous = state.textContent; state.textContent = "…";
+  try { await openTrack(track); }
+  finally {
+    row.dataset.busy = "false"; row.setAttribute("aria-busy", "false"); state.textContent = previous;
   }
 };
 
@@ -43,11 +70,17 @@ const trackRow = (track, index = null) => {
   row.append(artwork(track));
   const copy = document.createElement("span"); copy.className = "learn-track-copy";
   const title = document.createElement("strong"); title.textContent = index == null ? track.title : `${String(index + 1).padStart(2, "0")}  ${track.title}`;
-  const meta = document.createElement("small"); meta.textContent = `${track.artist}${track.album ? ` · ${track.album}` : ""}`;
+  const meta = document.createElement("small");
+  const artist = document.createElement("span"); artist.className = "learn-artist-link"; artist.textContent = track.artist;
+  artist.setAttribute("role", "button"); artist.tabIndex = 0;
+  const openArtist = (event) => { event.preventDefault(); event.stopPropagation(); window.dispatchEvent(new CustomEvent("learn:open-artist", { detail: { name: track.artist } })); };
+  artist.addEventListener("click", openArtist); artist.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") openArtist(event); });
+  meta.append(artist, document.createTextNode(track.album ? ` · ${track.album}` : ""));
   copy.append(title, meta);
-  const state = document.createElement("span"); state.className = "learn-track-state"; state.textContent = track.ready ? "▶" : "○";
+  const state = document.createElement("span"); state.className = "learn-track-state"; state.textContent = "▶";
   row.append(copy, state);
-  row.addEventListener("click", () => openTrack(track).catch(() => {}));
+  row.setAttribute("aria-label", `Play ${track.title} by ${track.artist}`);
+  row.addEventListener("click", () => performRowAction(row, state, track));
   return row;
 };
 
@@ -60,7 +93,7 @@ const continueCard = (track) => {
   const progress = document.createElement("span"); progress.className = "learn-progress";
   const fill = document.createElement("span"); fill.style.width = `${Math.max(4, track.completionPercent || 0)}%`; progress.append(fill);
   content.append(title, artist, progress); card.append(content);
-  card.addEventListener("click", () => openTrack(track).catch(() => {}));
+  card.addEventListener("click", () => openTrack(track));
   return card;
 };
 
@@ -72,14 +105,33 @@ const playlistCard = (playlist) => {
   const title = document.createElement("strong"); title.textContent = playlist.name;
   const count = document.createElement("small"); count.textContent = `${playlist.trackCount} songs`;
   card.append(cover, title, count);
-  card.addEventListener("click", () => showPlaylist(playlist.id));
+  card.addEventListener("click", () => showPlaylist(playlist.id).catch((error) => announce(error.message || "Playlist could not be opened.")));
+  return card;
+};
+
+const artistCard = (artist) => {
+  const card = document.createElement("button"); card.type = "button"; card.className = "learn-artist-card";
+  const art = document.createElement("span"); art.className = "learn-artist-card-art";
+  if (artist.artwork) { const img = document.createElement("img"); img.src = artist.artwork; img.alt = ""; img.loading = "lazy"; art.append(img); }
+  else art.textContent = artist.name.slice(0, 1).toUpperCase() || "♪";
+  const name = document.createElement("strong"); name.textContent = artist.name;
+  const state = document.createElement("small");
+  state.textContent = ["queued", "scanning"].includes(artist.status) ? "Adding songs…" : `${artist.learnableCount || 0} songs`;
+  card.append(art, name, state);
+  card.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-saved-artist", { detail: { id: artist.id } })));
   return card;
 };
 
 const render = (data) => {
   snapshot = data;
+  clearTimeout(artistRefreshTimer);
   nodes.continueList.replaceChildren(...data.continueLearning.map(continueCard));
   nodes.continueSection.hidden = !data.continueLearning.length;
+  nodes.artists.replaceChildren(...(data.artists || []).map(artistCard));
+  nodes.artistsSection.hidden = !(data.artists || []).length;
+  if ((data.artists || []).some((artist) => ["queued", "scanning"].includes(artist.status))) {
+    artistRefreshTimer = setTimeout(() => refreshLearnLibrary().catch(() => {}), 4000);
+  }
   nodes.playlists.replaceChildren(...data.playlists.map(playlistCard));
   nodes.playlistsEmpty.hidden = Boolean(data.playlists.length);
   nodes.recent.replaceChildren(...data.recent.map((track) => trackRow(track)));
@@ -93,39 +145,172 @@ export const refreshLearnLibrary = async () => render(await getLearnLibrary());
 
 const showPlaylist = async (id) => {
   const playlist = await getLearnPlaylist(id);
+  if (history.state?.[PLAYLIST_HISTORY_KEY] !== id) {
+    history.pushState({ ...(history.state || {}), [PLAYLIST_HISTORY_KEY]: id }, "");
+  }
+  activePlaylist = playlist;
   nodes.library.hidden = true; nodes.playlistPage.hidden = false;
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
   const cover = document.createElement("span"); cover.className = "learn-playlist-cover"; cover.textContent = "♫";
   const title = document.createElement("h1"); title.textContent = playlist.name;
-  const meta = document.createElement("p"); meta.textContent = `${playlist.tracks.length} songs · Learning playlist`;
-  nodes.playlistHero.replaceChildren(cover, title, meta);
-  nodes.playlistTracks.replaceChildren(...playlist.tracks.map((track, index) => trackRow(track, index)));
+  const meta = document.createElement("p"); meta.textContent = `${playlist.tracks.length} songs`;
+  const add = document.createElement("button"); add.type = "button"; add.className = "learn-playlist-add"; add.textContent = "+  Add songs";
+  add.addEventListener("click", () => showSongPicker(playlist));
+  nodes.playlistHero.replaceChildren(cover, title, meta, add);
+  if (playlist.tracks.length) nodes.playlistTracks.replaceChildren(...playlist.tracks.map((track, index) => playlistTrackRow(track, index, playlist.id)));
+  else {
+    const empty = document.createElement("div"); empty.className = "learn-playlist-detail-empty";
+    empty.innerHTML = "<span>♫</span><strong>This playlist is empty</strong><small>Add a song from your library to start listening.</small>";
+    const button = document.createElement("button"); button.type = "button"; button.textContent = "Choose songs";
+    button.addEventListener("click", () => showSongPicker(playlist)); empty.append(button); nodes.playlistTracks.replaceChildren(empty);
+  }
 };
 
-const hidePlaylist = () => {
+const playlistTrackRow = (track, index, playlistId) => {
+  const wrap = document.createElement("div"); wrap.className = "learn-playlist-track";
+  wrap.append(trackRow(track, index));
+  const remove = document.createElement("button"); remove.type = "button"; remove.className = "learn-track-remove";
+  remove.setAttribute("aria-label", `Remove ${track.title}`); remove.textContent = "×";
+  remove.addEventListener("click", async () => {
+    remove.disabled = true;
+    try {
+      await removeTrackFromLearnPlaylist(playlistId, track.id);
+      await Promise.all([showPlaylist(playlistId), refreshLearnLibrary()]); announce(`${track.title} removed`);
+    } catch (error) { remove.disabled = false; announce(error.message || "Song could not be removed."); }
+  });
+  wrap.append(remove); return wrap;
+};
+
+const createSheet = (eyebrow, title) => {
+  const backdrop = document.createElement("div"); backdrop.className = "learn-sheet-backdrop";
+  const sheet = document.createElement("div"); sheet.className = "learn-sheet";
+  sheet.setAttribute("role", "dialog"); sheet.setAttribute("aria-modal", "true"); sheet.tabIndex = -1;
+  const handle = document.createElement("div"); handle.className = "learn-sheet-handle";
+  const heading = document.createElement("div"); heading.className = "learn-sheet-title";
+  const copy = document.createElement("div"); copy.innerHTML = `<span>${eyebrow}</span><h2>${title}</h2>`;
+  const close = document.createElement("button"); close.type = "button"; close.textContent = "×"; close.setAttribute("aria-label", "Close");
+  const token = `sheet-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  let afterDismiss = null;
+  const onPopState = () => teardown();
+  const teardown = () => {
+    window.removeEventListener("popstate", onPopState); backdrop.remove();
+    const callback = afterDismiss; afterDismiss = null; callback?.();
+  };
+  const dismiss = (callback = null) => {
+    afterDismiss = callback;
+    if (history.state?.learnSheet === token) history.back();
+    else teardown();
+  };
+  close.addEventListener("click", () => dismiss());
+  backdrop.addEventListener("click", (event) => { if (event.target === backdrop) dismiss(); });
+  backdrop.addEventListener("keydown", (event) => { if (event.key === "Escape") dismiss(); });
+  heading.append(copy, close); sheet.append(handle, heading); backdrop.append(sheet); document.body.append(backdrop);
+  history.pushState({ ...(history.state || {}), learnSheet: token }, "");
+  window.addEventListener("popstate", onPopState);
+  requestAnimationFrame(() => sheet.focus({ preventScroll: true }));
+  return { backdrop, sheet, dismiss };
+};
+
+const showSongPicker = async (playlist) => {
+  const data = await getLearnLibrary();
+  const existing = new Set(playlist.tracks.map((track) => track.id));
+  const available = data.recent.filter((track) => !existing.has(track.id));
+  const { sheet, dismiss } = createSheet("Your library", "Add songs");
+  const list = document.createElement("div"); list.className = "learn-track-list learn-song-picker";
+  if (!available.length) list.innerHTML = "<div class='learn-picker-empty'>Every downloaded song is already in this playlist.</div>";
+  for (const track of available) {
+    const row = trackRow(track); row.querySelector(".learn-track-state").textContent = "+";
+    row.addEventListener("click", async (event) => {
+      event.stopImmediatePropagation(); row.disabled = true;
+      try {
+        await addTrackToLearnPlaylist(playlist.id, { trackId: track.id });
+        dismiss(); await Promise.all([showPlaylist(playlist.id), refreshLearnLibrary()]); announce(`Added ${track.title}`);
+      } catch (error) { row.disabled = false; announce(error.message || "Song could not be added."); }
+    }, { capture: true });
+    list.append(row);
+  }
+  sheet.append(list);
+};
+
+const showPlaylistOptions = () => {
+  if (!activePlaylist) return;
+  const playlist = activePlaylist;
+  const { sheet, dismiss } = createSheet("Playlist", playlist.name);
+  const actions = document.createElement("div"); actions.className = "learn-playlist-actions";
+  const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Edit name";
+  const remove = document.createElement("button"); remove.type = "button"; remove.className = "danger"; remove.textContent = "Delete playlist";
+  edit.addEventListener("click", () => dismiss(() => showEditPlaylist(playlist)));
+  remove.addEventListener("click", async () => {
+    if (!window.confirm(`Delete “${playlist.name}”? Songs will stay in your library.`)) return;
+    remove.disabled = true;
+    try {
+      await deleteLearnPlaylist(playlist.id);
+      dismiss(() => {
+        const nextState = { ...(history.state || {}) }; delete nextState[PLAYLIST_HISTORY_KEY];
+        history.replaceState(nextState, ""); activePlaylist = null; hidePlaylist(false);
+      });
+      await refreshLearnLibrary(); announce("Playlist deleted");
+    } catch (error) { remove.disabled = false; announce(error.message || "Playlist could not be deleted."); }
+  });
+  actions.append(edit, remove); sheet.append(actions);
+};
+
+const showEditPlaylist = (playlist) => {
+  const { sheet, dismiss } = createSheet("Edit playlist", "Playlist details");
+  const form = document.createElement("form"); form.className = "learn-edit-playlist";
+  const input = document.createElement("input"); input.required = true; input.maxLength = 80; input.value = playlist.name;
+  const description = document.createElement("textarea"); description.maxLength = 240; description.placeholder = "Description (optional)"; description.value = playlist.description || "";
+  const submit = document.createElement("button"); submit.type = "submit"; submit.textContent = "Save changes";
+  form.append(input, description, submit);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault(); submit.disabled = true;
+    try {
+      await updateLearnPlaylist(playlist.id, { name: input.value.trim(), description: description.value.trim() });
+      dismiss(); await Promise.all([showPlaylist(playlist.id), refreshLearnLibrary()]); announce("Playlist updated");
+    } catch (error) { submit.disabled = false; announce(error.message || "Playlist could not be updated."); }
+  });
+  sheet.append(form); requestAnimationFrame(() => { input.focus(); input.select(); });
+};
+
+const hidePlaylist = (useHistory = true) => {
+  if (useHistory && history.state?.[PLAYLIST_HISTORY_KEY]) { history.back(); return; }
+  activePlaylist = null;
   nodes.playlistPage.hidden = true; nodes.library.hidden = false;
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
-const switchLibraryTab = (tab) => {
+const switchLibraryTab = (tab, useHistory = true) => {
   const playlists = tab === "playlists";
+  if (useHistory) {
+    if (playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] !== "playlists") {
+      history.pushState({ ...(history.state || {}), [LIBRARY_TAB_HISTORY_KEY]: "playlists" }, "");
+    } else if (!playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists") {
+      history.back(); return;
+    }
+  }
   nodes.library.classList.toggle("is-playlists-view", playlists);
-  nodes.libraryTitle.textContent = playlists ? "Playlists" : "Learn";
+  nodes.libraryTitle.textContent = playlists ? "Playlists" : "Music";
   nodes.libraryNav.classList.toggle("active", !playlists);
   nodes.playlistsNav.classList.toggle("active", playlists);
+  nodes.libraryNav.setAttribute("aria-current", playlists ? "false" : "page");
+  nodes.playlistsNav.setAttribute("aria-current", playlists ? "page" : "false");
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
-const openSheet = () => { nodes.sheet.hidden = false; requestAnimationFrame(() => $("mediaUrl")?.focus()); };
-export const closeLearnAddSheet = () => { nodes.sheet.hidden = true; };
+const openSheet = () => {
+  if (nodes.sheet.hidden) history.pushState({ ...(history.state || {}), learnAddSheet: true }, "");
+  nodes.sheet.hidden = false; requestAnimationFrame(() => $("mediaUrl")?.focus());
+};
+export const closeLearnAddSheet = (useHistory = true) => {
+  if (useHistory && history.state?.learnAddSheet) { history.back(); return; }
+  nodes.sheet.hidden = true;
+  if (!useHistory && history.state?.learnAddSheet) {
+    const nextState = { ...(history.state || {}) }; delete nextState.learnAddSheet;
+    history.replaceState(nextState, "");
+  }
+};
 
 export const showPlaylistPicker = async (track) => {
   const data = await getLearnLibrary();
-  const backdrop = document.createElement("div"); backdrop.className = "learn-sheet-backdrop";
-  const sheet = document.createElement("div"); sheet.className = "learn-sheet";
-  const handle = document.createElement("div"); handle.className = "learn-sheet-handle";
-  const heading = document.createElement("div"); heading.className = "learn-sheet-title";
-  const copy = document.createElement("div"); copy.innerHTML = "<span>Save song</span><h2>Choose a playlist</h2>";
-  const close = document.createElement("button"); close.type = "button"; close.textContent = "×";
-  heading.append(copy, close);
+  const { sheet, dismiss } = createSheet("Save song", "Choose a playlist");
   const list = document.createElement("div"); list.className = "learn-track-list";
   const playlists = data.playlists.length ? data.playlists : [await createLearnPlaylist({ name: "My learning playlist" })];
   for (const playlist of playlists) {
@@ -136,23 +321,19 @@ export const showPlaylistPicker = async (track) => {
     const small = document.createElement("small"); small.textContent = `${playlist.trackCount || 0} songs`;
     label.append(strong, small); button.append(icon, label);
     button.addEventListener("click", async () => {
-      await addTrackToLearnPlaylist(playlist.id, { trackId: track.trackId });
-      backdrop.remove(); await refreshLearnLibrary();
+      button.disabled = true;
+      try {
+        await addTrackToLearnPlaylist(playlist.id, { trackId: track.trackId });
+        dismiss(); await refreshLearnLibrary(); announce(`Added to ${playlist.name}`);
+      } catch (error) { button.disabled = false; announce(error.message || "Song could not be added."); }
     });
     list.append(button);
   }
-  close.addEventListener("click", () => backdrop.remove());
-  backdrop.addEventListener("click", (event) => { if (event.target === backdrop) backdrop.remove(); });
-  sheet.append(handle, heading, list); backdrop.append(sheet); document.body.append(backdrop);
+  sheet.append(list);
 };
 
 const showNewPlaylistDialog = () => {
-  const backdrop = document.createElement("div"); backdrop.className = "learn-sheet-backdrop";
-  const sheet = document.createElement("div"); sheet.className = "learn-sheet";
-  const handle = document.createElement("div"); handle.className = "learn-sheet-handle";
-  const heading = document.createElement("div"); heading.className = "learn-sheet-title";
-  const copy = document.createElement("div"); copy.innerHTML = "<span>New collection</span><h2>Create a playlist</h2>";
-  const close = document.createElement("button"); close.type = "button"; close.textContent = "×"; heading.append(copy, close);
+  const { sheet, dismiss } = createSheet("New collection", "Create a playlist");
   const form = document.createElement("form"); form.className = "media-import";
   const label = document.createElement("label"); label.className = "media-url-label"; label.textContent = "Playlist name";
   const row = document.createElement("div"); row.className = "media-url-row";
@@ -160,14 +341,14 @@ const showNewPlaylistDialog = () => {
   const input = document.createElement("input"); input.required = true; input.maxLength = 80; input.placeholder = "Songs I’m learning";
   const submit = document.createElement("button"); submit.type = "submit"; submit.textContent = "Create";
   field.append(input); row.append(field, submit); form.append(label, row);
-  const dismiss = () => backdrop.remove(); close.addEventListener("click", dismiss);
-  backdrop.addEventListener("click", (event) => { if (event.target === backdrop) dismiss(); });
   form.addEventListener("submit", async (event) => {
     event.preventDefault(); submit.disabled = true;
-    const playlist = await createLearnPlaylist({ name: input.value.trim() });
-    dismiss(); await refreshLearnLibrary(); await showPlaylist(playlist.id);
+    try {
+      const playlist = await createLearnPlaylist({ name: input.value.trim() });
+      dismiss(async () => { await refreshLearnLibrary(); await showPlaylist(playlist.id); announce("Playlist created"); });
+    } catch (error) { submit.disabled = false; announce(error.message || "Playlist could not be created."); }
   });
-  sheet.append(handle, heading, form); backdrop.append(sheet); document.body.append(backdrop);
+  sheet.append(form);
   requestAnimationFrame(() => input.focus());
 };
 
@@ -179,6 +360,7 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.sheetClose?.addEventListener("click", closeLearnAddSheet);
   nodes.sheet?.addEventListener("click", (event) => { if (event.target === nodes.sheet) closeLearnAddSheet(); });
   nodes.playlistBack?.addEventListener("click", hidePlaylist);
+  nodes.playlistMenu?.addEventListener("click", showPlaylistOptions);
   nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("library"));
   nodes.playlistsNav?.addEventListener("click", () => switchLibraryTab("playlists"));
   nodes.newPlaylist?.addEventListener("click", async () => {
@@ -191,5 +373,13 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
       window.location.assign("/api/media/spotify/connect");
     } else nodes.spotifyNote.textContent = "Spotify credentials are not configured on this server yet.";
   });
-  refreshLearnLibrary().catch(() => {});
+  window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
+  window.addEventListener("popstate", (event) => {
+    if (!event.state?.learnAddSheet && !nodes.sheet.hidden) closeLearnAddSheet(false);
+    if (!event.state?.[PLAYLIST_HISTORY_KEY] && !nodes.playlistPage.hidden) hidePlaylist(false);
+    const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library";
+    if (!nodes.library.hidden) switchLibraryTab(tab, false);
+  });
+  switchLibraryTab(history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library", false);
+  refreshLearnLibrary().catch((error) => announce(error.message || "Your music could not be loaded."));
 };

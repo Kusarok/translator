@@ -11,7 +11,7 @@ test("database lives under the injected storage root and migrations are idempote
   const db = openDatabase({ storageRoot: root });
   assert.equal(databasePath(root), path.join(root, "database", "translator.sqlite"));
   assert.equal(db.prepare("PRAGMA foreign_keys").get().foreign_keys, 1);
-  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 4);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 7);
   db.close();
   openDatabase({ storageRoot: root }).close();
   fs.rmSync(root, { recursive: true, force: true });
@@ -28,6 +28,7 @@ test("repositories cache entities with independent prefixed ids and relative pat
   const media = repo.media.upsert({ trackId: track.id, provider: "youtube", providerMediaId: "yt1", relativePath: "media/med_x/audio.mp3", sizeBytes: 10 });
   const artwork = repo.artwork.upsert({ trackId: track.id, remoteUrl: "https://example.com/cover.jpg", relativePath: "artwork/art_x/cover.jpg", sizeBytes: 10 });
   const job = repo.jobs.create({ trackId: track.id, jobType: "audio" });
+  assert.equal(repo.jobs.pending()[0].id, job.id);
   const playlist = repo.playlists.create({ name: "Learning mix" });
   repo.playlists.addTrack(playlist.id, track.id, 0);
   assert.match(lyrics.id, /^lyr_/);
@@ -37,13 +38,37 @@ test("repositories cache entities with independent prefixed ids and relative pat
   assert.match(job.id, /^job_/);
   assert.match(playlist.id, /^pls_/);
   assert.equal(repo.playlists.tracks(playlist.id).length, 1);
+  assert.equal(repo.playlists.update(playlist.id, { name: "Updated mix", description: "Favorites" }).name, "Updated mix");
+  assert.equal(repo.playlists.removeTrack(playlist.id, track.id), true);
+  assert.equal(repo.playlists.tracks(playlist.id).length, 0);
+  repo.playlists.addTrack(playlist.id, track.id, 0);
   repo.library.touchProgress(track.id, { status: "learning", playbackSeconds: 12, completionPercent: 20, incrementOpen: true });
   assert.equal(repo.library.continueLearning(1)[0].id, track.id);
   assert.equal(repo.library.recent(1)[0].completion_percent, 20);
   const account = repo.spotifyAccounts.upsert({ spotifyUserId: "user1", displayName: "User", accessTokenCiphertext: "cipher1", refreshTokenCiphertext: "cipher2", scopes: "playlist-read-private", expiresAt: new Date().toISOString() });
   assert.match(account.id, /^spa_/);
+  repo.search.indexLyrics({ trackId: track.id, lyricsId: lyrics.id, title: "Song", artist: "Artist", album: "Album", lyrics: "never made it as a wise man" });
+  assert.equal(repo.search.local('"wise man"', 5)[0].track_id, track.id);
+  const searchJob = repo.search.createJob("wise man", "wise man");
+  assert.match(searchJob.id, /^srj_/);
+  assert.equal(repo.search.findActive("wise man").id, searchJob.id);
+  const searchResult = repo.search.addResult({ searchJobId: searchJob.id, lrclibId: 123, title: "Song", artist: "Artist",
+    durationSeconds: 200, syncedLyrics: "[00:01]wise man", matchedLine: "wise man", audioProviderId: "yt1", score: 100, status: "ready" });
+  assert.match(searchResult.id, /^srs_/);
+  assert.equal(repo.search.results(searchJob.id).length, 1);
+  repo.search.updateJob(searchJob.id, { status: "completed" });
+  assert.equal(repo.search.findCached("wise man", new Date(Date.now() - 60_000).toISOString()).id, searchJob.id);
+  const artist = repo.artists.upsert({ musicbrainzId: "artist-mbid", name: "Artist", country: "US", type: "Person" });
+  assert.match(artist.id, /^ast_/);
+  const catalogItem = repo.artists.addCatalogItem({ artistId: artist.id, musicbrainzRecordingId: "recording-mbid",
+    lrclibId: 55, title: "Song", durationSeconds: 200, syncedLyrics: "[00:01]Song" });
+  assert.match(catalogItem.id, /^aci_/);
+  repo.artists.setTrack(catalogItem.id, track.id);
+  assert.equal(repo.artists.catalog(artist.id)[0].track_id, track.id);
   assert.equal(path.isAbsolute(media.relative_path), false);
   assert.equal(repo.jobs.findActive(track.id, "audio").id, job.id);
   assert.equal(repo.jobs.update(job.id, { status: "completed", resultId: media.id }).status, "completed");
+  assert.equal(repo.playlists.delete(playlist.id), true);
+  assert.equal(repo.playlists.findById(playlist.id), null);
   db.close();
 });

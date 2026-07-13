@@ -2,6 +2,8 @@ import { t } from "./i18n.js";
 import { getSpotifyLyrics, translateSpotifyLyrics, createSearchMediaJob, getMediaJob, importSpotifyPlaylist, saveLearnProgress } from "./api.js";
 import { getRequestPayload } from "./byok.js";
 import { closeLearnAddSheet, initLearnLibrary, refreshLearnLibrary, showPlaylistPicker } from "./learn-library.js";
+import { initLearnSearch } from "./learn-search.js";
+import { initArtistHub } from "./artist-hub.js";
 
 const el = Object.fromEntries(Object.entries({
   form: "mediaImportForm", input: "mediaUrl", submit: "mediaSubmit", status: "mediaStatusCard",
@@ -11,6 +13,9 @@ const el = Object.fromEntries(Object.entries({
   disclosure: "mediaDisclosure", original: "mediaOriginal", remove: "mediaRemove", start: "mediaStartLearning",
   view: "mediaView", resultBack: "mediaResultBack",
   addPlaylist: "mediaAddPlaylist",
+  mini: "learnMiniPlayer", miniOpen: "learnMiniOpen", miniCover: "learnMiniCover",
+  miniCoverFallback: "learnMiniCoverFallback", miniTitle: "learnMiniTitle", miniArtist: "learnMiniArtist",
+  miniLyric: "learnMiniLyric", miniPlay: "learnMiniPlay", miniClose: "learnMiniClose", miniProgress: "learnMiniProgress",
   lesson: "mediaLesson", lyrics: "mediaLyrics", lessonClose: "mediaLessonClose",
   lessonTitle: "mediaLessonTitle", lessonArtist: "mediaLessonArtist", lessonCover: "mediaLessonCover"
 }).map(([key, id]) => [key, document.getElementById(id)]));
@@ -122,6 +127,7 @@ const updateProgress = () => {
     if (buffered.start(i) <= audioEl.currentTime + 0.25) end = Math.max(end, buffered.end(i));
   }
   player.buffered.style.width = `${Math.min(1, end / dur) * 100}%`;
+  if (el.miniProgress) el.miniProgress.style.width = `${Math.min(1, audioEl.currentTime / dur) * 100}%`;
 };
 
 // When line-repeat is armed, loop the currently highlighted lyric by jumping back to its
@@ -137,6 +143,27 @@ const maybeRepeatLine = () => {
 const setPlaying = (playing) => {
   player.play?.classList.toggle("is-playing", playing);
   player.play?.setAttribute("aria-label", playing ? "Pause" : "Play");
+  el.mini?.classList.toggle("is-playing", playing);
+  el.miniPlay?.setAttribute("aria-label", playing ? "Pause" : "Play");
+};
+
+const showMiniPlayer = (visible = true) => {
+  const show = Boolean(visible && audioEl && track);
+  el.mini.hidden = !show;
+  document.body.classList.toggle("mini-player-active", show);
+  if (!show) return;
+  el.miniTitle.textContent = track.title || "";
+  el.miniArtist.textContent = track.artist || "";
+  el.miniArtist.hidden = Boolean(el.miniLyric?.textContent);
+  if (track.artwork) {
+    el.miniCover.src = track.artwork;
+    el.miniCover.hidden = false;
+    el.miniCoverFallback.hidden = true;
+  } else {
+    el.miniCover.hidden = true;
+    el.miniCoverFallback.hidden = false;
+  }
+  setPlaying(!audioEl.paused);
 };
 
 const mountAudioPlayer = (streamUrl) => {
@@ -333,7 +360,7 @@ const startAudioDownload = (onDone) => {
   target.downloadError = null;
   target.streamUrl = "";
   persistTrack();
-  createSearchMediaJob(query, target.sourceUrl, requestController?.signal)
+  createSearchMediaJob(query, target.sourceUrl || `track:${target.trackId}`, requestController?.signal)
     .then((job) => {
       if (token !== operationId || track !== target) return;
       target.jobId = job.id;
@@ -349,10 +376,17 @@ const startAudioDownload = (onDone) => {
 };
 
 const status = (label, message, progress, error = false) => {
+  const publicState = error || ["Failed", "Download failed"].includes(label)
+    ? { source: "Playback", label: "Couldn't play", message: message || "Try this song again." }
+    : label === "Ready"
+      ? { source: "Online music", label: "Ready to play", message: "Your song is ready." }
+      : label === "Importing"
+        ? { source: "Your music", label: "Adding playlist", message: "Adding songs to your library…" }
+        : { source: "Online music", label: "Getting song ready", message: "You can keep browsing while we prepare it." };
   el.status.hidden = false;
-  el.source.textContent = "YouTube Music";
-  el.statusLabel.textContent = label;
-  el.statusText.textContent = message;
+  el.source.textContent = publicState.source;
+  el.statusLabel.textContent = publicState.label;
+  el.statusText.textContent = publicState.message;
   el.progress.style.width = `${progress}%`;
   el.status.classList.toggle("is-error", error);
   // Pulse/shimmer only while a job is actively running — not at Ready (100%) or on error.
@@ -368,12 +402,13 @@ const setBusy = (busy) => {
 const showPreparedTrack = () => {
   if (currentLayer() === "input") return;
   const ready = Boolean(track.streamUrl);
-  el.resultSource.textContent = ready ? "YouTube Music · LRCLIB" : "Spotify metadata · LRCLIB";
+  el.resultSource.textContent = ready ? "Ready to play" : "Getting song ready";
   el.title.textContent = track.title;
   el.meta.textContent = `${track.artist}${track.album ? ` · ${track.album}` : ""}`;
   el.lessonTitle.textContent = track.title;
   el.lessonArtist.textContent = track.artist;
   el.original.href = track.sourceUrl;
+  el.original.hidden = !track.sourceUrl;
   if (track.artwork) {
     el.artwork.src = track.artwork; el.artwork.hidden = false;
     el.result.style.setProperty("--result-art", `url("${track.artwork.replaceAll('"', '')}")`);
@@ -385,7 +420,7 @@ const showPreparedTrack = () => {
   el.start.hidden = false;
   const failed = Boolean(track.downloadError);
   el.start.disabled = !ready && !failed;
-  el.start.textContent = ready ? "Start learning" : failed ? "Retry audio" : "Preparing audio…";
+  el.start.textContent = ready ? "Play song" : failed ? "Try again" : "Getting song ready…";
   el.start.classList.toggle("is-waiting", !ready && !failed);
   el.result.hidden = false;
   el.view.classList.add("has-result");
@@ -423,6 +458,10 @@ const syncAt = (seconds) => {
   activeIndex = next;
   const row = el.lyrics.children[activeIndex];
   row?.classList.add("is-active");
+  if (el.miniLyric) {
+    el.miniLyric.textContent = activeIndex >= 0 ? (track.lines[activeIndex]?.text || "") : "";
+    el.miniArtist.hidden = Boolean(el.miniLyric.textContent);
+  }
   if (row) {
     const target = row.offsetTop - (el.lyrics.clientHeight - row.offsetHeight) / 2;
     el.lyrics.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
@@ -438,10 +477,79 @@ const syncLoop = () => {
   syncFrame = requestAnimationFrame(syncLoop);
 };
 
+const beginPreparation = () => {
+  el.view.classList.add("is-preparing");
+  operationId += 1;
+  const token = operationId;
+  requestController?.abort();
+  requestController = new AbortController();
+  cleanupPlayer();
+  track = null; activeIndex = -1;
+  cancelAnimationFrame(syncFrame);
+  el.player.replaceChildren();
+  el.result.hidden = true;
+  setBusy(true);
+  return token;
+};
+
+const prepareTranslation = async (target, token) => {
+  if (target.translationCached || !target.lines?.length) return;
+  try {
+    const result = await translateSpotifyLyrics({
+      spotifyId: target.spotifyId,
+      trackId: target.trackId,
+      lines: target.lines.map((line) => line.text),
+      ...getRequestPayload()
+    }, requestController.signal);
+    if (token !== operationId || track !== target) return;
+    target.lines = target.lines.map((line, index) => ({ ...line, translation: result.translations[index] || "" }));
+    target.translationCached = true;
+    persistTrack();
+    if (!el.lesson.hidden) {
+      const currentTime = audioEl?.currentTime || 0;
+      activeIndex = -1;
+      renderLyrics();
+      syncAt(currentTime);
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError" && token === operationId && track === target) {
+      target.translationError = "Translation will be available when you try again.";
+      persistTrack();
+    }
+  }
+};
+
+const completePreparedTrack = async (prepared, token) => {
+  if (token !== operationId) return;
+  track = prepared;
+  persistTrack();
+  navigateTo("result");
+  showPreparedTrack();
+  void prepareTranslation(track, token);
+  if (track.streamUrl) {
+    status("Ready", "Ready to play.", 100);
+    openAndPlay();
+    return;
+  }
+  status("Downloading", "Getting your song ready…", 30);
+  el.result.scrollIntoView({ behavior: "smooth", block: "start" });
+  startAudioDownload(() => {
+    if (currentLayer() === "input") return;
+    if (track.streamUrl) {
+      showPreparedTrack();
+      status("Ready", "Ready to play.", 100);
+      openAndPlay();
+    } else {
+      showPreparedTrack();
+      status("Download failed", track.downloadError || "This song could not be played.", 0, true);
+    }
+  });
+};
+
 const submit = async (event) => {
   event.preventDefault();
   if (/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?playlist\//i.test(el.input.value)) {
-    closeLearnAddSheet();
+    closeLearnAddSheet(false);
     el.view.classList.add("is-preparing");
     status("Importing", "Reading your Spotify playlist…", 40);
     try {
@@ -458,51 +566,12 @@ const submit = async (event) => {
     }
     return;
   }
-  closeLearnAddSheet();
-  el.view.classList.add("is-preparing");
-  operationId += 1;
-  const token = operationId;
-  requestController?.abort();
-  requestController = new AbortController();
-  cleanupPlayer();
-  track = null; activeIndex = -1;
-  cancelAnimationFrame(syncFrame);
-  el.player.replaceChildren();
-  el.result.hidden = true;
-  setBusy(true);
+  closeLearnAddSheet(false);
+  const token = beginPreparation();
   try {
     status("Checking", "Reading the Spotify track and finding an exact lyrics match…", 22);
     const prepared = await getSpotifyLyrics(el.input.value, requestController.signal);
-    if (token !== operationId) return;
-    track = prepared;
-    if (!track.translationCached) {
-      status("Translating", "Translating each lyric line to Persian without changing timestamps…", 55);
-      const texts = track.lines.map((line) => line.text);
-      const result = await translateSpotifyLyrics({ spotifyId: track.spotifyId, lines: texts, ...getRequestPayload() }, requestController.signal);
-      if (token !== operationId) return;
-      track.lines = track.lines.map((line, index) => ({ ...line, translation: result.translations[index] }));
-      track.translationCached = true;
-    }
-    persistTrack();
-    showPreparedTrack();
-    navigateTo("result");
-    if (track.streamUrl) {
-      status("Ready", "Loaded instantly from the lesson cache.", 100);
-      el.result.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    status("Downloading", `Searching YouTube Music for "${track.artist} - ${track.title}"…`, 30);
-    el.result.scrollIntoView({ behavior: "smooth", block: "start" });
-    startAudioDownload(() => {
-      if (currentLayer() === "input") return;
-      if (track.streamUrl) {
-        showPreparedTrack();
-        status("Ready", "Audio downloaded from YouTube Music. Lyrics and translation are ready.", 100);
-      } else {
-        showPreparedTrack();
-        status("Download failed", track.downloadError || "Could not download audio from YouTube Music.", 0, true);
-      }
-    });
+    await completePreparedTrack(prepared, token);
   } catch (error) {
     if (error?.name === "AbortError" || token !== operationId) return;
     status("Failed", error.message, 0, true);
@@ -514,7 +583,7 @@ const startLesson = () => {
     if (track?.downloadError) retryAudioDownload();
     return;
   }
-  navigateTo("lesson");
+  openAndPlay();
 };
 
 const openLesson = () => {
@@ -525,6 +594,7 @@ const openLesson = () => {
   }
   el.start.hidden = true;
   el.lesson.hidden = false;
+  showMiniPlayer(false);
   document.body.classList.add("media-player-open");
   if (track.artwork) {
     el.lesson.style.setProperty("--lesson-art", `url("${track.artwork.replaceAll('"', '')}")`);
@@ -534,9 +604,22 @@ const openLesson = () => {
     el.lessonCover.hidden = true;
   }
   renderLyrics();
-  mountAudioPlayer(track.streamUrl);
+  if (!audioEl) mountAudioPlayer(track.streamUrl);
   cancelAnimationFrame(syncFrame);
-  syncFrame = requestAnimationFrame(syncLoop);
+  if (audioEl && !audioEl.paused) syncFrame = requestAnimationFrame(syncLoop);
+};
+
+const openAndPlay = () => {
+  if (!track?.streamUrl) return;
+  // The result screen is only a preparation/error state. Once audio is ready,
+  // replace it with the player so Android Back returns to the page where the
+  // user chose the song instead of forcing an unnecessary intermediate stop.
+  if (currentLayer() !== "lesson") {
+    history.replaceState(historyState("lesson"), "");
+    applyLayer("lesson");
+  }
+  else openLesson();
+  requestAnimationFrame(() => audioEl?.play().catch(() => {}));
 };
 
 const cleanupPlayer = () => {
@@ -546,6 +629,8 @@ const cleanupPlayer = () => {
 
 const cleanupAudio = () => {
   if (audioEl) { audioEl.pause(); audioEl.src = ""; audioEl = null; }
+  showMiniPlayer(false);
+  if (el.miniProgress) el.miniProgress.style.width = "0%";
 };
 
 const retryAudioDownload = () => {
@@ -553,13 +638,15 @@ const retryAudioDownload = () => {
   operationId += 1;
   requestController?.abort();
   requestController = new AbortController();
-  status("Downloading", `Searching YouTube Music for "${track.artist} - ${track.title}"…`, 30);
+  status("Downloading", "Getting your song ready…", 30);
   showPreparedTrack();
   startAudioDownload(() => {
     if (currentLayer() === "input") return;
     showPreparedTrack();
-    if (track.streamUrl) status("Ready", "Audio downloaded from YouTube Music. Lyrics and translation are ready.", 100);
-    else status("Download failed", track.downloadError || "Could not download audio from YouTube Music.", 0, true);
+    if (track.streamUrl) {
+      status("Ready", "Ready to play.", 100);
+      openAndPlay();
+    } else status("Download failed", track.downloadError || "This song could not be played.", 0, true);
   });
 };
 
@@ -570,21 +657,21 @@ const teardownLesson = () => {
   document.body.classList.remove("media-result-open");
   el.lesson.hidden = true;
   el.start.hidden = false;
-  audioEl?.pause();
   cancelAnimationFrame(syncFrame);
   syncFrame = 0;
+  showMiniPlayer(true);
 };
 
 // UI-only teardown for the prepared-result screen; returns to the clean input state.
 const showInput = () => {
-  cleanupAudio();
   document.body.classList.remove("media-player-open");
   cancelAnimationFrame(syncFrame);
   el.lesson.hidden = true;
   el.result.hidden = true; el.status.hidden = true;
   el.view.classList.remove("has-result");
   el.view.classList.remove("is-preparing");
-  el.player.replaceChildren(); el.lyrics.replaceChildren();
+  if (!audioEl) { el.player.replaceChildren(); el.lyrics.replaceChildren(); }
+  showMiniPlayer(Boolean(audioEl));
   // The result card can leave this independent scroller far below the form. Once the card is
   // hidden that position looks like a black/empty screen on Android, so always return to top.
   el.form.closest(".media-scroll")?.scrollTo({ top: 0, behavior: "auto" });
@@ -614,17 +701,61 @@ export const initMedia = () => {
   el.resultBack?.addEventListener("click", goBack);
   el.remove?.addEventListener("click", goBack);
   el.addPlaylist?.addEventListener("click", () => track?.trackId && showPlaylistPicker(track).catch(() => {}));
+  el.miniOpen?.addEventListener("click", () => {
+    if (!track?.streamUrl) return;
+    if (currentLayer() === "lesson") openLesson();
+    else navigateTo("lesson");
+  });
+  el.miniPlay?.addEventListener("click", () => {
+    if (!audioEl) return;
+    if (audioEl.paused) audioEl.play().catch(() => {}); else audioEl.pause();
+  });
+  el.miniClose?.addEventListener("click", () => {
+    persistLearningProgress(true);
+    cleanupAudio();
+    el.player.replaceChildren();
+    el.lyrics.replaceChildren();
+  });
   initLearnLibrary({
-    onOpenTrack: (lesson) => {
+    onOpenTrack: async (lesson) => {
+      if (audioEl && track?.trackId !== lesson.trackId) {
+        cleanupAudio();
+        el.player.replaceChildren();
+        el.lyrics.replaceChildren();
+      }
+      if (!lesson.translationCached) {
+        const token = beginPreparation();
+        try { await completePreparedTrack(lesson, token); }
+        catch (error) { if (token === operationId) status("Failed", error.message, 0, true); }
+        finally { setBusy(false); }
+        return;
+      }
       track = lesson;
       persistTrack();
       navigateTo("result");
       showPreparedTrack();
-      status("Ready", "Loaded instantly from your library.", 100);
+      status("Ready", "Ready to play.", 100);
+      openAndPlay();
     },
     onPrepareTrack: (item) => {
       el.input.value = item.sourceUrl;
       el.form.requestSubmit();
+    }
+  });
+  initLearnSearch({
+    onPrepare: async (lesson) => {
+      const token = beginPreparation();
+      try { await completePreparedTrack(lesson, token); }
+      catch (error) { if (token === operationId) status("Failed", error.message, 0, true); }
+      finally { setBusy(false); }
+    }
+  });
+  initArtistHub({
+    onPrepare: async (lesson) => {
+      const token = beginPreparation();
+      try { await completePreparedTrack(lesson, token); }
+      catch (error) { if (token === operationId) status("Failed", error.message, 0, true); }
+      finally { setBusy(false); }
     }
   });
   try {

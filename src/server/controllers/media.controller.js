@@ -1,4 +1,4 @@
-import { addLibraryPlaylistTrack, artworkStream, createLibraryPlaylist, createMediaJob, createSearchMediaJob, getLibrary, getLibraryPlaylist, getMediaJob, mediaHealth, mediaStream, openCachedTrack, removeMedia, saveTrackProgress } from "../services/media-worker.service.js";
+import { addLibraryPlaylistTrack, artworkStream, createLibraryArtist, createLibraryPlaylist, createLyricsSearchJob, createMediaJob, createSearchMediaJob, deleteLibraryPlaylist, discoverLibraryArtists, getLibrary, getLibraryArtist, getLibraryPlaylist, getLyricsSearchJob, getMediaJob, mediaHealth, mediaStream, openCachedTrack, prepareLibraryArtistTrack, prepareLyricsSearchResult, removeLibraryPlaylistTrack, removeMedia, saveTrackProgress, updateLibraryPlaylist } from "../services/media-worker.service.js";
 import { findSpotifyLyrics, translateLyrics } from "../services/lyrics.service.js";
 import { isOwnerAuthenticated } from "../services/auth.service.js";
 import { env } from "../config/env.js";
@@ -64,12 +64,22 @@ export const library = async (_req, res) => {
 };
 export const createPlaylist = async (req, res) => relay(await createLibraryPlaylist(req.body), res);
 export const playlist = async (req, res) => relay(await getLibraryPlaylist(req.params.id), res);
+export const updatePlaylist = async (req, res) => relay(await updateLibraryPlaylist(req.params.id, req.body), res);
+export const deletePlaylist = async (req, res) => relay(await deleteLibraryPlaylist(req.params.id), res);
 export const addPlaylistTrack = async (req, res) => relay(await addLibraryPlaylistTrack(req.params.id, req.body), res);
+export const removePlaylistTrack = async (req, res) => relay(await removeLibraryPlaylistTrack(req.params.id, req.params.trackId), res);
 export const openTrack = async (req, res) => relay(await openCachedTrack(req.params.id), res);
 export const trackProgress = async (req, res) => relay(await saveTrackProgress(req.params.id, req.body), res);
+export const discoverArtists = async (req, res) => relay(await discoverLibraryArtists(req.body?.name), res);
+export const createArtist = async (req, res) => relay(await createLibraryArtist(req.body), res);
+export const artist = async (req, res) => relay(await getLibraryArtist(req.params.id), res);
+export const prepareArtistTrack = async (req, res) => relay(await prepareLibraryArtistTrack(req.params.id), res);
 export const spotifyConnect = async (_req, res) => res.redirect(spotifyConnectUrl());
 export const spotifyCallback = async (req, res) => {
   await completeSpotifyConnection({ code: req.query.code, state: req.query.state });
   res.redirect("/?spotify=connected");
 };
 export const spotifyImportPlaylist = async (req, res) => res.json(await importConnectedSpotifyPlaylist(req.body?.url));
+export const createSearch = async (req, res) => relay(await createLyricsSearchJob(req.body?.query), res);
+export const getSearch = async (req, res) => relay(await getLyricsSearchJob(req.params.id), res);
+export const prepareSearchResult = async (req, res) => relay(await prepareLyricsSearchResult(req.params.id), res);

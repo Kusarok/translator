@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "../config.js";
 import { repositories } from "../persistence.js";
-import { getCachedLesson } from "./lesson-cache.service.js";
+import { getCachedLessonByTrackId } from "./lesson-cache.service.js";
 
 const artworkUrl = (row) => row.artwork_id ? `/api/media/artwork/${row.artwork_id}` : row.artwork_url || "";
 const trackView = (row) => ({
@@ -32,6 +32,10 @@ export const libraryOverview = () => ({
   continueLearning: repositories.library.continueLearning().map(trackView),
   recent: repositories.library.recent().map(trackView),
   playlists: repositories.playlists.list().map(playlistView),
+  artists: repositories.artists.list().map((row) => ({
+    id: row.id, name: row.name, status: row.scan_status, discoveredCount: row.discovered_count,
+    learnableCount: row.learnable_count, artwork: row.artwork_id ? `/api/media/artwork/${row.artwork_id}` : row.artwork_url || ""
+  })),
   spotify: { connected: Boolean(repositories.spotifyAccounts.current()), configured: Boolean(config.spotifyClientId && config.spotifyClientSecret) }
 });
 
@@ -62,6 +66,15 @@ export const getPlaylistDetail = (id) => {
   return { ...playlistView(playlist), tracks: repositories.playlists.tracks(id).map(trackView) };
 };
 
+export const updateLearningPlaylist = (id, payload) => {
+  const playlist = repositories.playlists.update(id, payload);
+  return playlist ? getPlaylistDetail(id) : null;
+};
+
+export const deleteLearningPlaylist = (id) => repositories.playlists.delete(id);
+
+export const removeTrackFromPlaylist = (playlistId, trackId) => repositories.playlists.removeTrack(playlistId, trackId);
+
 export const addTrackToPlaylist = (playlistId, payload) => {
   const playlist = repositories.playlists.findById(playlistId);
   if (!playlist) return null;
@@ -77,7 +90,7 @@ export const openLibraryTrack = (trackId) => {
   const track = repositories.tracks.findById(trackId);
   if (!track) return null;
   repositories.library.touchProgress(track.id, { status: "learning", incrementOpen: true });
-  return getCachedLesson(track.external_id);
+  return getCachedLessonByTrackId(track.id);
 };
 
 export const updateTrackProgress = (trackId, payload) => {

@@ -46,9 +46,11 @@ const readJson = (relativePath) => {
 };
 
 export const cacheTrackLyrics = async (payload) => {
-  if (!payload?.spotifyId || !Array.isArray(payload.lines)) throw new TypeError("spotifyId and lines are required");
+  if ((!payload?.spotifyId && !payload?.lrclibId) || !Array.isArray(payload.lines)) throw new TypeError("A source id and lines are required");
+  const source = payload.spotifyId ? "spotify" : "lrclib";
+  const externalId = payload.spotifyId || String(payload.lrclibId);
   const track = repositories.tracks.upsert({
-    source: "spotify", externalId: payload.spotifyId, sourceUrl: payload.sourceUrl,
+    source, externalId, sourceUrl: payload.sourceUrl,
     title: payload.title, artist: payload.artist, album: payload.album,
     durationSeconds: payload.duration, artworkUrl: payload.artwork
   });
@@ -63,11 +65,13 @@ export const cacheTrackLyrics = async (payload) => {
     lyrics = repositories.lyrics.upsert({ id, trackId: track.id, source: "lrclib", externalId: payload.lrclibId,
       language: "original", contentHash, relativePath });
   }
+  repositories.search.indexLyrics({ trackId: track.id, lyricsId: lyrics.id, title: track.title,
+    artist: track.artist, album: track.album, lyrics: payload.lines.map((line) => line.text).filter(Boolean).join("\n") });
   return { trackId: track.id, lyricsId: lyrics.id };
 };
 
 export const cacheTranslation = (payload) => {
-  const track = repositories.tracks.findByExternalId("spotify", payload.spotifyId);
+  const track = payload.trackId ? repositories.tracks.findById(payload.trackId) : repositories.tracks.findByExternalId("spotify", payload.spotifyId);
   const lyrics = track && repositories.lyrics.findForTrack(track.id)[0];
   if (!lyrics || !Array.isArray(payload.translations)) throw new TypeError("Cached lyrics and translations are required");
   const provider = payload.provider || "shared";
@@ -80,8 +84,7 @@ export const cacheTranslation = (payload) => {
     provider, model, promptVersion, contentHash: hash(payload.translations), relativePath });
 };
 
-export const getCachedLesson = (externalId) => {
-  const track = repositories.tracks.findByExternalId("spotify", externalId);
+const lessonForTrack = (track) => {
   if (!track) return null;
   const lyrics = repositories.lyrics.findForTrack(track.id)[0];
   if (!lyrics) return null;
@@ -93,7 +96,7 @@ export const getCachedLesson = (externalId) => {
   const artwork = repositories.artwork.findForTrack(track.id);
   const mediaExists = media && fs.existsSync(path.resolve(config.dataDir, media.relative_path));
   return {
-    spotifyId: track.external_id, sourceUrl: track.source_url, title: track.title, artist: track.artist,
+    spotifyId: track.source === "spotify" ? track.external_id : null, sourceUrl: track.source_url, title: track.title, artist: track.artist,
     album: track.album, duration: track.duration_seconds, artwork: artwork ? `/api/media/artwork/${artwork.id}` : track.artwork_url,
     lrclibId: lyrics.external_id, trackId: track.id, lyricsId: lyrics.id,
     lines: lines.map((line, index) => ({ ...line, translation: Array.isArray(translations) ? translations[index] || "" : "" })),
@@ -105,7 +108,21 @@ export const getCachedLesson = (externalId) => {
   };
 };
 
+export const getCachedLesson = (externalId) => lessonForTrack(repositories.tracks.findByExternalId("spotify", externalId));
+export const getCachedLessonByTrackId = (trackId) => lessonForTrack(repositories.tracks.findById(trackId));
+
+export const reindexCachedLyrics = () => {
+  for (const item of repositories.lyrics.allWithTracks()) {
+    const lines = readJson(item.relative_path);
+    if (!Array.isArray(lines)) continue;
+    repositories.search.indexLyrics({ trackId: item.track_id, lyricsId: item.id, title: item.title,
+      artist: item.artist, album: item.album, lyrics: lines.map((line) => line.text).filter(Boolean).join("\n") });
+  }
+};
+
 export const findTrackForReference = (referenceUrl) => {
+  const internal = String(referenceUrl || "").match(/^track:(trk_[A-Za-z0-9-]+)$/)?.[1];
+  if (internal) return repositories.tracks.findById(internal);
   const id = spotifyId(referenceUrl);
   return id ? repositories.tracks.findByExternalId("spotify", id) : null;
 };

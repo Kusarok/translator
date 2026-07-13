@@ -82,7 +82,7 @@ const persistJob = (job) => {
   fs.mkdirSync(directory, { recursive: true });
   const target = path.join(directory, "status.json");
   const temporary = `${target}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify(publicJob(job), null, 2)}\n`, "utf8");
+  fs.writeFileSync(temporary, `${JSON.stringify({ ...publicJob(job), request: { url: job.url || "", query: job.query || "" } }, null, 2)}\n`, "utf8");
   fs.renameSync(temporary, target);
 };
 
@@ -211,6 +211,8 @@ const drain = () => {
 
 export const createJob = (url) => {
   const platform = resolvePlatform(url);
+  const duplicate = [...jobs.values()].find((job) => job.url === platform.url && !["completed", "failed"].includes(job.status));
+  if (duplicate) return publicJob(duplicate);
   const now = new Date().toISOString();
   const job = { id: `job_${crypto.randomUUID()}`, url: platform.url, platform, status: "queued", stage: "Queued", progress: 0, metadata: null, media: null, error: null, createdAt: now, updatedAt: now };
   jobs.set(job.id, job);
@@ -271,3 +273,24 @@ export const cleanupExpired = () => {
     if (item.expiresAt && Date.parse(item.expiresAt) <= now) deleteMedia(id);
   }
 };
+
+const restorePendingJobs = () => {
+  for (const row of repositories.jobs.pending()) {
+    try {
+      const statusPath = path.join(config.jobsDir, row.id, "status.json");
+      const saved = JSON.parse(fs.readFileSync(statusPath, "utf8"));
+      const url = String(saved.request?.url || "");
+      const query = String(saved.request?.query || "");
+      if (!url && !query) throw new Error("This older job has no recoverable request metadata.");
+      const platform = query ? searchPlatform : resolvePlatform(url);
+      const job = { id: row.id, url, query, platform, status: "queued", stage: "Preparing", progress: 0,
+        metadata: saved.metadata || null, media: null, error: null, createdAt: row.created_at, updatedAt: new Date().toISOString() };
+      jobs.set(job.id, job); queue.push(job); persistJob(job);
+    } catch (error) {
+      repositories.jobs.update(row.id, { status: "failed", error: error.message });
+    }
+  }
+  drain();
+};
+
+restorePendingJobs();

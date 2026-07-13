@@ -19,6 +19,7 @@ export const openDatabase = ({ storageRoot, filename } = {}) => {
   if (target !== ":memory:") fs.mkdirSync(path.dirname(path.resolve(target)), { recursive: true });
   const db = new DatabaseSync(target);
   db.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
+  if (target !== ":memory:") db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL;");
   db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)");
   const applied = db.prepare("SELECT 1 FROM schema_migrations WHERE version = ?");
   const record = db.prepare("INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ?)");

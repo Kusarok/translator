@@ -1,8 +1,13 @@
 .media-view {
   position: relative;
   overflow: hidden;
+  --music-radius-sm: 10px;
+  --music-radius-md: 16px;
+  --music-radius-lg: 24px;
+  --music-hit: 48px;
+  --music-section-gap: 34px;
   background:
-    radial-gradient(120% 60% at 10% -6%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 44%),
+    radial-gradient(100% 48% at 0 -4%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 54%),
     var(--page);
 }
 
@@ -10,32 +15,51 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 26px 16px calc(env(safe-area-inset-bottom, 0px) + 30px);
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  scroll-padding-top: 58px;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom, 0px) + 30px) max(16px, env(safe-area-inset-left));
   scrollbar-width: thin;
 }
 
 /* ---- Learn library ---- */
-.learn-library { min-height: 100%; padding-bottom: 78px; }
-.learn-library-header { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 28px; }
+.learn-library { width: 100%; min-height: 100%; padding-bottom: 82px; }
+.learn-library-header { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 26px; }
 .learn-overline { display: block; margin-bottom: 3px; color: var(--accent-strong); font-size: 10px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
-.learn-library-header h1 { margin: 0; color: var(--text); font-size: 34px; line-height: 1; letter-spacing: -.045em; }
-.learn-add-button { width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--text); color: var(--page); display: grid; place-items: center; box-shadow: var(--elev-2); }
+.learn-library-header h1 { margin: 0; color: var(--text); font-size: clamp(32px,9vw,40px); line-height: 1; letter-spacing: -.05em; }
+.learn-add-button { width: var(--music-hit); height: var(--music-hit); border: 0; border-radius: 50%; background: var(--text); color: var(--page); display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.28); transition: transform .16s ease, box-shadow .16s ease; }
 .learn-add-button:active { transform: scale(.92); }
-.learn-section { margin-bottom: 30px; }
+.learn-search-bar { height: 52px; margin: -6px 0 var(--music-section-gap); display: grid; grid-template-columns: 22px minmax(0,1fr); align-items: center; gap: 10px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb,var(--surface-2) 94%,transparent); color: var(--muted); box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+.learn-search-bar:focus-within { border-color: color-mix(in srgb,var(--accent) 55%,var(--line)); box-shadow: var(--ring); }
+.learn-search-bar input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; box-shadow: none !important; }
+.learn-search-bar input::placeholder { color: var(--muted); }
+.learn-section { margin-bottom: var(--music-section-gap); }
 .learn-library.is-playlists-view #learnContinueSection,
+.learn-library.is-playlists-view #learnArtistsSection,
 .learn-library.is-playlists-view #learnRecentSection { display: none; }
 .learn-library.is-playlists-view #learnPlaylistsSection { margin-top: 8px; }
+.learn-library.is-playlists-view .learn-search-bar { display: none; }
 .learn-library.is-playlists-view .learn-playlist-grid { grid-auto-flow: row; grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; margin: 0; padding: 0; }
 .learn-library.is-playlists-view .learn-playlist-cover { width: 100%; }
-.learn-section-heading { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.learn-section-heading h2 { margin: 0; color: var(--text); font-size: 19px; letter-spacing: -.02em; }
-.learn-section-heading button { border: 0; background: none; color: var(--accent-strong); font-size: 12px; font-weight: 800; }
+.learn-section-heading { min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.learn-section-heading h2 { margin: 0; color: var(--text); font-size: 20px; line-height: 1.2; letter-spacing: -.025em; }
+.learn-section-heading button { min-height: 40px; padding: 0 6px; border: 0; background: none; color: var(--accent-strong); font-size: 12px; font-weight: 800; }
 .learn-continue { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 360px); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
 .learn-continue::-webkit-scrollbar { display: none; }
-.learn-continue-card { scroll-snap-align: start; position: relative; min-height: 138px; overflow: hidden; border-radius: 20px; padding: 16px; display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: center; border: 1px solid rgba(255,255,255,.08); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--surface-2)), var(--surface)); color: var(--text); text-align: left; }
+.learn-continue-card { scroll-snap-align: start; position: relative; min-height: 138px; overflow: hidden; border-radius: var(--music-radius-lg); padding: 16px; display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: center; border: 1px solid rgba(255,255,255,.08); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--surface-2)), var(--surface)); color: var(--text); text-align: left; box-shadow: 0 14px 38px rgba(0,0,0,.14); }
 .learn-continue-card img { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; box-shadow: var(--elev-2); }
 .learn-continue-card strong, .learn-track-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .learn-continue-card small { display: block; margin-top: 5px; color: var(--muted); }
+.learn-artist-grid { display: grid; grid-auto-flow: column; grid-auto-columns: 118px; gap: 14px; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; }
+.learn-artist-grid::-webkit-scrollbar { display: none; }
+.learn-artist-card { min-width: 0; min-height: 132px; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; }
+.learn-artist-card-art { width: 92px; height: 92px; overflow: hidden; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg,var(--accent-soft),var(--surface-3)); color: var(--accent-strong); font-size: 34px; box-shadow: var(--elev-1); }
+.learn-artist-card-art img { width: 100%; height: 100%; object-fit: cover; }
+.learn-artist-card strong,.learn-artist-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learn-artist-card strong { margin-top: 9px; font-size: 13px; }
+.learn-artist-card small { margin-top: 3px; color: var(--muted); font-size: 10px; }
 .learn-progress { height: 4px; margin-top: 14px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.13); }
 .learn-progress span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .learn-playlist-grid { display: grid; grid-auto-flow: column; grid-auto-columns: 142px; gap: 14px; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
@@ -46,52 +70,201 @@
 .learn-playlist-card strong { display: block; margin-top: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .learn-playlist-card small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
 .learn-empty-playlists { min-height: 92px; display: flex; align-items: center; gap: 14px; border: 1px dashed var(--line); border-radius: 16px; padding: 15px; color: var(--muted); }
+.learn-empty-playlists[hidden], .learn-library-empty[hidden] { display: none; }
 .learn-empty-playlists span { width: 48px; height: 48px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; background: var(--surface-2); color: var(--accent-strong); font-size: 23px; }
 .learn-empty-playlists p { margin: 0; font-size: 12px; line-height: 1.5; }
-.learn-track-list { display: flex; flex-direction: column; gap: 2px; }
-.learn-track-row { width: 100%; min-width: 0; border: 0; border-radius: 12px; background: transparent; color: var(--text); display: grid; grid-template-columns: 54px minmax(0,1fr) 36px; align-items: center; gap: 12px; padding: 8px; text-align: left; }
-.learn-track-row:active { background: var(--surface-2); }
+.learn-track-list { display: flex; flex-direction: column; gap: 4px; }
+.learn-track-row { width: 100%; min-width: 0; min-height: 68px; border: 0; border-radius: var(--music-radius-md); background: transparent; color: var(--text); display: grid; grid-template-columns: 54px minmax(0,1fr) 40px; align-items: center; gap: 12px; padding: 7px 6px; text-align: left; transition: background .16s ease,transform .12s ease; }
+.learn-track-row:hover { background: color-mix(in srgb,var(--surface-2) 72%,transparent); }
+.learn-track-row:active { background: var(--surface-2); transform: scale(.99); }
 .learn-track-row img, .learn-track-art-fallback { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; background: var(--surface-3); display: grid; place-items: center; color: var(--muted); }
 .learn-track-copy { min-width: 0; }
 .learn-track-copy small { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
-.learn-track-state { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-strong); font-size: 12px; }
+.learn-artist-link { color: inherit; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; }
+.learn-artist-link:active { color: var(--accent-strong); text-decoration-color: currentColor; }
+.learn-track-state { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-strong); font-size: 13px; }
 .learn-library-empty { text-align: center; padding: 38px 22px; border-radius: 22px; background: linear-gradient(180deg, var(--surface-2), transparent); }
 .learn-empty-icon { width: 70px; height: 70px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 22px; background: var(--accent-soft); color: var(--accent-strong); font-size: 32px; }
 .learn-library-empty h2 { margin: 0 0 8px; font-size: 20px; }
 .learn-library-empty p { margin: 0 auto 20px; max-width: 30ch; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .learn-library-empty button { min-height: 48px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--grad-accent); color: var(--accent-ink); font-weight: 900; }
-.learn-bottom-nav { position: fixed; z-index: 70; left: 50%; bottom: 0; width: min(100vw,460px); transform: translateX(-50%); margin: 0; padding: 9px 14px calc(9px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid var(--line-soft); background: rgba(8,10,12,.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
-.learn-bottom-nav button { border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; }
-.learn-bottom-nav button span { font-size: 19px; line-height: 1; }
+.learn-bottom-nav { position: fixed; z-index: 70; left: 50%; bottom: 0; width: min(100vw,460px); transform: translateX(-50%); margin: 0; padding: 7px max(18px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); display: grid; grid-template-columns: repeat(2,1fr); border-top: 1px solid var(--line-soft); background: rgba(8,10,12,.92); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); }
+.learn-bottom-nav button { min-height: 52px; border: 0; border-radius: 14px; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10px; font-weight: 750; transition: color .16s ease,background .16s ease; }
+.learn-bottom-nav button span { width: 22px; height: 22px; display: grid; place-items: center; font-size: 19px; line-height: 1; }
+.learn-bottom-nav button svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .learn-bottom-nav button.active { color: var(--accent-strong); }
-.learn-bottom-nav button:disabled { opacity: .4; }
+.learn-bottom-nav button.active span { filter: drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 55%,transparent)); }
+.learn-bottom-nav button:disabled { display: none; }
+
+/* ---- Persistent mini player ---- */
+.learn-mini-player { position: fixed; z-index: 75; left: 50%; bottom: calc(68px + env(safe-area-inset-bottom)); width: min(calc(100vw - 16px),444px); min-height: 68px; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0,1fr) 48px 32px; align-items: center; gap: 2px; padding: 7px 6px 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: color-mix(in srgb,#20282a 95%,transparent); color: #fff; box-shadow: 0 14px 42px rgba(0,0,0,.5); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); }
+.learn-mini-player[hidden] { display: none; }
+.mini-track-open { min-width: 0; border: 0; background: none; color: inherit; display: grid; grid-template-columns: 48px minmax(0,1fr); align-items: center; gap: 11px; padding: 0; text-align: left; }
+.mini-track-open img, .mini-cover-fallback { width: 50px; height: 50px; border-radius: 11px; object-fit: cover; background: var(--surface-3); }
+.mini-cover-fallback { display: grid; place-items: center; color: var(--accent-strong); }
+.mini-cover-fallback[hidden], .mini-track-open img[hidden] { display: none; }
+.mini-track-copy { min-width: 0; }
+.mini-track-copy strong, .mini-track-copy small { display: block; overflow: hidden; text-overflow: ellipsis; }
+.mini-track-copy strong { font-size: 13px; line-height: 1.25; white-space: nowrap; }
+.mini-track-copy small { margin-top: 3px; color: rgba(255,255,255,.58); font-size: 10px; white-space: nowrap; }
+.mini-track-copy small[hidden] { display: none; }
+.mini-track-copy .mini-current-lyric { color: var(--accent-strong); }
+.mini-track-copy .mini-current-lyric:empty { display: none; }
+.mini-play-button, .mini-close-button { border: 0; background: none; color: #fff; display: grid; place-items: center; }
+.mini-play-button { width: 44px; height: 44px; border-radius: 50%; }
+.mini-play-button:active { background: rgba(255,255,255,.1); transform: scale(.92); }
+.mini-play-button .mini-icon-pause { display: none; }
+.learn-mini-player.is-playing .mini-icon-play { display: none; }
+.learn-mini-player.is-playing .mini-icon-pause { display: block; }
+.mini-close-button { width: 32px; height: 32px; color: rgba(255,255,255,.55); font-size: 22px; }
+.mini-progress { position: absolute; left: 8px; right: 8px; bottom: 3px; height: 3px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.12); }
+.mini-progress span { display: block; width: 0; height: 100%; background: var(--accent); }
+body.media-result-open .learn-mini-player { bottom: calc(10px + env(safe-area-inset-bottom)); }
+body.mini-player-active .learn-library { padding-bottom: 148px; }
 
 /* ---- Playlist page ---- */
 .learn-playlist-page { min-height: 100%; padding-bottom: 50px; }
-.learn-subpage-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; text-align: center; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.learn-subpage-nav { position: sticky; z-index: 20; top: -26px; min-height: 58px; margin: -10px -16px 0; padding: 10px 16px 0; display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; text-align: center; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; background: linear-gradient(180deg,var(--page) 75%,transparent); }
+.learn-subpage-nav > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .learn-subpage-nav button { width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--text); display: grid; place-items: center; }
 .learn-playlist-hero { padding: 28px 0 24px; text-align: center; }
 .learn-playlist-hero .learn-playlist-cover { width: min(56vw,240px); margin: 0 auto 20px; }
 .learn-playlist-hero h1 { margin: 0 0 7px; font-size: 28px; letter-spacing: -.035em; }
 .learn-playlist-hero p { margin: 0; color: var(--muted); font-size: 12px; }
+.learn-playlist-add { min-width: 150px; height: 46px; margin: 20px auto 0; padding: 0 22px; border: 0; border-radius: 99px; background: var(--grad-accent); color: var(--accent-ink); font-weight: 900; }
 .learn-playlist-play { width: 58px; height: 58px; margin: 20px auto 0; border: 0; border-radius: 50%; background: var(--grad-accent); color: var(--accent-ink); font-size: 22px; box-shadow: var(--accent-glow); }
 
+/* ---- Artist hub ---- */
+.learn-artist-page { min-height: 100%; padding-bottom: 44px; }
+.learn-artist-hero { padding: 30px 12px 24px; text-align: center; }
+.learn-artist-avatar { width: 126px; height: 126px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg,var(--accent-soft),var(--surface-3)); color: var(--accent-strong); font-size: 48px; box-shadow: var(--elev-2); }
+.learn-artist-hero h1 { margin: 0; font-size: 31px; letter-spacing: -.04em; }
+.learn-artist-hero p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+.learn-artist-progress { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 13px 14px; border: 1px solid var(--line-soft); border-radius: 15px; background: var(--surface-2); }
+.learn-artist-progress[hidden] { display: none; }
+.learn-artist-progress > span { width: 20px; height: 20px; flex: 0 0 auto; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: media-spin .8s linear infinite; }
+.learn-artist-progress strong,.learn-artist-progress small { display: block; }
+.learn-artist-progress strong { font-size: 12px; }
+.learn-artist-progress small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.learn-artist-toolbar { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 10px; }
+.learn-artist-toolbar h2 { margin: 0; font-size: 19px; }
+.learn-artist-toolbar span { color: var(--muted); font-size: 11px; }
+.learn-artist-empty { padding: 42px 18px; display: flex; flex-direction: column; align-items: center; color: var(--muted); text-align: center; }
+.learn-artist-empty[hidden] { display: none; }
+.learn-artist-empty > span { color: var(--accent-strong); font-size: 36px; }
+.learn-artist-empty strong { margin-top: 12px; color: var(--text); }
+.learn-artist-empty small { margin-top: 6px; line-height: 1.5; }
+.learn-artist-choice { width: 100%; display: grid; grid-template-columns: 48px minmax(0,1fr) 24px; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: 13px; background: transparent; color: var(--text); text-align: left; }
+.learn-artist-choice:active { background: var(--surface-2); }
+.learn-artist-choice > span:first-child { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-size: 20px; }
+.learn-artist-choice strong,.learn-artist-choice small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learn-artist-choice small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.learn-playlist-track { position: relative; }
+.learn-playlist-track .learn-track-row { padding-right: 46px; }
+.learn-track-remove { position: absolute; z-index: 2; right: 5px; top: 50%; width: 36px; height: 36px; margin-top: -18px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 23px; }
+.learn-track-remove:active { background: var(--surface-3); color: #ff7777; }
+.learn-playlist-detail-empty { min-height: 230px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; color: var(--muted); text-align: center; }
+.learn-playlist-detail-empty > span { color: var(--accent-strong); font-size: 38px; }
+.learn-playlist-detail-empty strong { margin-top: 12px; color: var(--text); font-size: 17px; }
+.learn-playlist-detail-empty small { margin-top: 7px; }
+.learn-playlist-detail-empty button { height: 43px; margin-top: 20px; padding: 0 20px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-2); color: var(--text); font-weight: 800; }
+
+/* ---- Lyrics-first search ---- */
+.learn-search-page { min-height: 100%; padding-bottom: 40px; }
+.learn-search-bar-page { grid-template-columns: 22px minmax(0,1fr) 30px; margin: 18px 0 14px; background: var(--surface); }
+.learn-search-bar-page button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--muted); font-size: 19px; }
+.learn-search-summary { min-height: 22px; margin: 0 3px 10px; color: var(--muted); font-size: 11px; }
+.learn-search-artist-banner { width: 100%; min-height: 68px; margin: 2px 0 14px; padding: 10px 12px; display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: center; gap: 11px; border: 1px solid color-mix(in srgb,var(--accent) 32%,var(--line)); border-radius: 16px; background: linear-gradient(110deg,var(--accent-soft),var(--surface-2) 62%); color: var(--text); text-align: left; }
+.learn-search-artist-banner > span:first-child { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-3); color: var(--accent-strong); font-size: 21px; }
+.learn-search-artist-banner small,.learn-search-artist-banner strong { display: block; }
+.learn-search-artist-banner small { color: var(--accent-strong); font-size: 9px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.learn-search-artist-banner strong { margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.learn-search-artist-banner b { padding: 8px 11px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font-size: 10px; white-space: nowrap; }
+.learn-search-loading { display: flex; align-items: center; gap: 13px; margin: 18px 0; padding: 15px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface-2); }
+.learn-search-loading[hidden] { display: none; }
+.learn-search-loading > span { width: 22px; height: 22px; flex: 0 0 auto; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: media-spin .8s linear infinite; }
+.learn-search-loading strong, .learn-search-loading small { display: block; }
+.learn-search-loading strong { font-size: 12px; }
+.learn-search-loading small { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.learn-search-results { display: flex; flex-direction: column; gap: 10px; }
+.learn-search-result { position: relative; overflow: hidden; width: 100%; display: grid; grid-template-columns: 72px minmax(0,1fr) 42px; align-items: center; gap: 13px; padding: 10px; border: 1px solid var(--line-soft); border-radius: 17px; background: color-mix(in srgb,var(--surface-2) 88%,transparent); color: var(--text); text-align: left; }
+.learn-search-result:active { transform: scale(.985); background: var(--surface-3); }
+.learn-search-result img, .learn-search-result-art { width: 72px; height: 72px; border-radius: 11px; object-fit: cover; background: var(--surface-3); display: grid; place-items: center; color: var(--accent-strong); font-size: 25px; }
+.learn-search-result-copy { min-width: 0; }
+.learn-search-result-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.learn-search-result-copy > small { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 10px; }
+.learn-search-artist-link { position: relative; z-index: 2; display: inline-block; padding: 3px 7px; margin: -3px 1px -3px -7px; border: 0; border-radius: 99px; background: transparent; color: var(--accent-strong); font: inherit; font-weight: 850; }
+.learn-search-artist-link:active { background: var(--accent-soft); }
+.learn-search-artist-link:disabled { opacity: .65; }
+.learn-search-match { display: -webkit-box; margin-top: 8px; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: rgba(255,255,255,.72); font-size: 11px; line-height: 1.4; }
+.learn-search-badges { display: flex; gap: 5px; margin-top: 8px; }
+.learn-search-badges span { padding: 3px 6px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-strong); font-size: 8px; font-weight: 900; text-transform: uppercase; }
+/* Verification is an implementation detail; listeners only need songs that work. */
+.learn-search-badges { display: none; }
+.learn-search-result-play { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--grad-accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 15px; }
+.learn-search-result-play:disabled { opacity: .65; }
+.learn-search-empty { padding: 55px 20px; text-align: center; color: var(--muted); }
+.learn-search-empty > span { display: block; color: var(--accent-strong); font-size: 42px; }
+.learn-search-empty h2 { margin: 12px 0 7px; color: var(--text); font-size: 18px; }
+.learn-search-empty p { margin: 0; font-size: 12px; line-height: 1.5; }
+
 /* ---- Add music sheet ---- */
-.learn-sheet-backdrop { position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; background: rgba(0,0,0,.68); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.learn-sheet-backdrop { position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; overscroll-behavior: contain; background: rgba(0,0,0,.68); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
 .learn-sheet-backdrop[hidden] { display: none; }
-.learn-sheet { width: min(100%,520px); margin: 0 auto; padding: 10px 18px calc(20px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: #15191d; border: 1px solid rgba(255,255,255,.08); box-shadow: 0 -20px 70px rgba(0,0,0,.5); animation: learn-sheet-in .25s var(--ease-out); }
+.learn-sheet { width: min(100%,520px); max-height: min(88dvh,720px); overflow-y: auto; overscroll-behavior: contain; margin: 0 auto; padding: 10px 18px calc(20px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: #15191d; border: 1px solid rgba(255,255,255,.08); box-shadow: 0 -20px 70px rgba(0,0,0,.5); animation: learn-sheet-in .25s var(--ease-out); }
 @keyframes learn-sheet-in { from { transform: translateY(30px); opacity: 0; } }
 .learn-sheet-handle { width: 38px; height: 4px; margin: 0 auto 18px; border-radius: 99px; background: rgba(255,255,255,.2); }
 .learn-sheet-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .learn-sheet-title span { color: var(--accent-strong); font-size: 10px; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
 .learn-sheet-title h2 { margin: 4px 0 0; font-size: 22px; }
 .learn-sheet-title button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text); font-size: 25px; }
+.learn-song-picker { max-height: min(58vh,480px); overflow-y: auto; }
+.learn-picker-empty { padding: 32px 16px; color: var(--muted); text-align: center; font-size: 13px; }
+.learn-playlist-actions { display: grid; gap: 9px; }
+.learn-playlist-actions button { min-height: 52px; padding: 0 16px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface-2); color: var(--text); font-size: 14px; font-weight: 800; text-align: left; }
+.learn-playlist-actions button.danger { color: #ff7777; }
+.learn-edit-playlist { display: grid; gap: 12px; }
+.learn-edit-playlist input, .learn-edit-playlist textarea { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 14px; outline: 0; background: var(--surface-2); color: var(--text); font: inherit; }
+.learn-edit-playlist textarea { min-height: 84px; resize: vertical; }
+.learn-edit-playlist input:focus, .learn-edit-playlist textarea:focus { border-color: var(--accent); }
+.learn-edit-playlist button { min-height: 48px; border: 0; border-radius: 14px; background: var(--grad-accent); color: var(--accent-ink); font-weight: 900; }
 .learn-sheet .media-import { padding: 0; border: 0; box-shadow: none; background: none; }
 .learn-connect-spotify { width: 100%; min-height: 66px; margin-top: 18px; padding: 10px 14px; display: grid; grid-template-columns: 30px 1fr 20px; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--text); text-align: left; }
 .learn-connect-spotify .spotify-dot { color: #1ed760; font-size: 24px; }
 .learn-connect-spotify strong, .learn-connect-spotify small { display: block; }
 .learn-connect-spotify small { margin-top: 3px; color: var(--muted); font-size: 10px; }
 .learn-sheet-note { margin: 10px 4px 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.learn-toast { position: fixed; z-index: 140; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); width: max-content; max-width: calc(100vw - 32px); padding: 11px 15px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(25,29,32,.96); color: #fff; box-shadow: var(--elev-2); font-size: 12px; line-height: 1.35; text-align: center; opacity: 0; pointer-events: none; transform: translate(-50%,12px); transition: opacity .2s,transform .2s; }
+.learn-toast.is-visible { opacity: 1; transform: translate(-50%,0); }
+
+/* Keyboard and touch affordances shared by the Learn surfaces. */
+.media-view button:focus-visible,
+.media-view a:focus-visible,
+.media-view input:focus-visible,
+.media-view [role="button"]:focus-visible { outline: 3px solid color-mix(in srgb,var(--accent) 72%,white); outline-offset: 2px; }
+.media-view button:disabled { cursor: wait; }
+
+@media (max-width: 390px) {
+  .media-scroll { padding-inline: 12px; }
+  .learn-continue,
+  .learn-artist-grid,
+  .learn-playlist-grid { margin-inline: -12px; padding-inline: 12px; }
+  .learn-continue-card { grid-template-columns: 78px minmax(0,1fr); min-height: 116px; gap: 12px; padding: 12px; }
+  .learn-continue-card img { width: 78px; height: 78px; }
+  .learn-track-row { grid-template-columns: 50px minmax(0,1fr) 40px; gap: 10px; }
+  .learn-track-row img, .learn-track-art-fallback { width: 50px; height: 50px; }
+  .learn-search-result { grid-template-columns: 58px minmax(0,1fr) 44px; gap: 9px; padding: 9px; }
+  .learn-search-result img, .learn-search-result-art { width: 58px; height: 58px; }
+  .learn-search-badges { flex-wrap: wrap; }
+  .learn-search-artist-banner { grid-template-columns: 40px minmax(0,1fr); }
+  .learn-search-artist-banner > span:first-child { width: 40px; height: 40px; }
+  .learn-search-artist-banner b { grid-column: 1 / -1; width: 100%; min-height: 36px; display: grid; place-items: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-scroll { scroll-behavior: auto; }
+  .learn-sheet, .media-lesson:not([hidden]) { animation: none; }
+}
 
 .media-hero { margin: 4px 2px 20px; }
 .media-kicker { display: inline-flex; align-items: center; gap: 7px; color: var(--accent-strong); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
@@ -154,11 +327,15 @@
 .media-view.has-result .media-hero,
 .media-view.has-result .media-import,
 .media-view.has-result .learn-library,
-.media-view.has-result .learn-playlist-page { display: none; }
+.media-view.has-result .learn-playlist-page,
+.media-view.has-result .learn-search-page,
+.media-view.has-result .learn-artist-page { display: none; }
 .media-view.has-result .media-status-card:not(.is-loading):not(.is-error) { display: none; }
 .media-view.has-result .media-status-card { position: absolute; z-index: 8; top: 62px; left: 16px; right: 16px; margin: 0; border-radius: 16px; background: rgba(15,18,21,.88); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
 .media-view.is-preparing .learn-library,
-.media-view.is-preparing .learn-playlist-page { display: none; }
+.media-view.is-preparing .learn-playlist-page,
+.media-view.is-preparing .learn-search-page,
+.media-view.is-preparing .learn-artist-page { display: none; }
 .media-view.is-preparing .media-status-card { margin: min(26vh,180px) 0 0; }
 .media-view.has-result .track-hero { flex: 1 0 auto; min-height: 100%; margin: 0; padding: 0 max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); border: 0; border-radius: 0; box-shadow: none; background: linear-gradient(180deg, rgba(24,31,32,.68), var(--page) 58%); display: flex; flex-direction: column; }
 .track-hero::before { content: ""; position: absolute; inset: -15% -20% 42%; z-index: 0; background-image: var(--result-art); background-position: center; background-size: cover; filter: blur(58px) saturate(1.35); opacity: .32; transform: scale(1.35); pointer-events: none; -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
@@ -271,8 +448,9 @@ body.media-result-open .topbar { display: none; }
 
 @media (min-width: 700px) {
   body[data-mode="media"] .app-shell { max-width: none; }
-  .learn-bottom-nav { width: min(100vw,980px); }
-  .media-scroll { width: min(100%, 980px); margin-inline: auto; }
+  .learn-bottom-nav { width: min(100vw,760px); }
+  .learn-mini-player { width: min(calc(100vw - 24px),760px); }
+  .media-scroll { width: min(100%, 820px); margin-inline: auto; padding-inline: 28px; }
   /* Left column is an ambient album-art panel; lyrics sit on the right, player spans the base. */
   .media-lesson { grid-template-columns: minmax(300px, 1fr) minmax(440px, 1.55fr); grid-template-rows: auto minmax(0, 1fr) auto; }
   .lesson-header { grid-column: 1 / -1; }

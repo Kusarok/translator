@@ -11,6 +11,10 @@ const prefixes = Object.freeze({
   ,playlistTrack: "plt"
   ,sync: "syn"
   ,spotifyAccount: "spa"
+  ,searchJob: "srj"
+  ,searchResult: "srs"
+  ,artist: "ast"
+  ,artistCatalogItem: "aci"
 });
 
 export const createId = (type) => {

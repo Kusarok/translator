@@ -28,7 +28,10 @@ export const createRepositories = (db) => ({
   },
   lyrics: {
     findById: (id) => db.prepare("SELECT * FROM lyrics WHERE id = ?").get(id) || null,
+    findByExternalId: (source, externalId) => db.prepare(`SELECT * FROM lyrics WHERE source=? AND
+      (external_id=? OR (source='lrclib' AND CAST(external_id AS INTEGER)=CAST(? AS INTEGER))) LIMIT 1`).get(source, String(externalId), String(externalId)) || null,
     findForTrack: (trackId) => db.prepare("SELECT * FROM lyrics WHERE track_id = ? ORDER BY updated_at DESC").all(trackId),
+    allWithTracks: () => db.prepare(`SELECT l.*,t.title,t.artist,t.album FROM lyrics l JOIN tracks t ON t.id=l.track_id ORDER BY l.updated_at DESC`).all(),
     upsert(input) {
       const existing = db.prepare("SELECT * FROM lyrics WHERE track_id=? AND source=? AND content_hash=?").get(input.trackId, input.source, input.contentHash);
       if (existing) return existing;
@@ -82,6 +85,7 @@ export const createRepositories = (db) => ({
   },
   jobs: {
     findById: (id) => db.prepare("SELECT * FROM jobs WHERE id = ?").get(id) || null,
+    pending: () => db.prepare("SELECT * FROM jobs WHERE status IN ('queued','running','inspecting','downloading','processing') ORDER BY created_at").all(),
     findActive: (trackId, jobType) => db.prepare("SELECT * FROM jobs WHERE track_id=? AND job_type=? AND status IN ('queued','running','inspecting','downloading','processing') ORDER BY created_at LIMIT 1").get(trackId, jobType) || null,
     create(input) {
       const stamp = now(), id = input.id || createId("job");
@@ -118,11 +122,24 @@ export const createRepositories = (db) => ({
         .run(input.name, input.description || "", clean(input.sourceUrl), clean(input.artworkUrl), clean(input.snapshotId), now(), now(), existing.id);
       return this.findById(existing.id);
     },
+    update(id, input) {
+      const current = this.findById(id);
+      if (!current) return null;
+      db.prepare("UPDATE playlists SET name=?,description=?,updated_at=? WHERE id=?")
+        .run(String(input.name ?? current.name).trim() || current.name, String(input.description ?? current.description).trim(), now(), id);
+      return this.findById(id);
+    },
+    delete(id) { return db.prepare("DELETE FROM playlists WHERE id=?").run(id).changes > 0; },
     addTrack(playlistId, trackId, position) {
       const id = createId("playlistTrack"), stamp = now();
       db.prepare(`INSERT INTO playlist_tracks(id,playlist_id,track_id,position,added_at) VALUES (?,?,?,?,?)
         ON CONFLICT(playlist_id,track_id) DO UPDATE SET position=excluded.position`).run(id, playlistId, trackId, position || 0, stamp);
       db.prepare("UPDATE playlists SET updated_at=? WHERE id=?").run(stamp, playlistId);
+    },
+    removeTrack(playlistId, trackId) {
+      const removed = db.prepare("DELETE FROM playlist_tracks WHERE playlist_id=? AND track_id=?").run(playlistId, trackId).changes > 0;
+      if (removed) db.prepare("UPDATE playlists SET updated_at=? WHERE id=?").run(now(), playlistId);
+      return removed;
     },
     tracks(playlistId) {
       return db.prepare(`SELECT t.*, pt.position, pt.id AS playlist_track_id,
@@ -177,5 +194,128 @@ export const createRepositories = (db) => ({
           input.refreshTokenCiphertext, input.scopes || "", input.expiresAt, existing?.created_at || stamp, stamp);
       return this.current();
     }
+  },
+  artists: {
+    findById: (id) => db.prepare("SELECT * FROM artists WHERE id=?").get(id) || null,
+    findByMusicBrainzId: (id) => db.prepare("SELECT * FROM artists WHERE musicbrainz_id=?").get(id) || null,
+    list: () => db.prepare(`SELECT ar.*,
+      (SELECT aa.id FROM artist_catalog_items c JOIN artwork_assets aa ON aa.track_id=c.track_id WHERE c.artist_id=ar.id ORDER BY c.updated_at DESC LIMIT 1) AS artwork_id,
+      (SELECT t.artwork_url FROM artist_catalog_items c JOIN tracks t ON t.id=c.track_id WHERE c.artist_id=ar.id AND t.artwork_url!='' ORDER BY c.updated_at DESC LIMIT 1) AS artwork_url
+      FROM artists ar ORDER BY ar.updated_at DESC`).all(),
+    upsert(input) {
+      const current = this.findByMusicBrainzId(input.musicbrainzId), stamp = now();
+      const id = current?.id || input.id || createId("artist");
+      db.prepare(`INSERT INTO artists VALUES (?,?,?,?,?,?,?,'new',0,0,NULL,?,?,NULL)
+        ON CONFLICT(musicbrainz_id) DO UPDATE SET name=excluded.name,sort_name=excluded.sort_name,
+        country=excluded.country,disambiguation=excluded.disambiguation,artist_type=excluded.artist_type,updated_at=excluded.updated_at`)
+        .run(id, input.musicbrainzId, input.name, input.sortName || "", input.country || "", input.disambiguation || "", input.type || "", current?.created_at || stamp, stamp);
+      return this.findByMusicBrainzId(input.musicbrainzId);
+    },
+    updateScan(id, patch) {
+      const current = this.findById(id); if (!current) return null;
+      const completed = patch.scanStatus === "completed" ? now() : current.last_scanned_at;
+      db.prepare(`UPDATE artists SET scan_status=?,discovered_count=?,learnable_count=?,error=?,updated_at=?,last_scanned_at=? WHERE id=?`)
+        .run(patch.scanStatus ?? current.scan_status, patch.discoveredCount ?? current.discovered_count,
+          patch.learnableCount ?? current.learnable_count, patch.error === undefined ? current.error : patch.error,
+          now(), completed, id);
+      return this.findById(id);
+    },
+    scanning: () => db.prepare("SELECT * FROM artists WHERE scan_status IN ('queued','scanning') ORDER BY updated_at").all(),
+    addCatalogItem(input) {
+      const existing = db.prepare("SELECT * FROM artist_catalog_items WHERE artist_id=? AND lrclib_id=?").get(input.artistId, input.lrclibId);
+      const id = existing?.id || input.id || createId("artistCatalogItem"), stamp = now();
+      db.prepare(`INSERT INTO artist_catalog_items(id,artist_id,musicbrainz_recording_id,lrclib_id,track_id,title,album,duration_seconds,synced_lyrics,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,'checking',?,?)
+        ON CONFLICT(artist_id,lrclib_id) DO UPDATE SET musicbrainz_recording_id=excluded.musicbrainz_recording_id,
+        title=excluded.title,album=excluded.album,duration_seconds=excluded.duration_seconds,synced_lyrics=excluded.synced_lyrics,updated_at=excluded.updated_at`)
+        .run(id, input.artistId, clean(input.musicbrainzRecordingId), input.lrclibId, clean(input.trackId), input.title,
+          input.album || "", clean(input.durationSeconds), input.syncedLyrics, existing?.created_at || stamp, stamp);
+      return this.catalogItem(id);
+    },
+    catalogItem: (id) => db.prepare("SELECT * FROM artist_catalog_items WHERE id=?").get(id) || null,
+    setTrack(id, trackId) { db.prepare("UPDATE artist_catalog_items SET track_id=?,status='ready',updated_at=? WHERE id=?").run(trackId, now(), id); return this.catalogItem(id); },
+    linkTrack(id, trackId) { db.prepare("UPDATE artist_catalog_items SET track_id=?,updated_at=? WHERE id=?").run(trackId, now(), id); return this.catalogItem(id); },
+    setVerification(id, input) {
+      db.prepare(`UPDATE artist_catalog_items SET status=?,audio_provider_id=?,audio_webpage_url=?,audio_duration_seconds=?,artwork_url=?,updated_at=? WHERE id=?`)
+        .run(input.status, clean(input.audioProviderId), clean(input.audioWebpageUrl), clean(input.audioDurationSeconds), clean(input.artworkUrl), now(), id);
+      return this.catalogItem(id);
+    },
+    needsVerification(artistId) {
+      if (artistId) return db.prepare(`SELECT * FROM artist_catalog_items
+        WHERE artist_id=? AND status IN ('checking','lyrics_ready') ORDER BY created_at`).all(artistId);
+      return db.prepare("SELECT * FROM artist_catalog_items WHERE status IN ('checking','lyrics_ready') ORDER BY created_at").all();
+    },
+    catalog(artistId) {
+      return db.prepare(`WITH ranked AS (
+        SELECT c.*,ROW_NUMBER() OVER (
+          PARTITION BY LOWER(TRIM(c.title))
+          ORDER BY CASE c.status WHEN 'ready' THEN 0 ELSE 1 END,c.updated_at DESC,c.id
+        ) AS title_rank
+        FROM artist_catalog_items c
+        WHERE c.artist_id=? AND c.status IN ('verified','ready')
+      )
+        SELECT c.*,m.id AS media_id,a.id AS artwork_id,t.artwork_url AS track_artwork_url
+        FROM ranked c LEFT JOIN tracks t ON t.id=c.track_id
+        LEFT JOIN artwork_assets a ON a.track_id=t.id
+        LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
+        WHERE c.title_rank=1 ORDER BY c.title COLLATE NOCASE`).all(artistId);
+    }
+  },
+  search: {
+    indexLyrics(input) {
+      db.prepare("DELETE FROM lyrics_fts WHERE lyrics_id=?").run(input.lyricsId);
+      db.prepare("INSERT INTO lyrics_fts(track_id,lyrics_id,title,artist,album,lyrics) VALUES (?,?,?,?,?,?)")
+        .run(input.trackId, input.lyricsId, input.title, input.artist, input.album || "", input.lyrics);
+    },
+    local(query, limit = 10) {
+      return db.prepare(`SELECT track_id,lyrics_id,title,artist,album,
+        snippet(lyrics_fts,5,'<mark>','</mark>',' … ',16) AS matched_line,
+        bm25(lyrics_fts,2.0,1.5,1.0,0.5) AS rank
+        FROM lyrics_fts WHERE lyrics_fts MATCH ? ORDER BY rank LIMIT ?`).all(query, limit);
+    },
+    createJob(query, normalizedQuery) {
+      const id = createId("searchJob"), stamp = now();
+      db.prepare("INSERT INTO search_jobs VALUES (?,?,?,'queued',0,0,0,NULL,?,?)").run(id, query, normalizedQuery, stamp, stamp);
+      return this.job(id);
+    },
+    findActive(normalizedQuery) {
+      return db.prepare(`SELECT * FROM search_jobs WHERE normalized_query=?
+        AND status IN ('queued','searching','verifying') ORDER BY created_at LIMIT 1`).get(normalizedQuery) || null;
+    },
+    findCached(normalizedQuery, updatedAfter) {
+      return db.prepare(`SELECT j.* FROM search_jobs j WHERE j.normalized_query=? AND j.status='completed'
+        AND j.updated_at>=? ORDER BY j.updated_at DESC LIMIT 1`).get(normalizedQuery, updatedAfter) || null;
+    },
+    recoverable: () => db.prepare("SELECT * FROM search_jobs WHERE status IN ('queued','searching','verifying') ORDER BY created_at").all(),
+    job: (id) => db.prepare("SELECT * FROM search_jobs WHERE id=?").get(id) || null,
+    updateJob(id, patch) {
+      const current = this.job(id); if (!current) return null;
+      db.prepare(`UPDATE search_jobs SET status=?,candidates_found=?,lyrics_verified=?,audio_verified=?,error=?,updated_at=? WHERE id=?`)
+        .run(patch.status ?? current.status, patch.candidatesFound ?? current.candidates_found,
+          patch.lyricsVerified ?? current.lyrics_verified, patch.audioVerified ?? current.audio_verified,
+          patch.error === undefined ? current.error : patch.error, now(), id);
+      return this.job(id);
+    },
+    addResult(input) {
+      const id = input.id || createId("searchResult"), stamp = now();
+      db.prepare(`INSERT INTO search_results(id,search_job_id,lrclib_id,track_id,title,artist,album,duration_seconds,
+        synced_lyrics,matched_line,audio_provider_id,audio_webpage_url,audio_duration_seconds,artwork_url,score,status,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(search_job_id,lrclib_id) DO UPDATE SET
+          track_id=excluded.track_id,title=excluded.title,artist=excluded.artist,album=excluded.album,
+          duration_seconds=excluded.duration_seconds,synced_lyrics=excluded.synced_lyrics,matched_line=excluded.matched_line,
+          audio_provider_id=excluded.audio_provider_id,audio_webpage_url=excluded.audio_webpage_url,
+          audio_duration_seconds=excluded.audio_duration_seconds,artwork_url=excluded.artwork_url,
+          score=excluded.score,status=excluded.status`)
+        .run(id, input.searchJobId, input.lrclibId, clean(input.trackId), input.title, input.artist,
+          input.album || "", clean(input.durationSeconds), input.syncedLyrics, clean(input.matchedLine),
+          clean(input.audioProviderId), clean(input.audioWebpageUrl), clean(input.audioDurationSeconds),
+          clean(input.artworkUrl), input.score ?? 0, input.status, stamp);
+      return db.prepare("SELECT * FROM search_results WHERE search_job_id=? AND lrclib_id=?")
+        .get(input.searchJobId, input.lrclibId);
+    },
+    results: (jobId) => db.prepare("SELECT * FROM search_results WHERE search_job_id=? AND status='ready' ORDER BY score DESC").all(jobId),
+    findVerifiedByLrclibId: (lrclibId) => db.prepare(`SELECT * FROM search_results WHERE lrclib_id=? AND status='ready' AND audio_provider_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`).get(lrclibId) || null,
+    result: (id) => db.prepare("SELECT * FROM search_results WHERE id=?").get(id) || null
   }
 });

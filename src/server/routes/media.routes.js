@@ -1,14 +1,26 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { asyncHandler } from "../utils/async-handler.js";
-import { addPlaylistTrack, createJob, createPlaylist, createSearchJob, deleteMedia, getJob, getLyrics, health, library, openTrack, playlist, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, trackProgress, translateSyncedLyrics } from "../controllers/media.controller.js";
+import { addPlaylistTrack, artist, createArtist, createJob, createPlaylist, createSearch, createSearchJob, deleteMedia, deletePlaylist, discoverArtists, getJob, getLyrics, getSearch, health, library, openTrack, playlist, prepareArtistTrack, prepareSearchResult, removePlaylistTrack, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, trackProgress, translateSyncedLyrics, updatePlaylist } from "../controllers/media.controller.js";
 
 export const mediaRouter = Router();
+const searchLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
 
 mediaRouter.get("/health", asyncHandler(health));
 mediaRouter.get("/library", asyncHandler(library));
+mediaRouter.post("/library/artists/discover", searchLimiter, asyncHandler(discoverArtists));
+mediaRouter.post("/library/artists", asyncHandler(createArtist));
+mediaRouter.get("/library/artists/:id", asyncHandler(artist));
+mediaRouter.post("/library/artists/catalog/:id/prepare", searchLimiter, asyncHandler(prepareArtistTrack));
+mediaRouter.post("/search", searchLimiter, asyncHandler(createSearch));
+mediaRouter.get("/search/:id", asyncHandler(getSearch));
+mediaRouter.post("/search/results/:id/prepare", searchLimiter, asyncHandler(prepareSearchResult));
 mediaRouter.post("/library/playlists", asyncHandler(createPlaylist));
 mediaRouter.get("/library/playlists/:id", asyncHandler(playlist));
+mediaRouter.patch("/library/playlists/:id", asyncHandler(updatePlaylist));
+mediaRouter.delete("/library/playlists/:id", asyncHandler(deletePlaylist));
 mediaRouter.post("/library/playlists/:id/tracks", asyncHandler(addPlaylistTrack));
+mediaRouter.delete("/library/playlists/:id/tracks/:trackId", asyncHandler(removePlaylistTrack));
 mediaRouter.post("/library/tracks/:id/open", asyncHandler(openTrack));
 mediaRouter.post("/library/tracks/:id/progress", asyncHandler(trackProgress));
 mediaRouter.get("/spotify/connect", asyncHandler(spotifyConnect));

@@ -1,6 +1,6 @@
 import { HttpError } from "../utils/http-error.js";
 import { translateText } from "./translation.service.js";
-import { cacheLessonTranslation, cacheTrackLyrics, getCachedLesson } from "./media-worker.service.js";
+import { cacheLessonTranslation, cacheTrackLyrics, getCachedLesson, getCachedLessonByTrackId } from "./media-worker.service.js";
 
 const SPOTIFY_TRACK = /^https:\/\/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})(?:[/?#]|$)/i;
 const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
@@ -81,11 +81,11 @@ export const findSpotifyLyrics = async (input) => {
   return { ...result, ...cacheIds, cacheHit: false };
 };
 
-export const translateLyrics = async ({ spotifyId, lines, provider, apiKey, model, authenticated }) => {
+export const translateLyrics = async ({ spotifyId, trackId, lines, provider, apiKey, model, authenticated }) => {
   if (!Array.isArray(lines) || !lines.length || lines.length > 500) throw new HttpError(400, "Lyrics lines are required");
-  if (spotifyId) {
+  if (trackId || spotifyId) {
     try {
-      const cached = await getCachedLesson(spotifyId);
+      const cached = trackId ? await getCachedLessonByTrackId(trackId) : await getCachedLesson(spotifyId);
       if (cached?.data?.translationCached) {
         return { translations: cached.data.lines.map((line) => line.translation || ""), model: "cached", cacheHit: true };
       }
@@ -101,9 +101,9 @@ export const translateLyrics = async ({ spotifyId, lines, provider, apiKey, mode
   if (translated.length !== populated.length) throw new HttpError(502, `Translation returned ${translated.length} lines instead of ${populated.length}; timestamps were not changed`);
   const translations = lines.map(() => "");
   populated.forEach((line, index) => { translations[line.index] = translated[index]; });
-  if (spotifyId) {
+  if (trackId || spotifyId) {
     try {
-      await cacheLessonTranslation({ spotifyId, translations, targetLanguage: "fa", provider: provider || (authenticated ? "owner" : "free"), model: result.model, promptVersion: "lyrics-v1" });
+      await cacheLessonTranslation({ trackId, spotifyId, translations, targetLanguage: "fa", provider: provider || (authenticated ? "owner" : "free"), model: result.model, promptVersion: "lyrics-v1" });
     } catch (error) { console.warn("Could not cache translation:", error.message); }
   }
   return { translations, model: result.model, cacheHit: false };

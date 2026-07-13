@@ -100,13 +100,13 @@ export const searchAndDownloadWithYtDlp = async ({ query, directory, onProgress 
   return findLargestFile(directory);
 };
 
-export const inspectSearchResult = async (query) => {
+export const inspectSearchResult = async (query, { timeoutMs = 120000 } = {}) => {
   requirePython();
   const { command, args } = moduleCommand("yt_dlp", [
     "--dump-single-json", "--no-playlist", "--no-warnings", "--socket-timeout", "20",
     ...ytDlpAuthArgs(), `ytsearch1:${query}`
   ]);
-  const { stdout } = await runProcess({ command, args, timeoutMs: Math.min(config.timeoutMs, 120000) });
+  const { stdout } = await runProcess({ command, args, timeoutMs: Math.min(config.timeoutMs, timeoutMs) });
   const entries = JSON.parse(stdout);
   const raw = Array.isArray(entries?.entries) ? entries.entries[0] : entries;
   if (!raw) throw new Error("No matching audio found for this track.");

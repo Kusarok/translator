@@ -5,10 +5,14 @@ import { capabilities } from "./downloader.js";
 import { platformCatalog } from "./adapters/platforms.js";
 import { cleanupExpired, createJob, createSearchJob, deleteMedia, getJob, getMedia } from "./jobs.js";
 import { safeMediaPath } from "./storage.js";
-import { cacheTrackLyrics, cacheTranslation, getCachedLesson } from "./services/lesson-cache.service.js";
+import { cacheTrackLyrics, cacheTranslation, getCachedLesson, getCachedLessonByTrackId, reindexCachedLyrics } from "./services/lesson-cache.service.js";
 import { repositories } from "./persistence.js";
 import path from "node:path";
-import { addTrackToPlaylist, createLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, updateTrackProgress } from "./services/library.service.js";
+import { addTrackToPlaylist, createLearningPlaylist, deleteLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, removeTrackFromPlaylist, updateLearningPlaylist, updateTrackProgress } from "./services/library.service.js";
+import { createLyricsSearch, getLyricsSearch, prepareSearchResult } from "./modules/search/search.service.js";
+import { createArtistCatalog, discoverArtists, getArtistCatalog, prepareArtistCatalogItem } from "./modules/artists/artist.service.js";
+
+reindexCachedLyrics();
 
 const json = (res, status, body) => {
   const data = Buffer.from(JSON.stringify(body));
@@ -47,9 +51,27 @@ const serveFile = (req, res, item, download) => {
     res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
     return res.end();
   }
-  const start = match[1] ? Number(match[1]) : 0;
-  const end = match[2] ? Math.min(Number(match[2]), stat.size - 1) : stat.size - 1;
-  if (start > end || start >= stat.size) {
+  const hasStart = match[1] !== "";
+  const hasEnd = match[2] !== "";
+  let start;
+  let end;
+  if (!hasStart && !hasEnd) {
+    start = stat.size;
+    end = -1;
+  } else if (!hasStart) {
+    const suffixLength = Number(match[2]);
+    if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) {
+      start = stat.size;
+      end = -1;
+    } else {
+      end = stat.size - 1;
+      start = Math.max(0, stat.size - suffixLength);
+    }
+  } else {
+    start = Number(match[1]);
+    end = hasEnd ? Math.min(Number(match[2]), stat.size - 1) : stat.size - 1;
+  }
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= stat.size) {
     res.writeHead(416, { "Content-Range": `bytes */${stat.size}` });
     return res.end();
   }
@@ -74,6 +96,29 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, capabilities: capabilities(), platforms: platformCatalog() });
     }
     if (req.method === "GET" && url.pathname === "/library") return json(res, 200, libraryOverview());
+    if (req.method === "POST" && url.pathname === "/artists/discover") return json(res, 200, { artists: await discoverArtists((await body(req)).name) });
+    if (req.method === "POST" && url.pathname === "/artists") return json(res, 202, createArtistCatalog(await body(req)));
+    const artistMatch = /^\/artists\/(ast_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && artistMatch) {
+      const artist = getArtistCatalog(artistMatch[1]);
+      return artist ? json(res, 200, artist) : json(res, 404, { error: "Artist not found." });
+    }
+    const artistItemMatch = /^\/artists\/catalog\/(aci_[A-Za-z0-9-]+)\/prepare$/.exec(url.pathname);
+    if (req.method === "POST" && artistItemMatch) {
+      const lesson = await prepareArtistCatalogItem(artistItemMatch[1]);
+      return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Artist track not found." });
+    }
+    if (req.method === "POST" && url.pathname === "/lyrics-search") return json(res, 202, createLyricsSearch((await body(req)).query));
+    const lyricsSearchMatch = /^\/lyrics-search\/(srj_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && lyricsSearchMatch) {
+      const job = getLyricsSearch(lyricsSearchMatch[1]);
+      return job ? json(res, 200, job) : json(res, 404, { error: "Search job not found." });
+    }
+    const prepareSearchMatch = /^\/lyrics-search\/results\/(srs_[A-Za-z0-9-]+)\/prepare$/.exec(url.pathname);
+    if (req.method === "POST" && prepareSearchMatch) {
+      const lesson = await prepareSearchResult(prepareSearchMatch[1]);
+      return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Verified search result not found." });
+    }
     if (req.method === "GET" && url.pathname === "/playlists") return json(res, 200, { playlists: libraryOverview().playlists });
     if (req.method === "POST" && url.pathname === "/playlists") return json(res, 201, createLearningPlaylist(await body(req)));
     if (req.method === "PUT" && url.pathname === "/playlists/spotify") return json(res, 200, importSpotifyPlaylist(await body(req)));
@@ -87,10 +132,22 @@ const server = http.createServer(async (req, res) => {
       const playlist = getPlaylistDetail(playlistMatch[1]);
       return playlist ? json(res, 200, playlist) : json(res, 404, { error: "Playlist not found." });
     }
+    if (req.method === "PATCH" && playlistMatch) {
+      const playlist = updateLearningPlaylist(playlistMatch[1], await body(req));
+      return playlist ? json(res, 200, playlist) : json(res, 404, { error: "Playlist not found." });
+    }
+    if (req.method === "DELETE" && playlistMatch) {
+      return deleteLearningPlaylist(playlistMatch[1]) ? json(res, 200, { ok: true }) : json(res, 404, { error: "Playlist not found." });
+    }
     const playlistTrackMatch = /^\/playlists\/(pls_[A-Za-z0-9-]+)\/tracks$/.exec(url.pathname);
     if (req.method === "POST" && playlistTrackMatch) {
       const playlist = addTrackToPlaylist(playlistTrackMatch[1], await body(req));
       return playlist ? json(res, 200, playlist) : json(res, 404, { error: "Playlist not found." });
+    }
+    const removePlaylistTrackMatch = /^\/playlists\/(pls_[A-Za-z0-9-]+)\/tracks\/(trk_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "DELETE" && removePlaylistTrackMatch) {
+      return removeTrackFromPlaylist(removePlaylistTrackMatch[1], removePlaylistTrackMatch[2])
+        ? json(res, 200, { ok: true }) : json(res, 404, { error: "Playlist track not found." });
     }
     const libraryTrackMatch = /^\/library\/tracks\/(trk_[A-Za-z0-9-]+)\/(open|progress)$/.exec(url.pathname);
     if (req.method === "POST" && libraryTrackMatch) {
@@ -111,6 +168,11 @@ const server = http.createServer(async (req, res) => {
     const lessonMatch = /^\/cache\/lessons\/spotify\/([A-Za-z0-9]{22})$/.exec(url.pathname);
     if (req.method === "GET" && lessonMatch) {
       const lesson = getCachedLesson(lessonMatch[1]);
+      return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Lesson is not cached." });
+    }
+    const trackLessonMatch = /^\/cache\/lessons\/tracks\/(trk_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && trackLessonMatch) {
+      const lesson = getCachedLessonByTrackId(trackLessonMatch[1]);
       return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Lesson is not cached." });
     }
     if (req.method === "PUT" && url.pathname === "/cache/lyrics") {
