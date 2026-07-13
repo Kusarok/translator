@@ -449,6 +449,7 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   });
   window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
   window.addEventListener("learn:search-opened", () => {
+    activePlaylist = null; nodes.playlistPage.hidden = true; nodes.library.hidden = true;
     nodes.libraryNav?.classList.remove("active"); nodes.musicNav?.classList.remove("active");
     nodes.searchNav?.classList.add("active");
     nodes.libraryNav?.setAttribute("aria-current", "false"); nodes.musicNav?.setAttribute("aria-current", "false");
@@ -457,7 +458,9 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   window.addEventListener("learn:search-closed", (event) => switchLibraryTab(event.detail?.destination || "home", false));
   window.addEventListener("popstate", (event) => {
     if (!event.state?.learnAddSheet && !nodes.sheet.hidden) closeLearnAddSheet(false);
-    if (!event.state?.[PLAYLIST_HISTORY_KEY] && !nodes.playlistPage.hidden) hidePlaylist(false);
+    const playlistId = event.state?.[PLAYLIST_HISTORY_KEY];
+    if (playlistId && nodes.playlistPage.hidden) showPlaylist(playlistId).catch((error) => announce(error.message || "Playlist could not be opened."));
+    else if (!playlistId && !nodes.playlistPage.hidden) hidePlaylist(false);
     const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home";
     if (!event.state?.learnSearch && !event.state?.learnArtist && !event.state?.[PLAYLIST_HISTORY_KEY]) switchLibraryTab(tab, false);
   });

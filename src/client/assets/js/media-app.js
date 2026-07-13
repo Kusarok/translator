@@ -730,7 +730,14 @@ export const initMedia = () => {
   const hadLearnHistory = history.state?.[HISTORY_VERSION_KEY] === HISTORY_VERSION &&
     LAYERS.has(history.state?.[HISTORY_KEY]);
   if (!hadLearnHistory) history.replaceState(historyState("input"), "");
-  window.addEventListener("popstate", (event) => applyLayer(event.state?.[HISTORY_KEY] || "input"));
+  window.addEventListener("popstate", (event) => {
+    const layer = event.state?.[HISTORY_KEY] || "input";
+    const playerSurfaceOpen = !el.lesson.hidden || !el.result.hidden || el.view.classList.contains("has-result");
+    // Destination changes (Home/Search/Your Music) share the same URL and also
+    // emit popstate. They must not reset scroll, focus, or the active mini player.
+    if (layer === "input" && !playerSurfaceOpen) return;
+    applyLayer(layer);
+  });
   el.form?.addEventListener("submit", submit);
   el.start?.addEventListener("click", startLesson);
   el.lessonClose?.addEventListener("click", goBack);

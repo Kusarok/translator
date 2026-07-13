@@ -87,6 +87,14 @@ test("music subpages retain explicit Back and browser/Android history handling",
   assert.match(search, /history\.pushState/);
   assert.match(library, /history\.pushState/);
   assert.match(artist, /history\.pushState/);
+  assert.match(mediaApp, /playerSurfaceOpen/,
+    "tab history must not reset the player surface or scroll position");
+  assert.match(mediaApp, /layer === "input" && !playerSurfaceOpen/);
+  assert.match(artist, /learnArtist: artist\.id/,
+    "artist history needs a stable id so Back can restore the page");
+  assert.match(artist, /openSavedArtist\(artistId\)/);
+  assert.match(library, /playlistId && nodes\.playlistPage\.hidden.*showPlaylist\(playlistId\)/s,
+    "playlist history needs to restore the detail page");
 });
 
 test("background pipeline jargon is not exposed in music UI copy", () => {

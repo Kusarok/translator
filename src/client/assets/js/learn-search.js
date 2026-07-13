@@ -44,6 +44,7 @@ const revealSearch = (useHistory = true) => {
 
 const openSearchPage = () => {
   stop();
+  window.dispatchEvent(new CustomEvent("learn:base-destination", { detail: { destination: "search" } }));
   revealSearch(true);
   el.loading.hidden = true;
   el.empty.hidden = true;
