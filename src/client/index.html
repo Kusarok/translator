@@ -345,7 +345,24 @@
                     </div>
                     <span class="lesson-ytmusic-mark" aria-label="Online music">▶</span>
                   </header>
-                  <div class="media-lyrics" id="mediaLyrics" aria-live="polite"></div>
+                  <div class="lesson-mode-tabs" role="tablist" aria-label="Player view">
+                    <button class="active" id="lessonNowPlayingTab" type="button" role="tab" aria-selected="true" aria-controls="lessonNowPlayingPanel">Now Playing</button>
+                    <button id="lessonLearnTab" type="button" role="tab" aria-selected="false" aria-controls="mediaLyrics">Lyrics &amp; Learn</button>
+                  </div>
+                  <div class="lesson-content" id="lessonContent">
+                    <section class="lesson-now-playing" id="lessonNowPlayingPanel" role="tabpanel" aria-labelledby="lessonNowPlayingTab">
+                      <div class="lesson-now-art">
+                        <img id="mediaNowPlayingCover" alt="" hidden>
+                        <span id="mediaNowPlayingFallback" aria-hidden="true">♪</span>
+                      </div>
+                      <div class="lesson-now-copy">
+                        <h1 id="mediaNowPlayingTitle"></h1>
+                        <p id="mediaNowPlayingArtist"></p>
+                      </div>
+                      <button class="lesson-open-lyrics" id="lessonOpenLyrics" type="button">Lyrics &amp; translation <span>›</span></button>
+                    </section>
+                    <div class="media-lyrics" id="mediaLyrics" role="tabpanel" aria-labelledby="lessonLearnTab" aria-live="polite" hidden></div>
+                  </div>
                   <div class="media-player-wrap" id="mediaPlayerWrap"></div>
                 </div>
                 <p class="media-disclosure" id="mediaDisclosure" hidden></p>

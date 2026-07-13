@@ -388,7 +388,7 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 .media-start-learning.is-waiting { background: var(--surface-3); color: var(--muted); box-shadow: none; }
 .media-start-learning.is-waiting::before, .media-start-learning:disabled::before { display: none; }
 .media-start-learning.is-waiting::after { content: ""; width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: media-spin .8s linear infinite; }
-.media-lesson { position: fixed; inset: 0; width: 100%; max-width: 100vw; min-width: 0; z-index: 100; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; overflow-x: clip; background: linear-gradient(180deg, #0b0d10, #050607); color: #fff; isolation: isolate; }
+.media-lesson { position: fixed; inset: 0; width: 100%; max-width: 100vw; min-width: 0; z-index: 100; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden; overflow-x: clip; background: linear-gradient(180deg, #0b0d10, #050607); color: #fff; isolation: isolate; }
 .media-lesson[hidden] { display: none; }
 .media-lesson:not([hidden]) { animation: lesson-rise var(--dur-enter, 240ms) var(--ease-out, cubic-bezier(0.32,0.72,0,1)); }
 @keyframes lesson-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
@@ -407,7 +407,22 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 .lesson-head-text strong { font-size: 15px; font-weight: 800; }
 .lesson-head-text span { margin-top: 1px; color: rgba(255,255,255,.6); font-size: 12px; font-weight: 500; }
 .lesson-ytmusic-mark { flex: 0 0 auto; color: #ff2d55; font-size: 20px; }
-.media-lyrics { width: 100%; max-width: 100vw; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 32px clamp(16px, 5vw, 40px) 50vh; scrollbar-width: none; will-change: scroll-position; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 78%, transparent 100%); }
+.lesson-mode-tabs { width: min(calc(100% - 32px),420px); min-height: 44px; margin: 2px auto 8px; padding: 4px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(3,5,6,.3); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.lesson-mode-tabs button { min-height: 36px; border: 0; border-radius: 999px; background: transparent; color: rgba(255,255,255,.55); font-size: 11px; font-weight: 850; }
+.lesson-mode-tabs button.active { background: rgba(255,255,255,.12); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.lesson-content { width: min(100%,900px); min-width: 0; min-height: 0; margin-inline: auto; overflow: hidden; touch-action: pan-y; }
+.lesson-now-playing { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: clamp(8px,2vh,20px) 22px 14px; text-align: center; }
+.lesson-now-playing[hidden],.media-lyrics[hidden] { display: none; }
+.lesson-now-art { width: min(64vw,36dvh,310px); aspect-ratio: 1; overflow: hidden; display: grid; place-items: center; border-radius: 14px; background: rgba(255,255,255,.08); box-shadow: 0 28px 70px -24px rgba(0,0,0,.95); }
+.lesson-now-art img { width: 100%; height: 100%; object-fit: cover; }
+.lesson-now-art img[hidden],.lesson-now-art img:not([hidden]) + span { display: none; }
+.lesson-now-art span { color: rgba(255,255,255,.45); font-size: 64px; }
+.lesson-now-copy { width: 100%; min-width: 0; margin-top: clamp(16px,3vh,26px); }
+.lesson-now-copy h1 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(24px,7vw,34px); line-height: 1.12; letter-spacing: -.035em; }
+.lesson-now-copy p { margin: 7px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,.62); font-size: 14px; }
+.lesson-open-lyrics { min-height: 42px; margin-top: 14px; padding: 0 15px; border: 0; border-radius: 999px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.78); font-size: 11px; font-weight: 800; }
+.lesson-open-lyrics span { margin-left: 5px; color: var(--accent-strong); font-size: 18px; vertical-align: -1px; }
+.media-lyrics { width: 100%; height: 100%; max-width: 100vw; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 32px clamp(16px, 5vw, 40px) 50vh; scrollbar-width: none; will-change: scroll-position; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 78%, transparent 100%); }
 .media-lyrics::-webkit-scrollbar { display: none; }
 .lyric-pair { display: block; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; border: 0; background: none; color: rgba(255,255,255,.42); opacity: .72; padding: 14px 0; text-align: left; cursor: pointer; transition: color .2s, opacity .2s; content-visibility: auto; contain-intrinsic-size: 110px; }
 .lyric-pair .lyric-original, .lyric-pair .lyric-translation { width: 100%; max-width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; word-break: normal; }
@@ -417,6 +432,7 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 .lyric-pair.is-active .lyric-original { font-weight: 950; text-shadow: 0 2px 18px rgba(0,0,0,.3); }
 .lyric-pair.is-active .lyric-translation { color: #fff; font-weight: 900; }
 .media-lesson .media-player-wrap { width: 100%; max-width: 100vw; min-width: 0; overflow: hidden; border-radius: 0; padding: 14px clamp(12px, 4vw, 32px) calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(6,7,8,.12), rgba(4,5,6,.82)); -webkit-backdrop-filter: blur(22px) saturate(150%); backdrop-filter: blur(22px) saturate(150%); border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; }
+.media-lesson:not(.is-learning-mode) .lp-speed,.media-lesson:not(.is-learning-mode) .lp-repeat { opacity: 0; pointer-events: none; }
 
 /* ---- Custom lesson player ---- */
 .lp-audio { display: none; }
@@ -477,11 +493,6 @@ body.media-result-open .topbar { display: none; }
   .learn-bottom-nav { width: min(100vw,760px); }
   .learn-mini-player { width: min(calc(100vw - 24px),760px); }
   .media-scroll { width: min(100%, 820px); margin-inline: auto; padding-inline: 28px; }
-  /* Left column is an ambient album-art panel; lyrics sit on the right, player spans the base. */
-  .media-lesson { grid-template-columns: minmax(300px, 1fr) minmax(440px, 1.55fr); grid-template-rows: auto minmax(0, 1fr) auto; }
-  .lesson-header { grid-column: 1 / -1; }
-  .media-lesson::before { background-position: left center; }
-  .media-lyrics { grid-column: 2; grid-row: 2; padding-top: 8vh; }
-  .media-lesson .media-player-wrap { grid-column: 1 / -1; grid-row: 3; }
-  .media-lesson::after { background: linear-gradient(90deg, rgba(5,6,7,.5), rgba(7,9,11,.9)); }
+  .lesson-now-art { width: min(36vw,40dvh,350px); }
+  .media-lyrics { padding-inline: clamp(40px,8vw,110px); }
 }

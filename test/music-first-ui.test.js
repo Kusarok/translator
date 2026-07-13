@@ -35,7 +35,11 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnMiniPlayer",
     "learnMiniOpen",
     "learnMiniPlay",
-    "learnMiniProgress"
+    "learnMiniProgress",
+    "lessonNowPlayingTab",
+    "lessonLearnTab",
+    "lessonNowPlayingPanel",
+    "lessonContent"
   ];
 
   const pageIds = new Set(ids(html));
@@ -115,4 +119,17 @@ test("mini player exposes one predictable open/play/close control contract", () 
   assert.match(mediaApp, /miniClose\?\.addEventListener\("click"/);
   assert.match(mediaApp, /history\.replaceState\(historyState\("lesson"\)/,
     "ready songs should replace the temporary result step so Back returns to the originating music page");
+});
+
+test("full player defaults to listening and keeps learning in a separate swipeable view", () => {
+  assert.match(html, /id="lessonNowPlayingTab"[^>]*aria-selected="true"/);
+  assert.match(html, /id="lessonLearnTab"[^>]*aria-selected="false"/);
+  assert.match(html, /id="mediaLyrics"[^>]*hidden/);
+  assert.match(mediaApp, /const setPlayerMode = \(mode/);
+  assert.match(mediaApp, /playerMode = mode === "learn" \? "learn" : "now"/);
+  assert.match(mediaApp, /touchstart/);
+  assert.match(mediaApp, /touchend/);
+  assert.match(mediaApp, /setPlayerMode\(dx < 0 \? "learn" : "now"\)/);
+  assert.match(mediaCss, /\.lesson-mode-tabs\s*\{/);
+  assert.match(mediaCss, /\.lesson-now-playing\s*\{/);
 });
