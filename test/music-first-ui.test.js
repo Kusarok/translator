@@ -26,6 +26,11 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnArtistPage",
     "learnPlaylistsSection",
     "learnMusicNav",
+    "learnLibraryFilters",
+    "learnSongsFilter",
+    "learnArtistsFilter",
+    "learnPlaylistsFilter",
+    "learnQuickAccess",
     "learnPlaylistPage",
     "learnMiniPlayer",
     "learnMiniOpen",
@@ -52,6 +57,18 @@ test("bottom navigation has real Home, Search, and Your Music destinations", () 
   assert.match(library, /learnLibraryTab/);
   assert.match(search, /learn:search-opened/);
   assert.match(search, /learn:base-destination/);
+});
+
+test("Your Music filters songs, artists, and playlists and remembers the choice", () => {
+  assert.match(library, /translator_music_library_filter/);
+  assert.match(library, /localStorage\.getItem\(LIBRARY_FILTER_STORAGE_KEY\)/);
+  assert.match(library, /localStorage\.setItem\(LIBRARY_FILTER_STORAGE_KEY, libraryFilter\)/);
+  assert.match(library, /selectLibraryFilter\("songs"\)/);
+  assert.match(library, /selectLibraryFilter\("artists"\)/);
+  assert.match(library, /selectLibraryFilter\("playlists"\)/);
+  assert.match(library, /data\.artists\?\.\[0\].*kind: "artist"/s,
+    "Home quick access should surface saved artists near the top");
+  assert.match(mediaCss, /\.learn-quick-grid\s*\{/);
 });
 
 test("music subpages retain explicit Back and browser/Android history handling", () => {

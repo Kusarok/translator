@@ -190,13 +190,24 @@
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
                 </form>
 
+                <div class="learn-library-filters" id="learnLibraryFilters" role="tablist" aria-label="Your music" hidden>
+                  <button id="learnSongsFilter" type="button" role="tab" data-library-filter="songs">Songs</button>
+                  <button id="learnArtistsFilter" type="button" role="tab" data-library-filter="artists">Artists</button>
+                  <button id="learnPlaylistsFilter" type="button" role="tab" data-library-filter="playlists">Playlists</button>
+                </div>
+
+                <section class="learn-section learn-quick-section" id="learnQuickSection" hidden>
+                  <div class="learn-section-heading"><h2>Jump back in</h2></div>
+                  <div class="learn-quick-grid" id="learnQuickAccess"></div>
+                </section>
+
                 <section class="learn-section" id="learnContinueSection" hidden>
                   <div class="learn-section-heading"><h2>Continue listening</h2></div>
                   <div class="learn-continue" id="learnContinue"></div>
                 </section>
 
                 <section class="learn-section" id="learnRecentSection">
-                  <div class="learn-section-heading"><h2>Recently added</h2></div>
+                  <div class="learn-section-heading"><h2 id="learnRecentTitle">Recently added</h2></div>
                   <div class="learn-track-list" id="learnRecent"></div>
                   <div class="learn-library-empty" id="learnLibraryEmpty" hidden>
                     <div class="learn-empty-icon">♪</div>
@@ -207,13 +218,14 @@
                 </section>
 
                 <section class="learn-section" id="learnArtistsSection" hidden>
-                  <div class="learn-section-heading"><h2>Your artists</h2></div>
+                  <div class="learn-section-heading"><h2 id="learnArtistsTitle">Your artists</h2></div>
                   <div class="learn-artist-grid" id="learnArtists"></div>
+                  <div class="learn-collection-empty" id="learnArtistsEmpty" hidden><span>♪</span><strong>No artists yet</strong><small>Open an artist from Search to add them here.</small></div>
                 </section>
 
                 <section class="learn-section" id="learnPlaylistsSection">
                   <div class="learn-section-heading">
-                    <h2>Your playlists</h2>
+                    <h2 id="learnPlaylistsTitle">Your playlists</h2>
                     <button id="learnNewPlaylist" type="button">New playlist</button>
                   </div>
                   <div class="learn-playlist-grid" id="learnPlaylists"></div>

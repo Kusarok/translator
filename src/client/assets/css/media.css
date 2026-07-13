@@ -36,10 +36,24 @@
 .learn-search-bar input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; box-shadow: none !important; }
 .learn-search-bar input::placeholder { color: var(--muted); }
 .learn-section { margin-bottom: var(--music-section-gap); }
+.learn-section[hidden], .learn-library-filters[hidden] { display: none; }
 .learn-library.is-music-view #learnContinueSection,
-.learn-library.is-music-view #learnRecentSection { display: none; }
-.learn-library.is-music-view #learnArtistsSection { margin-top: 6px; }
+.learn-library.is-music-view #learnQuickSection { display: none; }
 .learn-library.is-music-view .learn-search-bar { display: none; }
+.learn-library-filters { position: sticky; z-index: 18; top: -24px; display: flex; gap: 8px; margin: -8px -16px 26px; padding: 15px 16px 12px; overflow-x: auto; background: linear-gradient(180deg,var(--page) 76%,transparent); scrollbar-width: none; }
+.learn-library-filters::-webkit-scrollbar { display: none; }
+.learn-library-filters button { min-width: 88px; min-height: 42px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--muted); font-weight: 800; }
+.learn-library-filters button.active { border-color: transparent; background: var(--text); color: var(--page); }
+.learn-quick-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.learn-quick-tile { min-width: 0; min-height: 64px; padding: 7px; border: 1px solid var(--line-soft); border-radius: 12px; background: color-mix(in srgb,var(--surface-2) 90%,transparent); color: var(--text); display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 10px; align-items: center; text-align: left; }
+.learn-quick-tile img,.learn-quick-tile-art { width: 48px; height: 48px; border-radius: 9px; object-fit: cover; display: grid; place-items: center; background: var(--surface-3); color: var(--accent-strong); }
+.learn-quick-tile[data-kind="artist"] img,.learn-quick-tile[data-kind="artist"] .learn-quick-tile-art { border-radius: 50%; }
+.learn-quick-tile-copy { min-width: 0; }
+.learn-quick-tile strong,.learn-quick-tile small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learn-quick-tile strong { font-size: 12px; }
+.learn-quick-tile small { margin-top: 4px; color: var(--muted); font-size: 9px; text-transform: capitalize; }
+.learn-library.is-music-view[data-library-filter="artists"] .learn-artist-grid { grid-auto-flow: row; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: visible; margin: 0; padding: 0; }
+.learn-library.is-music-view[data-library-filter="artists"] .learn-artist-card-art { width: min(100%,112px); aspect-ratio: 1; height: auto; }
 .learn-library.is-music-view .learn-playlist-grid { grid-auto-flow: row; grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; margin: 0; padding: 0; }
 .learn-library.is-music-view .learn-playlist-cover { width: 100%; }
 .learn-section-heading { min-height: 36px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
@@ -72,6 +86,11 @@
 .learn-empty-playlists[hidden], .learn-library-empty[hidden] { display: none; }
 .learn-empty-playlists span { width: 48px; height: 48px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px; background: var(--surface-2); color: var(--accent-strong); font-size: 23px; }
 .learn-empty-playlists p { margin: 0; font-size: 12px; line-height: 1.5; }
+.learn-collection-empty { min-height: 180px; padding: 28px 18px; display: grid; place-items: center; align-content: center; gap: 7px; border: 1px dashed var(--line); border-radius: 18px; color: var(--muted); text-align: center; }
+.learn-collection-empty[hidden] { display: none; }
+.learn-collection-empty span { font-size: 28px; color: var(--accent-strong); }
+.learn-collection-empty strong { color: var(--text); font-size: 15px; }
+.learn-collection-empty small { max-width: 28ch; line-height: 1.45; }
 .learn-track-list { display: flex; flex-direction: column; gap: 4px; }
 .learn-track-row { width: 100%; min-width: 0; min-height: 68px; border: 0; border-radius: var(--music-radius-md); background: transparent; color: var(--text); display: grid; grid-template-columns: 54px minmax(0,1fr) 40px; align-items: center; gap: 12px; padding: 7px 6px; text-align: left; transition: background .16s ease,transform .12s ease; }
 .learn-track-row:hover { background: color-mix(in srgb,var(--surface-2) 72%,transparent); }
@@ -262,6 +281,10 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
   .learn-search-artist-banner { grid-template-columns: 40px minmax(0,1fr); }
   .learn-search-artist-banner > span:first-child { width: 40px; height: 40px; }
   .learn-search-artist-banner b { grid-column: 1 / -1; width: 100%; min-height: 36px; display: grid; place-items: center; }
+  .learn-quick-grid { gap: 7px; }
+  .learn-quick-tile { min-height: 58px; grid-template-columns: 42px minmax(0,1fr); gap: 8px; padding: 6px; }
+  .learn-quick-tile img,.learn-quick-tile-art { width: 42px; height: 42px; }
+  .learn-library.is-music-view[data-library-filter="artists"] .learn-artist-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
