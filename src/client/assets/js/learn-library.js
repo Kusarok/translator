@@ -7,7 +7,7 @@ const nodes = {
   playlists: $("learnPlaylists"), playlistsEmpty: $("learnPlaylistsEmpty"), recent: $("learnRecent"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
-  playlistsNav: $("learnPlaylistsNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
+  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
   connectSpotify: $("learnConnectSpotify")
   ,libraryNav: $("learnLibraryNav"), libraryTitle: $("learnLibraryTitle"), scroll: document.querySelector("#mediaView .media-scroll")
@@ -279,20 +279,23 @@ const hidePlaylist = (useHistory = true) => {
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
 const switchLibraryTab = (tab, useHistory = true) => {
-  const playlists = tab === "playlists";
-  if (useHistory) {
-    if (playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] !== "playlists") {
-      history.pushState({ ...(history.state || {}), [LIBRARY_TAB_HISTORY_KEY]: "playlists" }, "");
-    } else if (!playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists") {
-      history.back(); return;
-    }
+  const destination = tab === "music" ? "music" : "home";
+  if (useHistory && history.state?.[LIBRARY_TAB_HISTORY_KEY] !== destination) {
+    const nextState = { ...(history.state || {}), [LIBRARY_TAB_HISTORY_KEY]: destination };
+    delete nextState.learnSearch;
+    delete nextState.learnArtist;
+    delete nextState[PLAYLIST_HISTORY_KEY];
+    history.pushState(nextState, "");
   }
-  nodes.library.classList.toggle("is-playlists-view", playlists);
-  nodes.libraryTitle.textContent = playlists ? "Playlists" : "Music";
-  nodes.libraryNav.classList.toggle("active", !playlists);
-  nodes.playlistsNav.classList.toggle("active", playlists);
-  nodes.libraryNav.setAttribute("aria-current", playlists ? "false" : "page");
-  nodes.playlistsNav.setAttribute("aria-current", playlists ? "page" : "false");
+  nodes.playlistPage.hidden = true;
+  nodes.library.hidden = false;
+  nodes.library.classList.toggle("is-music-view", destination === "music");
+  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Music";
+  for (const [button, active] of [[nodes.libraryNav, destination === "home"], [nodes.searchNav, false], [nodes.musicNav, destination === "music"]]) {
+    button?.classList.toggle("active", active);
+    button?.setAttribute("aria-current", active ? "page" : "false");
+  }
+  window.dispatchEvent(new CustomEvent("learn:base-destination", { detail: { destination } }));
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
 const openSheet = () => {
@@ -361,8 +364,9 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.sheet?.addEventListener("click", (event) => { if (event.target === nodes.sheet) closeLearnAddSheet(); });
   nodes.playlistBack?.addEventListener("click", hidePlaylist);
   nodes.playlistMenu?.addEventListener("click", showPlaylistOptions);
-  nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("library"));
-  nodes.playlistsNav?.addEventListener("click", () => switchLibraryTab("playlists"));
+  nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("home"));
+  nodes.searchNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
+  nodes.musicNav?.addEventListener("click", () => switchLibraryTab("music"));
   nodes.newPlaylist?.addEventListener("click", async () => {
     showNewPlaylistDialog();
   });
@@ -374,12 +378,19 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
     } else nodes.spotifyNote.textContent = "Spotify credentials are not configured on this server yet.";
   });
   window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
+  window.addEventListener("learn:search-opened", () => {
+    nodes.libraryNav?.classList.remove("active"); nodes.musicNav?.classList.remove("active");
+    nodes.searchNav?.classList.add("active");
+    nodes.libraryNav?.setAttribute("aria-current", "false"); nodes.musicNav?.setAttribute("aria-current", "false");
+    nodes.searchNav?.setAttribute("aria-current", "page");
+  });
+  window.addEventListener("learn:search-closed", (event) => switchLibraryTab(event.detail?.destination || "home", false));
   window.addEventListener("popstate", (event) => {
     if (!event.state?.learnAddSheet && !nodes.sheet.hidden) closeLearnAddSheet(false);
     if (!event.state?.[PLAYLIST_HISTORY_KEY] && !nodes.playlistPage.hidden) hidePlaylist(false);
-    const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library";
-    if (!nodes.library.hidden) switchLibraryTab(tab, false);
+    const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home";
+    if (!event.state?.learnSearch && !event.state?.learnArtist && !event.state?.[PLAYLIST_HISTORY_KEY]) switchLibraryTab(tab, false);
   });
-  switchLibraryTab(history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library", false);
+  switchLibraryTab(history.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home", false);
   refreshLearnLibrary().catch((error) => announce(error.message || "Your music could not be loaded."));
 };

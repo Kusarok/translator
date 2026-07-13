@@ -222,10 +222,6 @@
                   </div>
                 </section>
 
-                <nav class="learn-bottom-nav" aria-label="Music sections">
-                  <button class="active" id="learnLibraryNav" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</button>
-                  <button id="learnPlaylistsNav" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14M5 10h14M5 15h9M5 20h9"/><path d="M18 14v6m0-4 3-1v3"/></svg></span>Playlists</button>
-                </nav>
               </div>
 
               <section class="learn-search-page" id="learnSearchPage" hidden>
@@ -343,6 +339,17 @@
                 <p class="media-disclosure" id="mediaDisclosure" hidden></p>
               </article>
             </div>
+            <nav class="learn-bottom-nav" aria-label="Music navigation">
+              <button class="active" id="learnLibraryNav" type="button" aria-current="page">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home
+              </button>
+              <button id="learnSearchNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span>Search
+              </button>
+              <button id="learnMusicNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 2v6M16 2v6M8 13h8M8 17h5"/></svg></span>Your Music
+              </button>
+            </nav>
             <div class="learn-mini-player" id="learnMiniPlayer" hidden>
               <button class="mini-track-open" id="learnMiniOpen" type="button" aria-label="Open now playing">
                 <img id="learnMiniCover" alt="" hidden>

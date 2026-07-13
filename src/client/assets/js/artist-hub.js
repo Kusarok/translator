@@ -147,5 +147,9 @@ export const initArtistHub = ({ onPrepare } = {}) => {
     finally { event.detail?.onDone?.(); }
   });
   window.addEventListener("learn:open-saved-artist", (event) => openSavedArtist(event.detail?.id).catch((error) => announceError(error.message)));
+  window.addEventListener("learn:base-destination", () => {
+    if (el.page.hidden) return;
+    stopPolling(); el.page.setAttribute("aria-busy", "false"); el.page.hidden = true; el.library.hidden = false; previousPage = null;
+  });
   window.addEventListener("popstate", (event) => { if (!event.state?.learnArtist && !el.page.hidden) close(false); });
 };
