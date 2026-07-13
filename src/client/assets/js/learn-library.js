@@ -3,13 +3,16 @@ import { addTrackToLearnPlaylist, createLearnPlaylist, deleteLearnPlaylist, getL
 const $ = (id) => document.getElementById(id);
 const nodes = {
   library: $("learnLibrary"), continueSection: $("learnContinueSection"), continueList: $("learnContinue"),
-  artistsSection: $("learnArtistsSection"), artists: $("learnArtists"),
-  playlists: $("learnPlaylists"), playlistsEmpty: $("learnPlaylistsEmpty"), recent: $("learnRecent"),
+  quickSection: $("learnQuickSection"), quickAccess: $("learnQuickAccess"),
+  recentSection: $("learnRecentSection"), recent: $("learnRecent"), recentTitle: $("learnRecentTitle"),
+  artistsSection: $("learnArtistsSection"), artists: $("learnArtists"), artistsTitle: $("learnArtistsTitle"), artistsEmpty: $("learnArtistsEmpty"),
+  playlistsSection: $("learnPlaylistsSection"), playlists: $("learnPlaylists"), playlistsTitle: $("learnPlaylistsTitle"), playlistsEmpty: $("learnPlaylistsEmpty"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
-  playlistsNav: $("learnPlaylistsNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
+  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
-  connectSpotify: $("learnConnectSpotify")
+  connectSpotify: $("learnConnectSpotify"), filters: $("learnLibraryFilters"),
+  songsFilter: $("learnSongsFilter"), artistsFilter: $("learnArtistsFilter"), playlistsFilter: $("learnPlaylistsFilter")
   ,libraryNav: $("learnLibraryNav"), libraryTitle: $("learnLibraryTitle"), scroll: document.querySelector("#mediaView .media-scroll")
 };
 
@@ -20,6 +23,14 @@ let activePlaylist = null;
 let artistRefreshTimer = 0;
 const PLAYLIST_HISTORY_KEY = "learnPlaylist";
 const LIBRARY_TAB_HISTORY_KEY = "learnLibraryTab";
+const LIBRARY_FILTER_STORAGE_KEY = "translator_music_library_filter";
+const LIBRARY_FILTERS = new Set(["songs", "artists", "playlists"]);
+let libraryFilter = (() => {
+  try {
+    const saved = localStorage.getItem(LIBRARY_FILTER_STORAGE_KEY);
+    return LIBRARY_FILTERS.has(saved) ? saved : "artists";
+  } catch { return "artists"; }
+})();
 
 const announce = (message) => {
   if (!message) return;
@@ -122,23 +133,77 @@ const artistCard = (artist) => {
   return card;
 };
 
+const quickTile = ({ kind, item }) => {
+  const button = document.createElement("button"); button.type = "button"; button.className = "learn-quick-tile"; button.dataset.kind = kind;
+  const art = document.createElement(item.artwork ? "img" : "span");
+  if (item.artwork) { art.src = item.artwork; art.alt = ""; art.loading = "lazy"; }
+  else { art.className = "learn-quick-tile-art"; art.textContent = kind === "playlist" ? "♫" : kind === "artist" ? item.name?.slice(0, 1).toUpperCase() || "♪" : "♪"; }
+  const copy = document.createElement("span"); copy.className = "learn-quick-tile-copy";
+  const title = document.createElement("strong"); title.textContent = kind === "artist" ? item.name : item.title || item.name;
+  const meta = document.createElement("small"); meta.textContent = kind === "song" ? item.artist : kind;
+  copy.append(title, meta); button.append(art, copy);
+  if (kind === "song") button.addEventListener("click", () => openTrack(item));
+  else if (kind === "artist") button.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-saved-artist", { detail: { id: item.id } })));
+  else button.addEventListener("click", () => showPlaylist(item.id).catch((error) => announce(error.message || "Playlist could not be opened.")));
+  return button;
+};
+
+const renderLibraryView = () => {
+  if (!snapshot) return;
+  const musicView = nodes.library.classList.contains("is-music-view");
+  nodes.filters.hidden = !musicView;
+  nodes.quickSection.hidden = musicView || !nodes.quickAccess.children.length;
+  nodes.continueSection.hidden = musicView || !snapshot.continueLearning.length;
+  nodes.recentSection.hidden = musicView && libraryFilter !== "songs";
+  nodes.artistsSection.hidden = !musicView || libraryFilter !== "artists";
+  nodes.playlistsSection.hidden = !musicView || libraryFilter !== "playlists";
+  nodes.recentTitle.textContent = musicView ? "Songs" : "Recently added";
+  nodes.artistsTitle.textContent = "Artists";
+  nodes.playlistsTitle.textContent = "Playlists";
+  nodes.recent.replaceChildren(...(musicView ? snapshot.recent : snapshot.recent.slice(0, 6)).map((track) => trackRow(track)));
+  nodes.empty.hidden = Boolean(snapshot.recent.length);
+  nodes.artistsEmpty.hidden = Boolean(snapshot.artists?.length);
+};
+
+const selectLibraryFilter = (filter, persist = true) => {
+  libraryFilter = LIBRARY_FILTERS.has(filter) ? filter : "artists";
+  nodes.library.dataset.libraryFilter = libraryFilter;
+  for (const [button, value] of [[nodes.songsFilter, "songs"], [nodes.artistsFilter, "artists"], [nodes.playlistsFilter, "playlists"]]) {
+    const active = value === libraryFilter;
+    button?.classList.toggle("active", active);
+    button?.setAttribute("aria-selected", String(active));
+    button?.setAttribute("tabindex", active ? "0" : "-1");
+  }
+  if (persist) {
+    try { localStorage.setItem(LIBRARY_FILTER_STORAGE_KEY, libraryFilter); } catch { /* Storage may be unavailable. */ }
+  }
+  renderLibraryView();
+  nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
+};
+
 const render = (data) => {
   snapshot = data;
   clearTimeout(artistRefreshTimer);
   nodes.continueList.replaceChildren(...data.continueLearning.map(continueCard));
-  nodes.continueSection.hidden = !data.continueLearning.length;
   nodes.artists.replaceChildren(...(data.artists || []).map(artistCard));
-  nodes.artistsSection.hidden = !(data.artists || []).length;
   if ((data.artists || []).some((artist) => ["queued", "scanning"].includes(artist.status))) {
     artistRefreshTimer = setTimeout(() => refreshLearnLibrary().catch(() => {}), 4000);
   }
   nodes.playlists.replaceChildren(...data.playlists.map(playlistCard));
   nodes.playlistsEmpty.hidden = Boolean(data.playlists.length);
-  nodes.recent.replaceChildren(...data.recent.map((track) => trackRow(track)));
-  nodes.empty.hidden = Boolean(data.recent.length);
+  const quickItems = [
+    data.recent[0] && { kind: "song", item: data.recent[0] },
+    data.artists?.[0] && { kind: "artist", item: data.artists[0] },
+    data.recent[1] && { kind: "song", item: data.recent[1] },
+    data.artists?.[1] && { kind: "artist", item: data.artists[1] },
+    data.playlists[0] && { kind: "playlist", item: data.playlists[0] },
+    data.recent[2] && { kind: "song", item: data.recent[2] }
+  ].filter(Boolean);
+  nodes.quickAccess.replaceChildren(...quickItems.map(quickTile));
   nodes.spotifyNote.textContent = data.spotify.configured
     ? "Connect your account to import playlists you own or collaborate on."
     : "Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to enable account connection.";
+  renderLibraryView();
 };
 
 export const refreshLearnLibrary = async () => render(await getLearnLibrary());
@@ -279,20 +344,25 @@ const hidePlaylist = (useHistory = true) => {
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
 const switchLibraryTab = (tab, useHistory = true) => {
-  const playlists = tab === "playlists";
-  if (useHistory) {
-    if (playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] !== "playlists") {
-      history.pushState({ ...(history.state || {}), [LIBRARY_TAB_HISTORY_KEY]: "playlists" }, "");
-    } else if (!playlists && history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists") {
-      history.back(); return;
-    }
+  const destination = tab === "music" ? "music" : "home";
+  if (useHistory && history.state?.[LIBRARY_TAB_HISTORY_KEY] !== destination) {
+    const nextState = { ...(history.state || {}), [LIBRARY_TAB_HISTORY_KEY]: destination };
+    delete nextState.learnSearch;
+    delete nextState.learnArtist;
+    delete nextState[PLAYLIST_HISTORY_KEY];
+    history.pushState(nextState, "");
   }
-  nodes.library.classList.toggle("is-playlists-view", playlists);
-  nodes.libraryTitle.textContent = playlists ? "Playlists" : "Music";
-  nodes.libraryNav.classList.toggle("active", !playlists);
-  nodes.playlistsNav.classList.toggle("active", playlists);
-  nodes.libraryNav.setAttribute("aria-current", playlists ? "false" : "page");
-  nodes.playlistsNav.setAttribute("aria-current", playlists ? "page" : "false");
+  nodes.playlistPage.hidden = true;
+  nodes.library.hidden = false;
+  nodes.library.classList.toggle("is-music-view", destination === "music");
+  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Music";
+  for (const [button, active] of [[nodes.libraryNav, destination === "home"], [nodes.searchNav, false], [nodes.musicNav, destination === "music"]]) {
+    button?.classList.toggle("active", active);
+    button?.setAttribute("aria-current", active ? "page" : "false");
+  }
+  if (destination === "music") selectLibraryFilter(libraryFilter, false);
+  else renderLibraryView();
+  window.dispatchEvent(new CustomEvent("learn:base-destination", { detail: { destination } }));
   nodes.scroll?.scrollTo({ top: 0, behavior: "auto" });
 };
 const openSheet = () => {
@@ -361,8 +431,12 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.sheet?.addEventListener("click", (event) => { if (event.target === nodes.sheet) closeLearnAddSheet(); });
   nodes.playlistBack?.addEventListener("click", hidePlaylist);
   nodes.playlistMenu?.addEventListener("click", showPlaylistOptions);
-  nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("library"));
-  nodes.playlistsNav?.addEventListener("click", () => switchLibraryTab("playlists"));
+  nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("home"));
+  nodes.searchNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
+  nodes.musicNav?.addEventListener("click", () => switchLibraryTab("music"));
+  nodes.songsFilter?.addEventListener("click", () => selectLibraryFilter("songs"));
+  nodes.artistsFilter?.addEventListener("click", () => selectLibraryFilter("artists"));
+  nodes.playlistsFilter?.addEventListener("click", () => selectLibraryFilter("playlists"));
   nodes.newPlaylist?.addEventListener("click", async () => {
     showNewPlaylistDialog();
   });
@@ -374,12 +448,22 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
     } else nodes.spotifyNote.textContent = "Spotify credentials are not configured on this server yet.";
   });
   window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
+  window.addEventListener("learn:search-opened", () => {
+    activePlaylist = null; nodes.playlistPage.hidden = true; nodes.library.hidden = true;
+    nodes.libraryNav?.classList.remove("active"); nodes.musicNav?.classList.remove("active");
+    nodes.searchNav?.classList.add("active");
+    nodes.libraryNav?.setAttribute("aria-current", "false"); nodes.musicNav?.setAttribute("aria-current", "false");
+    nodes.searchNav?.setAttribute("aria-current", "page");
+  });
+  window.addEventListener("learn:search-closed", (event) => switchLibraryTab(event.detail?.destination || "home", false));
   window.addEventListener("popstate", (event) => {
     if (!event.state?.learnAddSheet && !nodes.sheet.hidden) closeLearnAddSheet(false);
-    if (!event.state?.[PLAYLIST_HISTORY_KEY] && !nodes.playlistPage.hidden) hidePlaylist(false);
-    const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library";
-    if (!nodes.library.hidden) switchLibraryTab(tab, false);
+    const playlistId = event.state?.[PLAYLIST_HISTORY_KEY];
+    if (playlistId && nodes.playlistPage.hidden) showPlaylist(playlistId).catch((error) => announce(error.message || "Playlist could not be opened."));
+    else if (!playlistId && !nodes.playlistPage.hidden) hidePlaylist(false);
+    const tab = event.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home";
+    if (!event.state?.learnSearch && !event.state?.learnArtist && !event.state?.[PLAYLIST_HISTORY_KEY]) switchLibraryTab(tab, false);
   });
-  switchLibraryTab(history.state?.[LIBRARY_TAB_HISTORY_KEY] === "playlists" ? "playlists" : "library", false);
+  switchLibraryTab(history.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home", false);
   refreshLearnLibrary().catch((error) => announce(error.message || "Your music could not be loaded."));
 };

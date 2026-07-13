@@ -17,7 +17,10 @@ const el = Object.fromEntries(Object.entries({
   miniCoverFallback: "learnMiniCoverFallback", miniTitle: "learnMiniTitle", miniArtist: "learnMiniArtist",
   miniLyric: "learnMiniLyric", miniPlay: "learnMiniPlay", miniClose: "learnMiniClose", miniProgress: "learnMiniProgress",
   lesson: "mediaLesson", lyrics: "mediaLyrics", lessonClose: "mediaLessonClose",
-  lessonTitle: "mediaLessonTitle", lessonArtist: "mediaLessonArtist", lessonCover: "mediaLessonCover"
+  lessonTitle: "mediaLessonTitle", lessonArtist: "mediaLessonArtist", lessonCover: "mediaLessonCover",
+  lessonNowTab: "lessonNowPlayingTab", lessonLearnTab: "lessonLearnTab", lessonContent: "lessonContent",
+  nowPanel: "lessonNowPlayingPanel", nowCover: "mediaNowPlayingCover", nowFallback: "mediaNowPlayingFallback",
+  nowTitle: "mediaNowPlayingTitle", nowArtist: "mediaNowPlayingArtist", openLyrics: "lessonOpenLyrics"
 }).map(([key, id]) => [key, document.getElementById(id)]));
 
 let track = null;
@@ -32,6 +35,8 @@ let operationId = 0;
 let requestController = null;
 let sessionWriteTimer = 0;
 let lastProgressSave = 0;
+let playerMode = "now";
+let swipeStart = null;
 // Slow-first cycle: language learners lean on 0.75× / 0.5× to catch every syllable.
 const SPEEDS = [1, 0.75, 0.5, 1.25, 1.5];
 const player = {};
@@ -74,7 +79,8 @@ const persistPlaybackSoon = () => {
     track.playback = {
       currentTime: audioEl.currentTime,
       playbackRate: audioEl.playbackRate,
-      repeatLine
+      repeatLine,
+      playerMode
     };
     persistTrack();
   }, 300);
@@ -164,6 +170,31 @@ const showMiniPlayer = (visible = true) => {
     el.miniCoverFallback.hidden = false;
   }
   setPlaying(!audioEl.paused);
+};
+
+const setPlayerMode = (mode, { focus = false } = {}) => {
+  playerMode = mode === "learn" ? "learn" : "now";
+  const learning = playerMode === "learn";
+  el.lesson.classList.toggle("is-learning-mode", learning);
+  el.nowPanel.hidden = learning;
+  el.lyrics.hidden = !learning;
+  for (const [button, active] of [[el.lessonNowTab, !learning], [el.lessonLearnTab, learning]]) {
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  }
+  for (const control of [player.speed, player.repeat].filter(Boolean)) {
+    control.tabIndex = learning ? 0 : -1;
+    control.setAttribute("aria-hidden", String(!learning));
+  }
+  if (learning) {
+    if (!el.lyrics.children.length) renderLyrics();
+    const time = audioEl?.currentTime || 0;
+    activeIndex = -1;
+    requestAnimationFrame(() => syncAt(time));
+  }
+  if (track && audioEl) persistPlaybackSoon();
+  if (focus) (learning ? el.lessonLearnTab : el.lessonNowTab).focus({ preventScroll: true });
 };
 
 const mountAudioPlayer = (streamUrl) => {
@@ -407,13 +438,17 @@ const showPreparedTrack = () => {
   el.meta.textContent = `${track.artist}${track.album ? ` · ${track.album}` : ""}`;
   el.lessonTitle.textContent = track.title;
   el.lessonArtist.textContent = track.artist;
+  el.nowTitle.textContent = track.title;
+  el.nowArtist.textContent = track.artist;
   el.original.href = track.sourceUrl;
   el.original.hidden = !track.sourceUrl;
   if (track.artwork) {
     el.artwork.src = track.artwork; el.artwork.hidden = false;
+    el.nowCover.src = track.artwork; el.nowCover.hidden = false; el.nowFallback.hidden = true;
     el.result.style.setProperty("--result-art", `url("${track.artwork.replaceAll('"', '')}")`);
   } else {
     el.artwork.hidden = true;
+    el.nowCover.hidden = true; el.nowFallback.hidden = false;
     el.result.style.removeProperty("--result-art");
   }
   el.lesson.hidden = true;
@@ -462,7 +497,7 @@ const syncAt = (seconds) => {
     el.miniLyric.textContent = activeIndex >= 0 ? (track.lines[activeIndex]?.text || "") : "";
     el.miniArtist.hidden = Boolean(el.miniLyric.textContent);
   }
-  if (row) {
+  if (row && playerMode === "learn") {
     const target = row.offsetTop - (el.lyrics.clientHeight - row.offsetHeight) / 2;
     el.lyrics.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
   }
@@ -479,6 +514,7 @@ const syncLoop = () => {
 
 const beginPreparation = () => {
   el.view.classList.add("is-preparing");
+  playerMode = "now";
   operationId += 1;
   const token = operationId;
   requestController?.abort();
@@ -505,7 +541,7 @@ const prepareTranslation = async (target, token) => {
     target.lines = target.lines.map((line, index) => ({ ...line, translation: result.translations[index] || "" }));
     target.translationCached = true;
     persistTrack();
-    if (!el.lesson.hidden) {
+    if (!el.lesson.hidden && playerMode === "learn") {
       const currentTime = audioEl?.currentTime || 0;
       activeIndex = -1;
       renderLyrics();
@@ -603,8 +639,8 @@ const openLesson = () => {
   } else {
     el.lessonCover.hidden = true;
   }
-  renderLyrics();
   if (!audioEl) mountAudioPlayer(track.streamUrl);
+  setPlayerMode(playerMode);
   cancelAnimationFrame(syncFrame);
   if (audioEl && !audioEl.paused) syncFrame = requestAnimationFrame(syncLoop);
 };
@@ -694,7 +730,14 @@ export const initMedia = () => {
   const hadLearnHistory = history.state?.[HISTORY_VERSION_KEY] === HISTORY_VERSION &&
     LAYERS.has(history.state?.[HISTORY_KEY]);
   if (!hadLearnHistory) history.replaceState(historyState("input"), "");
-  window.addEventListener("popstate", (event) => applyLayer(event.state?.[HISTORY_KEY] || "input"));
+  window.addEventListener("popstate", (event) => {
+    const layer = event.state?.[HISTORY_KEY] || "input";
+    const playerSurfaceOpen = !el.lesson.hidden || !el.result.hidden || el.view.classList.contains("has-result");
+    // Destination changes (Home/Search/Your Music) share the same URL and also
+    // emit popstate. They must not reset scroll, focus, or the active mini player.
+    if (layer === "input" && !playerSurfaceOpen) return;
+    applyLayer(layer);
+  });
   el.form?.addEventListener("submit", submit);
   el.start?.addEventListener("click", startLesson);
   el.lessonClose?.addEventListener("click", goBack);
@@ -716,8 +759,29 @@ export const initMedia = () => {
     el.player.replaceChildren();
     el.lyrics.replaceChildren();
   });
+  el.lessonNowTab?.addEventListener("click", () => setPlayerMode("now"));
+  el.lessonLearnTab?.addEventListener("click", () => setPlayerMode("learn"));
+  for (const tab of [el.lessonNowTab, el.lessonLearnTab]) tab?.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault(); setPlayerMode(event.key === "ArrowRight" ? "learn" : "now", { focus: true });
+  });
+  el.openLyrics?.addEventListener("click", () => setPlayerMode("learn", { focus: true }));
+  el.lessonContent?.addEventListener("touchstart", (event) => {
+    const touch = event.touches[0];
+    swipeStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }, { passive: true });
+  el.lessonContent?.addEventListener("touchend", (event) => {
+    const touch = event.changedTouches[0];
+    if (!swipeStart || !touch) return;
+    const dx = touch.clientX - swipeStart.x;
+    const dy = touch.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    setPlayerMode(dx < 0 ? "learn" : "now");
+  }, { passive: true });
   initLearnLibrary({
     onOpenTrack: async (lesson) => {
+      if (track?.trackId !== lesson.trackId) playerMode = "now";
       if (audioEl && track?.trackId !== lesson.trackId) {
         cleanupAudio();
         el.player.replaceChildren();
@@ -762,6 +826,7 @@ export const initMedia = () => {
     const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY));
     if (saved?.spotifyId && Array.isArray(saved.lines)) {
       track = saved;
+      playerMode = saved.playback?.playerMode === "learn" ? "learn" : "now";
       el.input.value = saved.sourceUrl || "";
       // A fresh tab has only the input entry. Keep it intact and add the restored result
       // above it, otherwise Back has nowhere inside Learn to return to and unloads the app.

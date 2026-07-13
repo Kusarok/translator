@@ -79,7 +79,7 @@ const showArtist = async (artist) => {
   previousPage.hidden = true; el.page.hidden = false;
   el.page.setAttribute("aria-busy", "true");
   el.scroll?.scrollTo({ top: 0, behavior: "auto" });
-  if (!history.state?.learnArtist) history.pushState({ ...(history.state || {}), learnArtist: true }, "");
+  if (history.state?.learnArtist !== artist.id) history.pushState({ ...(history.state || {}), learnArtist: artist.id }, "");
   render(artist); await poll(artist.id, controller.signal);
 };
 
@@ -147,5 +147,13 @@ export const initArtistHub = ({ onPrepare } = {}) => {
     finally { event.detail?.onDone?.(); }
   });
   window.addEventListener("learn:open-saved-artist", (event) => openSavedArtist(event.detail?.id).catch((error) => announceError(error.message)));
-  window.addEventListener("popstate", (event) => { if (!event.state?.learnArtist && !el.page.hidden) close(false); });
+  window.addEventListener("learn:base-destination", () => {
+    if (el.page.hidden) return;
+    stopPolling(); el.page.setAttribute("aria-busy", "false"); el.page.hidden = true; el.library.hidden = false; previousPage = null;
+  });
+  window.addEventListener("popstate", (event) => {
+    const artistId = typeof event.state?.learnArtist === "string" ? event.state.learnArtist : null;
+    if (artistId && el.page.hidden) openSavedArtist(artistId).catch((error) => announceError(error.message));
+    else if (!artistId && !el.page.hidden) close(false);
+  });
 };

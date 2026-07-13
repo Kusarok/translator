@@ -190,13 +190,24 @@
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
                 </form>
 
+                <div class="learn-library-filters" id="learnLibraryFilters" role="tablist" aria-label="Your music" hidden>
+                  <button id="learnSongsFilter" type="button" role="tab" data-library-filter="songs">Songs</button>
+                  <button id="learnArtistsFilter" type="button" role="tab" data-library-filter="artists">Artists</button>
+                  <button id="learnPlaylistsFilter" type="button" role="tab" data-library-filter="playlists">Playlists</button>
+                </div>
+
+                <section class="learn-section learn-quick-section" id="learnQuickSection" hidden>
+                  <div class="learn-section-heading"><h2>Jump back in</h2></div>
+                  <div class="learn-quick-grid" id="learnQuickAccess"></div>
+                </section>
+
                 <section class="learn-section" id="learnContinueSection" hidden>
                   <div class="learn-section-heading"><h2>Continue listening</h2></div>
                   <div class="learn-continue" id="learnContinue"></div>
                 </section>
 
                 <section class="learn-section" id="learnRecentSection">
-                  <div class="learn-section-heading"><h2>Recently added</h2></div>
+                  <div class="learn-section-heading"><h2 id="learnRecentTitle">Recently added</h2></div>
                   <div class="learn-track-list" id="learnRecent"></div>
                   <div class="learn-library-empty" id="learnLibraryEmpty" hidden>
                     <div class="learn-empty-icon">♪</div>
@@ -207,13 +218,14 @@
                 </section>
 
                 <section class="learn-section" id="learnArtistsSection" hidden>
-                  <div class="learn-section-heading"><h2>Your artists</h2></div>
+                  <div class="learn-section-heading"><h2 id="learnArtistsTitle">Your artists</h2></div>
                   <div class="learn-artist-grid" id="learnArtists"></div>
+                  <div class="learn-collection-empty" id="learnArtistsEmpty" hidden><span>♪</span><strong>No artists yet</strong><small>Open an artist from Search to add them here.</small></div>
                 </section>
 
                 <section class="learn-section" id="learnPlaylistsSection">
                   <div class="learn-section-heading">
-                    <h2>Your playlists</h2>
+                    <h2 id="learnPlaylistsTitle">Your playlists</h2>
                     <button id="learnNewPlaylist" type="button">New playlist</button>
                   </div>
                   <div class="learn-playlist-grid" id="learnPlaylists"></div>
@@ -222,10 +234,6 @@
                   </div>
                 </section>
 
-                <nav class="learn-bottom-nav" aria-label="Music sections">
-                  <button class="active" id="learnLibraryNav" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</button>
-                  <button id="learnPlaylistsNav" type="button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14M5 10h14M5 15h9M5 20h9"/><path d="M18 14v6m0-4 3-1v3"/></svg></span>Playlists</button>
-                </nav>
               </div>
 
               <section class="learn-search-page" id="learnSearchPage" hidden>
@@ -337,12 +345,40 @@
                     </div>
                     <span class="lesson-ytmusic-mark" aria-label="Online music">▶</span>
                   </header>
-                  <div class="media-lyrics" id="mediaLyrics" aria-live="polite"></div>
+                  <div class="lesson-mode-tabs" role="tablist" aria-label="Player view">
+                    <button class="active" id="lessonNowPlayingTab" type="button" role="tab" aria-selected="true" aria-controls="lessonNowPlayingPanel">Now Playing</button>
+                    <button id="lessonLearnTab" type="button" role="tab" aria-selected="false" aria-controls="mediaLyrics">Lyrics &amp; Learn</button>
+                  </div>
+                  <div class="lesson-content" id="lessonContent">
+                    <section class="lesson-now-playing" id="lessonNowPlayingPanel" role="tabpanel" aria-labelledby="lessonNowPlayingTab">
+                      <div class="lesson-now-art">
+                        <img id="mediaNowPlayingCover" alt="" hidden>
+                        <span id="mediaNowPlayingFallback" aria-hidden="true">♪</span>
+                      </div>
+                      <div class="lesson-now-copy">
+                        <h1 id="mediaNowPlayingTitle"></h1>
+                        <p id="mediaNowPlayingArtist"></p>
+                      </div>
+                      <button class="lesson-open-lyrics" id="lessonOpenLyrics" type="button">Lyrics &amp; translation <span>›</span></button>
+                    </section>
+                    <div class="media-lyrics" id="mediaLyrics" role="tabpanel" aria-labelledby="lessonLearnTab" aria-live="polite" hidden></div>
+                  </div>
                   <div class="media-player-wrap" id="mediaPlayerWrap"></div>
                 </div>
                 <p class="media-disclosure" id="mediaDisclosure" hidden></p>
               </article>
             </div>
+            <nav class="learn-bottom-nav" aria-label="Music navigation">
+              <button class="active" id="learnLibraryNav" type="button" aria-current="page">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home
+              </button>
+              <button id="learnSearchNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span>Search
+              </button>
+              <button id="learnMusicNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 2v6M16 2v6M8 13h8M8 17h5"/></svg></span>Your Music
+              </button>
+            </nav>
             <div class="learn-mini-player" id="learnMiniPlayer" hidden>
               <button class="mini-track-open" id="learnMiniOpen" type="button" aria-label="Open now playing">
                 <img id="learnMiniCover" alt="" hidden>

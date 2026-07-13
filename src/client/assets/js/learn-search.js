@@ -14,6 +14,7 @@ let controller = null;
 let pollTimer = 0;
 let debounceTimer = 0;
 let prepareHandler = null;
+const LIBRARY_TAB_HISTORY_KEY = "learnLibraryTab";
 
 const announce = (message) => {
   let toast = document.querySelector(".learn-toast");
@@ -28,6 +29,27 @@ const announce = (message) => {
 const stop = () => {
   clearTimeout(pollTimer); clearTimeout(debounceTimer);
   controller?.abort(); controller = null;
+};
+
+const revealSearch = (useHistory = true) => {
+  if (useHistory && !history.state?.learnSearch) {
+    history.pushState({ ...(history.state || {}), learnSearch: true }, "");
+  }
+  el.library.hidden = true;
+  el.page.hidden = false;
+  el.page.setAttribute("aria-busy", "false");
+  el.scroll?.scrollTo({ top: 0, behavior: "auto" });
+  window.dispatchEvent(new CustomEvent("learn:search-opened"));
+};
+
+const openSearchPage = () => {
+  stop();
+  window.dispatchEvent(new CustomEvent("learn:base-destination", { detail: { destination: "search" } }));
+  revealSearch(true);
+  el.loading.hidden = true;
+  el.empty.hidden = true;
+  if (!el.results.children.length) el.summary.textContent = "Search by song, artist, or a lyric line.";
+  requestAnimationFrame(() => el.pageInput.focus({ preventScroll: true }));
 };
 
 const resultCard = (result) => {
@@ -135,9 +157,8 @@ const poll = async (id, signal) => {
 const search = async (value) => {
   const query = String(value || "").trim();
   if (query.length < 2) return;
-  stop(); controller = new AbortController();
-  if (!history.state?.learnSearch) history.pushState({ ...(history.state || {}), learnSearch: true }, "");
-  el.library.hidden = true; el.page.hidden = false; el.pageInput.value = query;
+  stop(); revealSearch(true); controller = new AbortController();
+  el.pageInput.value = query;
   el.results.replaceChildren(); el.artist.replaceChildren(); el.empty.hidden = true; el.loading.hidden = false;
   el.page.setAttribute("aria-busy", "true");
   el.summary.textContent = ""; el.stage.textContent = "Finding songs with lyrics…";
@@ -164,6 +185,8 @@ const close = (useHistory = true) => {
   el.input.value = ""; el.pageInput.value = ""; el.results.replaceChildren();
   el.artist.replaceChildren();
   el.scroll?.scrollTo({ top: 0, behavior: "auto" });
+  const destination = history.state?.[LIBRARY_TAB_HISTORY_KEY] === "music" ? "music" : "home";
+  window.dispatchEvent(new CustomEvent("learn:search-closed", { detail: { destination } }));
 };
 
 export const closeLearnSearch = close;
@@ -179,6 +202,8 @@ export const initLearnSearch = ({ onPrepare } = {}) => {
   });
   el.clear?.addEventListener("click", clearSearch);
   el.back?.addEventListener("click", close);
+  window.addEventListener("learn:open-search", openSearchPage);
+  window.addEventListener("learn:base-destination", () => { if (!el.page.hidden) close(false); });
   window.addEventListener("popstate", (event) => {
     if (!event.state?.learnSearch && !el.page.hidden) close(false);
   });
