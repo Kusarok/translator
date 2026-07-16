@@ -198,7 +198,8 @@ test("full player defaults to listening and keeps learning in a separate swipeab
   assert.match(html, /id="lessonLearnTab"[^>]*aria-selected="false"/);
   assert.match(html, /id="mediaLyrics"[^>]*hidden/);
   assert.match(mediaApp, /const setPlayerMode = \(mode/);
-  assert.match(mediaApp, /playerMode = mode === "learn" \? "learn" : "now"/);
+  assert.match(mediaApp, /playerMode = mode === "learn" &&[\s\S]*?track\?\.lines\?\.length \? "learn" : "now"/);
+  assert.match(mediaApp, /lessonLearnTab\.hidden = track\.hasLyrics === false/);
   assert.match(mediaApp, /touchstart/);
   assert.match(mediaApp, /touchend/);
   assert.match(mediaApp, /setPlayerMode\(dx < 0 \? "learn" : "now"\)/);

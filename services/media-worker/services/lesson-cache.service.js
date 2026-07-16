@@ -87,10 +87,9 @@ export const cacheTranslation = (payload) => {
 const lessonForTrack = (track) => {
   if (!track) return null;
   const lyrics = repositories.lyrics.findForTrack(track.id)[0];
-  if (!lyrics) return null;
-  const lines = readJson(lyrics.relative_path);
+  const lines = lyrics ? readJson(lyrics.relative_path) : [];
   if (!Array.isArray(lines)) return null;
-  const translation = repositories.translations.findLatest(lyrics.id, "fa");
+  const translation = lyrics ? repositories.translations.findLatest(lyrics.id, "fa") : null;
   const translations = translation ? readJson(translation.relative_path) : null;
   const media = repositories.media.findReadyForTrack(track.id);
   const artwork = repositories.artwork.findForTrack(track.id);
@@ -99,7 +98,8 @@ const lessonForTrack = (track) => {
   return {
     spotifyId: track.source === "spotify" ? track.external_id : null, sourceUrl: track.source_url, title: track.title, artist: track.artist,
     album: track.album, duration: track.duration_seconds, artwork: artwork ? `/api/media/artwork/${artwork.id}` : track.artwork_url,
-    lrclibId: lyrics.external_id, trackId: track.id, lyricsId: lyrics.id,
+    lrclibId: lyrics?.external_id || null, trackId: track.id, lyricsId: lyrics?.id || null,
+    hasLyrics: Boolean(lyrics && lines.length),
     lines: lines.map((line, index) => ({ ...line, translation: Array.isArray(translations) ? translations[index] || "" : "" })),
     translationCached: Array.isArray(translations),
     mediaId: mediaExists ? media.id : null,

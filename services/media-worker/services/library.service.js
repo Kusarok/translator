@@ -16,6 +16,7 @@ const trackView = (row) => ({
   artwork: artworkUrl(row),
   mediaId: row.media_id || null,
   ready: Boolean(row.media_id),
+  hasLyrics: Boolean(row.has_lyrics),
   learningStatus: row.learning_status || "new",
   completionPercent: Number(row.completion_percent || 0),
   lastOpenedAt: row.last_opened_at || null,

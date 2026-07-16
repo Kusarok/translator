@@ -19,6 +19,11 @@ const CATALOG = Object.freeze({
   licenseCode: "CC BY 4.0",
   licenseUrl: "https://creativecommons.org/licenses/by/4.0/"
 });
+const HOLIZNA = Object.freeze({
+  id: "holiznacc0-orphaned-media", artist: "HoliznaCC0", album: "Orphaned Media",
+  pageUrl: "https://freemusicarchive.org/music/holiznacc0/orphaned-media",
+  licenseCode: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/"
+});
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -78,7 +83,6 @@ export const parseJoshWoodwardSong = (html, pageUrl) => {
   const licenseUrl = String(metadata.license || "").replace(/\/+$/, "/");
   if (licenseUrl !== CATALOG.licenseUrl) return null;
   const lyrics = String(metadata.recordingOf?.lyrics?.text || "").replaceAll("\r\n", "\n").trim();
-  if (!lyrics) return null;
   return {
     externalId: `${CATALOG.id}:${new URL(pageUrl).pathname.split("/").filter(Boolean).at(-1)}`,
     title: String(metadata.name || "").trim(), artist: CATALOG.artist,
@@ -93,6 +97,24 @@ const songUrls = async () => {
   const xml = await (await fetchRetry(CATALOG.sitemap)).text();
   return [...xml.matchAll(/<loc>(https:\/\/www\.joshwoodward\.com\/song\/[^<]+)<\/loc>/g)]
     .map((match) => htmlDecode(match[1]));
+};
+
+const holiznaSongs = async () => {
+  const html = await (await fetchRetry(HOLIZNA.pageUrl)).text();
+  if (!/CC0 1\.0 Universal/i.test(html)) throw new Error("The HoliznaCC0 album no longer declares CC0.");
+  const artworkUrl = htmlDecode(html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i)?.[1] || "");
+  const seen = new Set();
+  return [...html.matchAll(/data-track-info='([^']+)'/g)].flatMap((match) => {
+    try {
+      const item = JSON.parse(htmlDecode(match[1]));
+      if (!item.id || !item.fileUrl || seen.has(item.id)) return [];
+      seen.add(item.id);
+      return [{ externalId: `holiznacc0:${item.id}`, title: item.title, artist: HOLIZNA.artist,
+        album: item.albumTitle || HOLIZNA.album, lyrics: "", pageUrl: item.url,
+        audioUrl: item.fileUrl, artworkUrl, declaredBytes: null,
+        licenseCode: HOLIZNA.licenseCode, licenseUrl: HOLIZNA.licenseUrl }];
+    } catch { return []; }
+  });
 };
 
 const durationOf = (target) => {
@@ -171,32 +193,35 @@ const persist = async (song, html) => {
     durationSeconds: duration, checksum: digest(fs.readFileSync(audioTarget)), status: "ready", lastVerifiedAt: new Date().toISOString() });
   atomicJson(path.join(mediaDirectory, "metadata.json"), { ...song, lyrics: undefined, trackId: track.id, mediaId, duration });
 
-  const lines = lyricLines(song.lyrics, duration);
-  const contentHash = digest(JSON.stringify(lines));
-  let lyrics = repositories.lyrics.findForTrack(track.id).find((row) => row.content_hash === contentHash);
-  if (!lyrics) {
-    const id = createId("lyrics");
-    const lyricsTarget = path.join(config.lyricsDir, id, "original.json");
-    atomicJson(lyricsTarget, lines);
-    lyrics = repositories.lyrics.upsert({ id, trackId: track.id, source: "open-catalog", externalId: song.externalId,
-      language: "en", contentHash, relativePath: relative(lyricsTarget) });
+  let lyrics = null;
+  if (song.lyrics) {
+    const lines = lyricLines(song.lyrics, duration);
+    const contentHash = digest(JSON.stringify(lines));
+    lyrics = repositories.lyrics.findForTrack(track.id).find((row) => row.content_hash === contentHash);
+    if (!lyrics) {
+      const id = createId("lyrics");
+      const lyricsTarget = path.join(config.lyricsDir, id, "original.json");
+      atomicJson(lyricsTarget, lines);
+      lyrics = repositories.lyrics.upsert({ id, trackId: track.id, source: "open-catalog", externalId: song.externalId,
+        language: "en", contentHash, relativePath: relative(lyricsTarget) });
+    }
+    repositories.search.indexLyrics({ trackId: track.id, lyricsId: lyrics.id, title: song.title, artist: song.artist,
+      album: song.album, lyrics: lines.map((line) => line.text).join("\n") });
   }
-  repositories.search.indexLyrics({ trackId: track.id, lyricsId: lyrics.id, title: song.title, artist: song.artist,
-    album: song.album, lyrics: lines.map((line) => line.text).join("\n") });
 
   const licenseId = existingLicense?.id || createId("license");
   const evidenceTarget = path.join(config.dataDir, "licenses", licenseId, "evidence.json");
-  const evidence = { publisher: CATALOG.artist, pageUrl: song.pageUrl, audioUrl: song.audioUrl,
+  const evidence = { publisher: song.artist, pageUrl: song.pageUrl, audioUrl: song.audioUrl,
     title: song.title, album: song.album, licenseCode: song.licenseCode, licenseUrl: song.licenseUrl,
     pageSha256: digest(html), audioSha256: digest(fs.readFileSync(audioTarget)), checkedAt: new Date().toISOString() };
   atomicJson(evidenceTarget, evidence);
   repositories.licenses.upsert({ id: licenseId, trackId: track.id, licenseCode: song.licenseCode,
-    licenseUrl: song.licenseUrl, rightsHolder: CATALOG.artist,
-    attributionText: `${song.title} by ${CATALOG.artist} — ${song.licenseCode}`,
+    licenseUrl: song.licenseUrl, rightsHolder: song.artist,
+    attributionText: `${song.title} by ${song.artist} — ${song.licenseCode}`,
     evidenceUrl: song.pageUrl, evidenceHash: digest(JSON.stringify(evidence)), evidenceRelativePath: relative(evidenceTarget),
-    coversRecording: true, coversComposition: true, coversLyrics: true, verifiedAt: evidence.checkedAt });
+    coversRecording: true, coversComposition: true, coversLyrics: Boolean(song.lyrics), verifiedAt: evidence.checkedAt });
   await cacheArtwork(track.id, song.artworkUrl);
-  repositories.lyricTranslationJobs.schedule({ trackId: track.id, targetLanguage: "fa" });
+  if (lyrics) repositories.lyricTranslationJobs.schedule({ trackId: track.id, targetLanguage: "fa" });
   return "imported";
 };
 
@@ -232,6 +257,22 @@ const main = async () => {
     }
   };
   await Promise.all(Array.from({ length: options.concurrency }, worker));
+  if (!options.dryRun && options.limit === Infinity) {
+    const holizna = await holiznaSongs();
+    counters.discovered += holizna.length;
+    for (const [offset, song] of holizna.entries()) {
+      try {
+        const evidenceHtml = await (await fetchRetry(song.pageUrl)).text();
+        if (!/CC0 1\.0 Universal/i.test(evidenceHtml)) throw new Error("The track page does not declare CC0.");
+        counters.eligible += 1;
+        const result = await persist(song, evidenceHtml); counters[result] += 1;
+        process.stdout.write(`[Holizna ${offset + 1}/${holizna.length}] ${result}: ${song.title}\n`);
+      } catch (error) {
+        counters.failed += 1;
+        process.stderr.write(`[Holizna ${offset + 1}/${holizna.length}] failed: ${song.title}: ${error.message}\n`);
+      }
+    }
+  }
   process.stdout.write(`${JSON.stringify(counters)}\n`);
   if (counters.failed) process.exitCode = 2;
 };
