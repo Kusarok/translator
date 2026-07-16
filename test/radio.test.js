@@ -34,5 +34,6 @@ test("music home includes a persistent animated radio player and background cont
   assert.match(client, /navigator\.mediaSession/);
   assert.match(client, /new MediaMetadata/);
   assert.match(client, /window\.Hls/);
+  assert.match(html, /\/vendor\/hls\.min\.js\?v=__ASSET_VERSION__/);
   assert.match(css, /\.radio-equalizer/);
 });
