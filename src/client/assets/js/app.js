@@ -42,6 +42,7 @@ const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
 const modeMenu = document.querySelector("#modeMenu");
 const modeIcon = document.querySelector("#modeIcon");
+const modeIconUse = modeIcon?.querySelector("use");
 const modeLabel = document.querySelector("#modeLabel");
 const views = {
   translator: document.querySelector("#translatorView"),
@@ -89,7 +90,7 @@ const switchView = (view) => {
   });
 
   if (activeTab) {
-    modeIcon.textContent = activeTab.dataset.icon;
+    modeIconUse?.setAttribute("href", `#icon-${activeTab.dataset.icon}`);
     const labelSpan = activeTab.querySelector("[data-i18n]");
     if (labelSpan) {
       modeLabel.dataset.i18n = labelSpan.dataset.i18n;
