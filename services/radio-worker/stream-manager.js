@@ -68,6 +68,7 @@ const startStation = (station) => {
   const child = spawn(config.ffmpeg, [
     "-nostdin", "-hide_banner", "-loglevel", "warning",
     "-rw_timeout", "15000000",
+    "-re",
     "-i", station.sourceUrl,
     "-map", "0:a:0", "-vn",
     "-c:a", "libmp3lame", "-b:a", "128k", "-ar", "48000", "-ac", "2",

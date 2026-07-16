@@ -21,6 +21,7 @@ test("radio worker creates one native background stream shared by every listener
   const source = fs.readFileSync("services/radio-worker/stream-manager.js", "utf8");
   const server = fs.readFileSync("services/radio-worker/server.js", "utf8");
   assert.match(source, /"-map", "0:a:0", "-vn"/);
+  assert.match(source, /"-re"/);
   assert.match(source, /"-c:a", "libmp3lame", "-b:a", "128k"/);
   assert.match(source, /state\.listeners/);
   assert.match(server, /"Content-Type": "audio\/mpeg"/);
