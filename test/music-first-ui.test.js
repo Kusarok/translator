@@ -26,6 +26,7 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnArtistPage",
     "learnPlaylistsSection",
     "learnMusicNav",
+    "learnToolsNav",
     "learnLibraryFilters",
     "learnSongsFilter",
     "learnArtistsFilter",
@@ -51,14 +52,15 @@ test("music-first shell keeps every primary destination and the persistent mini 
   assert.match(html, /<\/div>\s*<nav class="learn-bottom-nav"[\s\S]*?<div class="learn-mini-player"/,
     "persistent navigation and mini player must stay outside scrolling page content");
   assert.match(mediaCss, /\.learn-mini-player\s*\{[^}]*position:\s*fixed/s);
-  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(3,1fr\)/s);
+  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(4,1fr\)/s);
   assert.match(mediaCss, /body\.mini-player-active\s+\.learn-library[\s\S]*?\{[^}]*padding-bottom:/s,
     "library content must not be hidden behind the player");
 });
 
-test("bottom navigation has real Home, Search, and Your Music destinations", () => {
+test("bottom navigation has real Home, Search, Your Music, and Tools destinations", () => {
   assert.match(library, /searchNav.*learnSearchNav/s);
   assert.match(library, /musicNav.*learnMusicNav/s);
+  assert.match(library, /toolsNav.*learnToolsNav/s);
   assert.match(library, /learn:open-search/);
   assert.match(library, /learnLibraryTab/);
   assert.match(search, /learn:search-opened/);

@@ -9,7 +9,7 @@ const nodes = {
   playlistsSection: $("learnPlaylistsSection"), playlists: $("learnPlaylists"), playlistsTitle: $("learnPlaylistsTitle"), playlistsEmpty: $("learnPlaylistsEmpty"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
-  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
+  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), toolsNav: $("learnToolsNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
   connectSpotify: $("learnConnectSpotify"), filters: $("learnLibraryFilters"),
   songsFilter: $("learnSongsFilter"), artistsFilter: $("learnArtistsFilter"), playlistsFilter: $("learnPlaylistsFilter")
@@ -191,6 +191,10 @@ const render = (data) => {
   }
   nodes.playlists.replaceChildren(...data.playlists.map(playlistCard));
   nodes.playlistsEmpty.hidden = Boolean(data.playlists.length);
+  if (nodes.dailyLimit && data.quota) {
+    nodes.dailyLimit.textContent = data.quota.remaining === 0 ? "Daily song limit reached" : `${data.quota.remaining} new song${data.quota.remaining === 1 ? "" : "s"} left today`;
+    nodes.dailyLimit.classList.toggle("is-empty", data.quota.remaining === 0);
+  }
   const quickItems = [
     data.recent[0] && { kind: "song", item: data.recent[0] },
     data.artists?.[0] && { kind: "artist", item: data.artists[0] },
@@ -434,6 +438,7 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("home"));
   nodes.searchNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
   nodes.musicNav?.addEventListener("click", () => switchLibraryTab("music"));
+  nodes.toolsNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("app:switch-view", { detail: { view: "translator" } })));
   nodes.songsFilter?.addEventListener("click", () => selectLibraryFilter("songs"));
   nodes.artistsFilter?.addEventListener("click", () => selectLibraryFilter("artists"));
   nodes.playlistsFilter?.addEventListener("click", () => selectLibraryFilter("playlists"));

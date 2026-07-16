@@ -43,6 +43,12 @@ let renderedLyricsLines = null;
 let translationPollTimer = 0;
 let translationRequestTrack = null;
 let translationUiState = "idle";
+const notify = (message) => {
+  let toast = document.querySelector(".learn-toast");
+  if (!toast) { toast = document.createElement("div"); toast.className = "learn-toast"; toast.setAttribute("role", "status"); document.body.append(toast); }
+  toast.textContent = message; toast.classList.add("is-visible");
+  clearTimeout(notify.timer); notify.timer = setTimeout(() => toast.classList.remove("is-visible"), 3600);
+};
 // Slow-first cycle: language learners lean on 0.75× / 0.5× to catch every syllable.
 const SPEEDS = [1, 0.75, 0.5, 1.25, 1.5];
 const player = {};
@@ -483,7 +489,7 @@ const startAudioDownload = (onDone) => {
     })
     .catch((error) => {
       if (error?.name === "AbortError" || token !== operationId || track !== target) return;
-      target.downloadError = "Could not start audio download from YouTube Music.";
+      target.downloadError = error.message || "This song could not be prepared.";
       persistTrack();
       onDone();
     });
@@ -655,25 +661,24 @@ const completePreparedTrack = async (prepared, token) => {
   if (token !== operationId) return;
   track = prepared;
   persistTrack();
-  navigateTo("result");
-  showPreparedTrack();
   void prepareTranslation(track, token);
   if (track.streamUrl) {
-    status("Ready", "Ready to play.", 100);
+    navigateTo("result");
+    showPreparedTrack();
     openAndPlay();
     return;
   }
-  status("Downloading", "Getting your song ready…", 30);
-  el.result.scrollIntoView({ behavior: "smooth", block: "start" });
+  showInput();
+  notify("Song added. We’ll keep preparing it while you browse.");
+  await refreshLearnLibrary().catch(() => {});
   startAudioDownload(() => {
-    if (currentLayer() === "input") return;
     if (track.streamUrl) {
-      showPreparedTrack();
-      status("Ready", "Ready to play.", 100);
-      openAndPlay();
+      if (!audioEl) mountAudioPlayer(track.streamUrl);
+      showMiniPlayer(true);
+      refreshLearnLibrary().catch(() => {});
+      notify(`${track.title} is ready to play.`);
     } else {
-      showPreparedTrack();
-      status("Download failed", track.downloadError || "This song could not be played.", 0, true);
+      notify(track.downloadError || "This song could not be prepared. Try again later.");
     }
   });
 };
