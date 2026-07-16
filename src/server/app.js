@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientPath = path.resolve(__dirname, "../client");
 const indexPath = path.join(clientPath, "index.html");
-const hlsClientPath = path.resolve(__dirname, "../../../node_modules/hls.js/dist/hls.min.js");
+const hlsClientPath = path.resolve(__dirname, "../../node_modules/hls.js/dist/hls.min.js");
 const assetVersion = String(Date.now());
 
 const sendIndex = (res) => {

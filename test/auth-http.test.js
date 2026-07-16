@@ -68,3 +68,10 @@ test("a repeated Google callback returns an authenticated browser to the app", a
   assert.equal(callback.status, 302);
   assert.equal(callback.headers.get("location"), "/?auth=google_success");
 });
+
+test("the bundled HLS client is available from the same origin", async () => {
+  const response = await fetch(`${base}/vendor/hls.min.js`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /javascript/);
+  assert.match(await response.text(), /Hls/);
+});
