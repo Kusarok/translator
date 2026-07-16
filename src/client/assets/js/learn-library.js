@@ -8,8 +8,9 @@ const nodes = {
   artistsSection: $("learnArtistsSection"), artists: $("learnArtists"), artistsTitle: $("learnArtistsTitle"), artistsEmpty: $("learnArtistsEmpty"),
   playlistsSection: $("learnPlaylistsSection"), playlists: $("learnPlaylists"), playlistsTitle: $("learnPlaylistsTitle"), playlistsEmpty: $("learnPlaylistsEmpty"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
+  homeSearch: $("musicHomeSearch"), homeAdd: $("musicHomeAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
-  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), toolsNav: $("learnToolsNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
+  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
   connectSpotify: $("learnConnectSpotify"), filters: $("learnLibraryFilters"),
   songsFilter: $("learnSongsFilter"), artistsFilter: $("learnArtistsFilter"), playlistsFilter: $("learnPlaylistsFilter")
@@ -157,11 +158,12 @@ const renderLibraryView = () => {
   nodes.recentSection.hidden = musicView && libraryFilter !== "songs";
   nodes.artistsSection.hidden = !musicView || libraryFilter !== "artists";
   nodes.playlistsSection.hidden = !musicView || libraryFilter !== "playlists";
-  nodes.recentTitle.textContent = musicView ? "Songs" : "Recently added";
+  const visibleTracks = musicView ? snapshot.recent : snapshot.catalog || [];
+  nodes.recentTitle.textContent = musicView ? "Saved songs" : "Available now";
   nodes.artistsTitle.textContent = "Artists";
   nodes.playlistsTitle.textContent = "Playlists";
-  nodes.recent.replaceChildren(...(musicView ? snapshot.recent : snapshot.recent.slice(0, 6)).map((track) => trackRow(track)));
-  nodes.empty.hidden = Boolean(snapshot.recent.length);
+  nodes.recent.replaceChildren(...(musicView ? visibleTracks : visibleTracks.slice(0, 12)).map((track) => trackRow(track)));
+  nodes.empty.hidden = Boolean(visibleTracks.length);
   nodes.artistsEmpty.hidden = Boolean(snapshot.artists?.length);
 };
 
@@ -283,7 +285,7 @@ const createSheet = (eyebrow, title) => {
 const showSongPicker = async (playlist) => {
   const data = await getLearnLibrary();
   const existing = new Set(playlist.tracks.map((track) => track.id));
-  const available = data.recent.filter((track) => !existing.has(track.id));
+  const available = (data.catalog || data.recent).filter((track) => !existing.has(track.id));
   const { sheet, dismiss } = createSheet("Your library", "Add songs");
   const list = document.createElement("div"); list.className = "learn-track-list learn-song-picker";
   if (!available.length) list.innerHTML = "<div class='learn-picker-empty'>Every downloaded song is already in this playlist.</div>";
@@ -359,7 +361,7 @@ const switchLibraryTab = (tab, useHistory = true) => {
   nodes.playlistPage.hidden = true;
   nodes.library.hidden = false;
   nodes.library.classList.toggle("is-music-view", destination === "music");
-  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Music";
+  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Home";
   for (const [button, active] of [[nodes.libraryNav, destination === "home"], [nodes.searchNav, false], [nodes.musicNav, destination === "music"]]) {
     button?.classList.toggle("active", active);
     button?.setAttribute("aria-current", active ? "page" : "false");
@@ -431,6 +433,8 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   prepareTrackHandler = onPrepareTrack;
   nodes.add?.addEventListener("click", openSheet);
   nodes.emptyAdd?.addEventListener("click", openSheet);
+  nodes.homeAdd?.addEventListener("click", openSheet);
+  nodes.homeSearch?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
   nodes.sheetClose?.addEventListener("click", closeLearnAddSheet);
   nodes.sheet?.addEventListener("click", (event) => { if (event.target === nodes.sheet) closeLearnAddSheet(); });
   nodes.playlistBack?.addEventListener("click", hidePlaylist);
@@ -438,7 +442,6 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("home"));
   nodes.searchNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
   nodes.musicNav?.addEventListener("click", () => switchLibraryTab("music"));
-  nodes.toolsNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("app:switch-view", { detail: { view: "translator" } })));
   nodes.songsFilter?.addEventListener("click", () => selectLibraryFilter("songs"));
   nodes.artistsFilter?.addEventListener("click", () => selectLibraryFilter("artists"));
   nodes.playlistsFilter?.addEventListener("click", () => selectLibraryFilter("playlists"));
@@ -453,6 +456,10 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
     } else nodes.spotifyNote.textContent = "Spotify credentials are not configured on this server yet.";
   });
   window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
+  window.addEventListener("learn:navigate", (event) => {
+    if (event.detail?.destination === "search") window.dispatchEvent(new CustomEvent("learn:open-search"));
+    else switchLibraryTab(event.detail?.destination === "music" ? "music" : "home");
+  });
   window.addEventListener("learn:search-opened", () => {
     activePlaylist = null; nodes.playlistPage.hidden = true; nodes.library.hidden = true;
     nodes.libraryNav?.classList.remove("active"); nodes.musicNav?.classList.remove("active");

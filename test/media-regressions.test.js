@@ -106,6 +106,24 @@ test("library, recent activity, artists, playlists, and daily quota are isolated
   closeAndRemove(fixture);
 });
 
+test("ready songs form a shared catalog while activity stays private", () => {
+  const fixture = temporaryDatabase();
+  const { repo } = fixture;
+  const alice = "usr_alice", bob = "usr_bob";
+  const track = repo.tracks.upsert({ source: "lrclib", externalId: "global-song", title: "Global Song", artist: "Shared Artist" });
+  const lyrics = repo.lyrics.upsert({ trackId: track.id, source: "lrclib", externalId: "global-lyrics", contentHash: "global-hash", relativePath: "lyrics/global/song.json" });
+  repo.media.upsert({ trackId: track.id, provider: "youtube", providerMediaId: "global-media", relativePath: "media/global/song.m4a", status: "ready" });
+  repo.search.indexLyrics({ trackId: track.id, lyricsId: lyrics.id, title: track.title, artist: track.artist, album: "", lyrics: "a lyric everyone can find" });
+  repo.library.save(alice, track.id);
+
+  assert.equal(repo.library.recent(alice).length, 1);
+  assert.equal(repo.library.recent(bob).length, 0, "another user's listening activity must stay private");
+  assert.equal(repo.library.catalog(alice).map((item) => item.id).includes(track.id), true);
+  assert.equal(repo.library.catalog(bob).map((item) => item.id).includes(track.id), true, "ready cached music must be available to every user");
+  assert.equal(repo.search.local('"shared artist"', 10)[0].track_id, track.id, "shared cache search must not be scoped to one user");
+  closeAndRemove(fixture);
+});
+
 test("search jobs deduplicate active queries, cache completed results, and survive restart", () => {
   const fixture = temporaryDatabase();
   const { root, repo } = fixture;

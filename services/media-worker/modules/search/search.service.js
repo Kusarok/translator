@@ -54,6 +54,7 @@ const searchLrclib = async (query) => {
 const addCachedResults = (job, normalized) => {
   let rows = [];
   try { rows = repositories.search.local(ftsPhrase(normalized), 20); } catch { return 0; }
+  let added = 0;
   for (const row of rows) {
     const lesson = getCachedLessonByTrackId(row.track_id);
     if (!lesson?.streamUrl) continue;
@@ -62,8 +63,9 @@ const addCachedResults = (job, normalized) => {
       durationSeconds: lesson.duration, syncedLyrics: "cached", matchedLine: row.matched_line?.replace(/<\/?mark>/g, ""),
       audioProviderId: lesson.mediaId, audioDurationSeconds: lesson.duration, artworkUrl: lesson.artwork,
       score: 200 - Number(row.rank || 0), status: "ready" });
+    added += 1;
   }
-  return rows.length;
+  return added;
 };
 
 const verifyCandidate = async (jobId, candidate, query) => {
@@ -83,10 +85,9 @@ const verifyCandidate = async (jobId, candidate, query) => {
 const runSearch = async (job) => {
   try {
     repositories.search.updateJob(job.id, { status: "searching" });
-    const cachedCount = addCachedResults(job, job.normalized_query);
     const candidates = await searchLrclib(job.query);
     repositories.search.updateJob(job.id, { status: "verifying", candidatesFound: candidates.length, lyricsVerified: candidates.length });
-    let verified = cachedCount;
+    let verified = 0;
     for (let index = 0; index < candidates.length; index += AUDIO_VERIFICATION_BATCH_SIZE) {
       const batch = await Promise.all(candidates.slice(index, index + AUDIO_VERIFICATION_BATCH_SIZE).map((candidate) => verifyCandidate(job.id, candidate, job.query)));
       verified += batch.filter(Boolean).length;
@@ -115,6 +116,13 @@ export const createLyricsSearch = (value) => {
   const existing = repositories.search.findActive(normalized) || repositories.search.findCached(normalized, new Date(Date.now() - config.searchCacheMs).toISOString());
   if (existing) return publicJob(existing);
   const job = repositories.search.createJob(query, normalized);
+  const cachedCount = addCachedResults(job, normalized);
+  if (cachedCount > 0) {
+    const completed = repositories.search.updateJob(job.id, {
+      status: "completed", candidatesFound: cachedCount, lyricsVerified: cachedCount, audioVerified: cachedCount
+    });
+    return publicJob(completed);
+  }
   enqueueSearch(job);
   return publicJob(job);
 };

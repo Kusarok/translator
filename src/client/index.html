@@ -30,6 +30,15 @@
     <link rel="stylesheet" href="/assets/css/login.css?v=__ASSET_VERSION__">
   </head>
   <body>
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-translate" viewBox="0 0 24 24"><path d="M4 5h10M9 3v2M6 9c1.5 3.2 3.8 5.5 7 7M12 9c-1 3-3.7 6-7 8M15 19l3-8 3 8M16.2 16h3.6"/></symbol>
+      <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M5 18.5 3.5 21l4-1.2A9 9 0 1 0 5 18.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></symbol>
+      <symbol id="icon-live" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></symbol>
+      <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+      <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l2 2M18 5l2 2"/></symbol>
+    </svg>
     <div class="login-gate" id="loginGate" hidden>
       <div class="login-card">
         <div class="login-logo" aria-hidden="true">♪</div>
@@ -58,22 +67,22 @@
         <header class="topbar">
           <div class="mode-wrap">
             <button class="mode-btn" id="modeBtn" type="button" aria-haspopup="true" aria-expanded="false">
-              <span class="mode-icon" id="modeIcon">🔤</span>
+              <span class="mode-icon" id="modeIcon"><svg aria-hidden="true"><use href="#icon-translate"/></svg></span>
               <span class="mode-label" id="modeLabel" data-i18n="appName">Translator</span>
               <span class="mode-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
             </button>
             <div class="mode-menu" id="modeMenu" role="menu">
-              <button class="menu-tab mode-option active" data-view="translator" data-icon="🔤" role="menuitem">
-                <span aria-hidden="true">🔤</span><span data-i18n="appName">Translator</span>
+              <button class="menu-tab mode-option active" data-view="translator" data-icon="translate" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-translate"/></svg></span><span data-i18n="appName">Translator</span>
               </button>
-              <button class="menu-tab mode-option" data-view="chat" data-icon="💬" role="menuitem">
-                <span aria-hidden="true">💬</span><span data-i18n="chat">Chat</span>
+              <button class="menu-tab mode-option" data-view="chat" data-icon="chat" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-chat"/></svg></span><span data-i18n="chat">Chat</span>
               </button>
-              <button class="menu-tab mode-option" data-view="live" data-icon="🎙️" role="menuitem">
-                <span aria-hidden="true">🎙️</span><span data-i18n="liveTab">Live</span>
+              <button class="menu-tab mode-option" data-view="live" data-icon="live" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-live"/></svg></span><span data-i18n="liveTab">Live</span>
               </button>
-              <button class="menu-tab mode-option" data-view="media" data-icon="▶️" role="menuitem">
-                <span aria-hidden="true">▶️</span><span data-i18n="mediaTab">Music</span>
+              <button class="menu-tab mode-option" data-view="media" data-icon="music" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-music"/></svg></span><span data-i18n="mediaTab">Music</span>
               </button>
             </div>
           </div>
@@ -106,7 +115,17 @@
               </span>
             </div>
             <div class="messages" id="translatorMessages">
-              <div class="chat-empty" id="translatorEmptyState" data-i18n="trEmpty">Type below and press Enter to translate…</div>
+              <div class="translator-welcome" id="translatorEmptyState">
+                <span class="translator-welcome-icon" aria-hidden="true">Aa</span>
+                <span class="translator-welcome-kicker">SMART TRANSLATION</span>
+                <h1>Translate anything</h1>
+                <p>Paste text in any language. We’ll detect it automatically and keep the meaning natural.</p>
+                <div class="translator-suggestions" aria-label="Translation examples">
+                  <button type="button" data-translate-example="What does this lyric mean?">Explain a lyric</button>
+                  <button type="button" data-translate-example="Translate this naturally into Persian: ">Natural Persian</button>
+                  <button type="button" data-translate-example="Help me understand this sentence: ">Understand a sentence</button>
+                </div>
+              </div>
             </div>
             <div class="composer">
               <div class="key-banner" id="translatorKeyBanner" hidden>
@@ -195,9 +214,8 @@
               <div class="learn-library" id="learnLibrary">
                 <header class="learn-library-header">
                   <div>
-                    <span class="learn-overline">Your online music</span>
-                    <h1 id="learnLibraryTitle">Music</h1>
-                    <span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span>
+                    <span class="learn-overline">FOR YOU</span>
+                    <h1 id="learnLibraryTitle">Home</h1>
                   </div>
                   <button class="learn-add-button" id="learnAddButton" type="button" aria-label="Add music">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -207,6 +225,19 @@
                   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
                 </form>
+                <section class="music-home-hero" id="musicHomeHero">
+                  <svg class="music-home-wave" viewBox="0 0 180 150" aria-hidden="true"><path d="M18 80c18-54 34 54 52 0s34 54 52 0 34 54 50 0"/><path d="M18 104c18-34 34 34 52 0s34 34 52 0 34 34 50 0"/></svg>
+                  <div class="music-home-copy">
+                    <span>DISCOVER</span>
+                    <h2>Find your next song</h2>
+                    <p>Search by title, artist, or even a lyric you remember.</p>
+                  </div>
+                  <div class="music-home-actions">
+                    <button class="music-home-primary" id="musicHomeSearch" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg> Explore</button>
+                    <button class="music-home-secondary" id="musicHomeAdd" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add link</button>
+                  </div>
+                  <div class="music-quota-row"><span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span></div>
+                </section>
 
                 <div class="learn-library-filters" id="learnLibraryFilters" role="tablist" aria-label="Your music" hidden>
                   <button id="learnSongsFilter" type="button" role="tab" data-library-filter="songs">Songs</button>
@@ -400,9 +431,6 @@
               <button id="learnMusicNav" type="button">
                 <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 2v6M16 2v6M8 13h8M8 17h5"/></svg></span>Your Music
               </button>
-              <button id="learnToolsNav" type="button">
-                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>Tools
-              </button>
             </nav>
             <div class="learn-mini-player" id="learnMiniPlayer" hidden>
               <button class="mini-track-open" id="learnMiniOpen" type="button" aria-label="Open now playing">
@@ -428,7 +456,7 @@
               <button class="icon-btn small" id="appSettingsClose" type="button" aria-label="Close">✕</button>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="sourceLanguage">Language</label>
               <div class="lang-row">
                 <select class="select" id="sourceLanguage" name="sourceLanguage" data-i18n-aria="sourceLanguage" aria-label="Source language"></select>
@@ -437,7 +465,7 @@
               </div>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="selectTone">Preset</label>
               <select class="select full" id="toneSelect" data-i18n-aria="selectTone" aria-label="Select tone">
                 <option value="default">Default</option>
@@ -450,8 +478,8 @@
             <div class="sheet-section row-between">
               <label class="setting-label" data-i18n="themeSection">Theme</label>
               <div class="segmented" id="themeSeg">
-                <button class="seg-btn" type="button" data-theme-val="light">☀️ <span data-i18n="themeLight">Light</span></button>
-                <button class="seg-btn" type="button" data-theme-val="dark">🌙 <span data-i18n="themeDark">Dark</span></button>
+                <button class="seg-btn" type="button" data-theme-val="light"><svg aria-hidden="true"><use href="#icon-sun"/></svg><span data-i18n="themeLight">Light</span></button>
+                <button class="seg-btn" type="button" data-theme-val="dark"><svg aria-hidden="true"><use href="#icon-moon"/></svg><span data-i18n="themeDark">Dark</span></button>
               </div>
             </div>
 
@@ -465,7 +493,7 @@
 
             <div class="sheet-section">
               <button class="settings-row" id="apiSettingsTrigger" type="button" aria-haspopup="dialog">
-                <span class="settings-row-icon" aria-hidden="true">🔑</span>
+                <span class="settings-row-icon" aria-hidden="true"><svg><use href="#icon-key"/></svg></span>
                 <span class="settings-row-text">
                   <span class="settings-row-title" data-i18n="apiSectionTitle">API &amp; Providers</span>
                   <span class="settings-row-sub" id="apiSettingsSummary" data-i18n="apiSectionSub">Keys, provider &amp; model</span>
@@ -474,8 +502,9 @@
               </button>
             </div>
 
-            <div class="sheet-section row-between">
-              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
+            <div class="sheet-section settings-support">
+              <span class="settings-support-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/></svg></span>
+              <span><strong data-i18n="feedbackTitle">Help &amp; Support</strong><small>Questions, feedback, or account help</small></span>
               <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
             </div>
           </div>

@@ -12,6 +12,8 @@ const search = read("src/client/assets/js/learn-search.js");
 const artist = read("src/client/assets/js/artist-hub.js");
 const mediaApp = read("src/client/assets/js/media-app.js");
 const mediaCss = read("src/client/assets/css/media.css");
+const app = read("src/client/assets/js/app.js");
+const layoutCss = read("src/client/assets/css/layout.css");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -26,7 +28,6 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnArtistPage",
     "learnPlaylistsSection",
     "learnMusicNav",
-    "learnToolsNav",
     "learnLibraryFilters",
     "learnSongsFilter",
     "learnArtistsFilter",
@@ -37,6 +38,9 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnMiniOpen",
     "learnMiniPlay",
     "learnMiniProgress",
+    "musicHomeHero",
+    "musicHomeSearch",
+    "musicHomeAdd",
     "lessonNowPlayingTab",
     "lessonLearnTab",
     "lessonNowPlayingPanel",
@@ -52,19 +56,46 @@ test("music-first shell keeps every primary destination and the persistent mini 
   assert.match(html, /<\/div>\s*<nav class="learn-bottom-nav"[\s\S]*?<div class="learn-mini-player"/,
     "persistent navigation and mini player must stay outside scrolling page content");
   assert.match(mediaCss, /\.learn-mini-player\s*\{[^}]*position:\s*fixed/s);
-  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(4,1fr\)/s);
+  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(3,1fr\)/s);
   assert.match(mediaCss, /body\.mini-player-active\s+\.learn-library[\s\S]*?\{[^}]*padding-bottom:/s,
     "library content must not be hidden behind the player");
 });
 
-test("bottom navigation has real Home, Search, Your Music, and Tools destinations", () => {
+test("the music-first home exposes one clear discovery path and global navigation", () => {
+  assert.match(html, /id="musicHomeHero"[\s\S]*?Find your next song/);
+  assert.match(html, /id="musicHomeSearch"[^>]*>[\s\S]*?Explore<\/button>/);
+  assert.match(html, /id="musicHomeAdd"[^>]*>[\s\S]*?Add link<\/button>/);
+  assert.match(library, /homeSearch.*musicHomeSearch/s);
+  assert.match(library, /homeAdd.*musicHomeAdd/s);
+  assert.match(library, /learn:navigate/);
+  assert.match(mediaCss, /\.music-home-hero\s*\{/);
+});
+
+test("bottom navigation has focused Home, Search, and Library destinations", () => {
   assert.match(library, /searchNav.*learnSearchNav/s);
   assert.match(library, /musicNav.*learnMusicNav/s);
-  assert.match(library, /toolsNav.*learnToolsNav/s);
+  assert.doesNotMatch(html, /id="learnToolsNav"|id="toolsBottomNav"/);
+  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(3,1fr\)/s);
   assert.match(library, /learn:open-search/);
   assert.match(library, /learnLibraryTab/);
   assert.match(search, /learn:search-opened/);
   assert.match(search, /learn:base-destination/);
+});
+
+test("settings stay above navigation and remain vertically scrollable on mobile", () => {
+  assert.match(layoutCss, /\.overlay\s*\{[^}]*z-index:\s*100/s);
+  assert.match(layoutCss, /\.sheet\s*\{[^}]*overflow-y:\s*auto[^}]*touch-action:\s*pan-y/s);
+  assert.match(html, /settings-support[\s\S]*?mailto:info@kafenet\.com/);
+  assert.match(layoutCss, /\[data-mode="media"\]\s+\.translator-setting\s*\{\s*display:\s*none/);
+});
+
+test("the primary app switcher uses a consistent SVG icon system instead of emoji logos", () => {
+  for (const icon of ["translate", "chat", "live", "music"]) {
+    assert.match(html, new RegExp(`id="icon-${icon}"`));
+    assert.match(html, new RegExp(`data-icon="${icon}"`));
+  }
+  assert.doesNotMatch(html.match(/<header class="topbar">[\s\S]*?<\/header>/)?.[0] || "", /🔤|💬|🎙️|▶️/);
+  assert.match(app, /modeIconUse\?\.setAttribute\("href", `#icon-/);
 });
 
 test("Your Music filters songs, artists, and playlists and remembers the choice", () => {

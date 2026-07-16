@@ -42,6 +42,7 @@ const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
 const modeMenu = document.querySelector("#modeMenu");
 const modeIcon = document.querySelector("#modeIcon");
+const modeIconUse = modeIcon?.querySelector("use");
 const modeLabel = document.querySelector("#modeLabel");
 const views = {
   translator: document.querySelector("#translatorView"),
@@ -56,7 +57,6 @@ const account = {
   initial: document.getElementById("accountInitial"), name: document.getElementById("accountName"),
   email: document.getElementById("accountEmail"), logout: document.getElementById("accountLogout")
 };
-
 const renderAccount = () => {
   const user = state.auth?.user;
   if (!user) return;
@@ -90,7 +90,7 @@ const switchView = (view) => {
   });
 
   if (activeTab) {
-    modeIcon.textContent = activeTab.dataset.icon;
+    modeIconUse?.setAttribute("href", `#icon-${activeTab.dataset.icon}`);
     const labelSpan = activeTab.querySelector("[data-i18n]");
     if (labelSpan) {
       modeLabel.dataset.i18n = labelSpan.dataset.i18n;
@@ -444,6 +444,11 @@ const bindEvents = () => {
   });
 
   elements.serverStatus.addEventListener("click", loadHealth);
+  document.querySelectorAll("[data-translate-example]").forEach((button) => button.addEventListener("click", () => {
+    elements.inputText.value = button.dataset.translateExample || "";
+    updateDirection(elements.inputText); autoGrowInput(); updateCharacterCount();
+    elements.inputText.focus(); elements.inputText.setSelectionRange(elements.inputText.value.length, elements.inputText.value.length);
+  }));
   account.toggle?.addEventListener("click", (event) => {
     event.stopPropagation(); account.menu.hidden = !account.menu.hidden;
     account.toggle.setAttribute("aria-expanded", String(!account.menu.hidden));

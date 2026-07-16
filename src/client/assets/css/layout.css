@@ -1,3 +1,5 @@
+.svg-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
 .app-shell {
   width: 100%;
   max-width: 460px;
@@ -25,14 +27,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+  gap: 9px;
+  min-height: 58px;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
   border-bottom: 1px solid var(--line-soft);
   border-color: var(--line-soft);
   position: relative;
   z-index: 20;
   flex-shrink: 0;
-  background: var(--glass);
+  background: color-mix(in srgb, var(--page) 86%, transparent);
   -webkit-backdrop-filter: saturate(150%) blur(18px);
   backdrop-filter: saturate(150%) blur(18px);
   transition: box-shadow var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
@@ -47,7 +50,7 @@
   position: relative;
 }
 .account-wrap { position: relative; }
-.account-button { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-size: 14px; font-weight: 900; }
+.account-button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line-soft); border-radius: 13px; background: var(--accent-soft); color: var(--accent-strong); font-size: 13px; font-weight: 900; }
 .account-menu { position: absolute; z-index: 40; top: calc(100% + 9px); inset-inline-end: 0; width: 230px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-2); box-shadow: var(--elev-2); text-align: start; }
 .account-menu[hidden] { display: none; }
 .account-menu strong,.account-menu small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -57,11 +60,12 @@
 .mode-btn {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  gap: 8px;
+  min-height: 42px;
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text);
-  padding: 9px 13px;
+  padding: 4px 8px 4px 4px;
   border-radius: var(--radius-control);
   font-size: var(--fs-base);
   font-weight: 700;
@@ -78,9 +82,15 @@
 }
 
 .mode-icon {
-  font-size: 16px;
-  line-height: 1;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--accent-ink);
+  background: var(--grad-accent);
 }
+.mode-icon svg,.mode-option svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
 
 .mode-chev {
   color: var(--muted);
@@ -154,6 +164,8 @@
   background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
 }
+.mode-option > span:first-child { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; color: var(--muted); background: var(--surface-3); }
+.mode-option.active > span:first-child { color: var(--accent-strong); background: var(--accent-soft); }
 
 [dir="rtl"] .mode-option.active {
   box-shadow: inset -3px 0 0 var(--accent);
@@ -172,7 +184,6 @@
   min-height: 0;
   position: relative;
 }
-
 .view {
   flex: 1;
   min-height: 0;
@@ -375,7 +386,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-enter) var(--ease-out);
-  z-index: 40;
+  z-index: 100;
 }
 
 .overlay.open {
@@ -393,7 +404,7 @@
   border-top: 1px solid var(--line-soft);
   border-top-left-radius: var(--radius-xl);
   border-top-right-radius: var(--radius-xl);
-  padding: 10px 18px calc(env(safe-area-inset-bottom, 0px) + 22px);
+  padding: 10px 18px max(28px, calc(env(safe-area-inset-bottom, 0px) + 22px));
   transform: translateY(100%);
   transition: transform var(--dur-sheet) var(--ease-spring);
   box-shadow: var(--shadow);
@@ -402,6 +413,10 @@
   max-height: 86dvh;
   max-height: min(88dvh, calc(var(--app-height) - 24px));
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 .overlay.open .sheet {
@@ -524,6 +539,15 @@
   font-size: 18px;
   flex-shrink: 0;
 }
+.settings-row-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.seg-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 460px) {
+  body[data-mode="media"] .status-pill { width: 38px; min-width: 38px; padding: 0; justify-content: center; }
+  body[data-mode="media"] .status-pill .status-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .top-right { gap: 6px; }
+  .top-right > .icon-btn { width: 38px; height: 38px; border-radius: 13px; }
+}
 
 .settings-row-text {
   display: flex;
@@ -556,6 +580,24 @@
 .settings-row:hover .settings-row-chev {
   transform: translateX(3px);
 }
+
+.settings-support {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px 15px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.settings-support-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: var(--accent-strong); background: var(--accent-soft); }
+.settings-support-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.settings-support strong,.settings-support small { display: block; }
+.settings-support strong { color: var(--text); font-size: 14px; }
+.settings-support small { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+.settings-support .feedback-link { grid-column: 2; width: fit-content; color: var(--accent-strong); font-size: 12px; font-weight: 750; overflow-wrap: anywhere; }
+[data-mode="media"] .translator-setting { display: none; }
 
 [dir="rtl"] .settings-row-chev {
   transform: scaleX(-1);
