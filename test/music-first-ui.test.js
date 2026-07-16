@@ -14,6 +14,8 @@ const mediaApp = read("src/client/assets/js/media-app.js");
 const mediaCss = read("src/client/assets/css/media.css");
 const app = read("src/client/assets/js/app.js");
 const layoutCss = read("src/client/assets/css/layout.css");
+const motionCss = read("src/client/assets/css/motion.css");
+const motionJs = read("src/client/assets/js/motion.js");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -96,6 +98,22 @@ test("the primary app switcher uses a consistent SVG icon system instead of emoj
   }
   assert.doesNotMatch(html.match(/<header class="topbar">[\s\S]*?<\/header>/)?.[0] || "", /🔤|💬|🎙️|▶️/);
   assert.match(app, /modeIconUse\?\.setAttribute\("href", `#icon-/);
+});
+
+test("search focus belongs to the whole control instead of drawing a second input box", () => {
+  assert.match(mediaCss, /\.media-view \.learn-search-bar input:focus[^}]*outline:\s*0\s*!important/s);
+  assert.match(mediaCss, /\.learn-search-bar:focus-within[^}]*box-shadow:/s);
+});
+
+test("motion is progressive, scroll-aware, and respects reduced-motion preferences", () => {
+  assert.match(html, /assets\/css\/motion\.css/);
+  assert.match(app, /initMotion\(\)/);
+  assert.match(motionJs, /IntersectionObserver/);
+  assert.match(motionJs, /MutationObserver/);
+  assert.match(motionJs, /pointerdown/);
+  assert.match(motionCss, /\.motion-enabled \.motion-reveal\.is-revealed/);
+  assert.match(motionCss, /\.media-lesson\.is-playing \.lesson-now-art/);
+  assert.match(motionCss, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test("Your Music filters songs, artists, and playlists and remembers the choice", () => {
