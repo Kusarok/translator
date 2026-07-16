@@ -46,6 +46,13 @@
 .mode-wrap {
   position: relative;
 }
+.account-wrap { position: relative; }
+.account-button { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-size: 14px; font-weight: 900; }
+.account-menu { position: absolute; z-index: 40; top: calc(100% + 9px); inset-inline-end: 0; width: 230px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-2); box-shadow: var(--elev-2); text-align: start; }
+.account-menu[hidden] { display: none; }
+.account-menu strong,.account-menu small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu small { margin-top: 4px; color: var(--muted); }
+.account-menu button { width: 100%; min-height: 42px; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1); color: var(--text); font-weight: 750; }
 
 .mode-btn {
   display: flex;

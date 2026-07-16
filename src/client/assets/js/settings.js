@@ -68,7 +68,7 @@ const setOwnerLoginStatus = (text, type) => {
 };
 
 const setOwnerUiState = () => {
-  const unlocked = Boolean(state.auth.authenticated);
+  const unlocked = Boolean(state.auth.owner);
   const gated = Boolean(state.auth.gateEnabled);
   elements.ownerLoginForm.hidden = unlocked || !gated;
   elements.ownerLogoutButton.hidden = !unlocked || !gated;
@@ -80,7 +80,7 @@ const loadOwnerProviders = async () => {
     current = await getSettings();
     renderProviders();
   } catch {
-    state.auth.authenticated = false;
+    state.auth.owner = false;
     setOwnerUiState();
     renderLocked();
   }
@@ -88,7 +88,7 @@ const loadOwnerProviders = async () => {
 
 export const refreshOwnerSection = () => {
   setOwnerUiState();
-  if (state.auth.authenticated) {
+  if (state.auth.owner) {
     loadOwnerProviders();
   } else {
     renderLocked();
