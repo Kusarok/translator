@@ -106,7 +106,17 @@
               </span>
             </div>
             <div class="messages" id="translatorMessages">
-              <div class="chat-empty" id="translatorEmptyState" data-i18n="trEmpty">Type below and press Enter to translate…</div>
+              <div class="translator-welcome" id="translatorEmptyState">
+                <span class="translator-welcome-icon" aria-hidden="true">Aa</span>
+                <span class="translator-welcome-kicker">SMART TRANSLATION</span>
+                <h1>Translate anything</h1>
+                <p>Paste text in any language. We’ll detect it automatically and keep the meaning natural.</p>
+                <div class="translator-suggestions" aria-label="Translation examples">
+                  <button type="button" data-translate-example="What does this lyric mean?">Explain a lyric</button>
+                  <button type="button" data-translate-example="Translate this naturally into Persian: ">Natural Persian</button>
+                  <button type="button" data-translate-example="Help me understand this sentence: ">Understand a sentence</button>
+                </div>
+              </div>
             </div>
             <div class="composer">
               <div class="key-banner" id="translatorKeyBanner" hidden>
@@ -195,14 +205,25 @@
               <div class="learn-library" id="learnLibrary">
                 <header class="learn-library-header">
                   <div>
-                    <span class="learn-overline">Your online music</span>
-                    <h1 id="learnLibraryTitle">Music</h1>
-                    <span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span>
+                    <span class="learn-overline">LINGO MUSIC</span>
+                    <h1 id="learnLibraryTitle">Home</h1>
                   </div>
                   <button class="learn-add-button" id="learnAddButton" type="button" aria-label="Add music">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </header>
+                <section class="music-home-hero" id="musicHomeHero">
+                  <div class="music-home-copy">
+                    <span>LISTEN · UNDERSTAND · REPEAT</span>
+                    <h2>Your music speaks every language.</h2>
+                    <p>Play online, follow the lyrics, and learn without leaving the song.</p>
+                  </div>
+                  <div class="music-home-actions">
+                    <button class="music-home-primary" id="musicHomeSearch" type="button"><span aria-hidden="true">⌕</span> Find music</button>
+                    <button class="music-home-secondary" id="musicHomeAdd" type="button">＋ Add link</button>
+                  </div>
+                  <div class="music-quota-row"><span class="music-quota-dot" aria-hidden="true"></span><span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span></div>
+                </section>
                 <form class="learn-search-bar" id="learnSearchForm" role="search">
                   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
@@ -419,6 +440,13 @@
             </div>
           </section>
         </main>
+
+        <nav class="tools-bottom-nav" id="toolsBottomNav" aria-label="Main navigation">
+          <button id="toolsHomeNav" type="button"><span aria-hidden="true">⌂</span>Home</button>
+          <button id="toolsSearchNav" type="button"><span aria-hidden="true">⌕</span>Search</button>
+          <button id="toolsLibraryNav" type="button"><span aria-hidden="true">▦</span>Library</button>
+          <button class="active" id="toolsAppsNav" type="button" aria-current="page"><span aria-hidden="true">✦</span>Tools</button>
+        </nav>
 
         <div class="overlay" id="appSettingsPanel">
           <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">

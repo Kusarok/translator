@@ -8,6 +8,7 @@ const nodes = {
   artistsSection: $("learnArtistsSection"), artists: $("learnArtists"), artistsTitle: $("learnArtistsTitle"), artistsEmpty: $("learnArtistsEmpty"),
   playlistsSection: $("learnPlaylistsSection"), playlists: $("learnPlaylists"), playlistsTitle: $("learnPlaylistsTitle"), playlistsEmpty: $("learnPlaylistsEmpty"),
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
+  homeSearch: $("musicHomeSearch"), homeAdd: $("musicHomeAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
   searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), toolsNav: $("learnToolsNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
@@ -359,7 +360,7 @@ const switchLibraryTab = (tab, useHistory = true) => {
   nodes.playlistPage.hidden = true;
   nodes.library.hidden = false;
   nodes.library.classList.toggle("is-music-view", destination === "music");
-  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Music";
+  nodes.libraryTitle.textContent = destination === "music" ? "Your Music" : "Home";
   for (const [button, active] of [[nodes.libraryNav, destination === "home"], [nodes.searchNav, false], [nodes.musicNav, destination === "music"]]) {
     button?.classList.toggle("active", active);
     button?.setAttribute("aria-current", active ? "page" : "false");
@@ -431,6 +432,8 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   prepareTrackHandler = onPrepareTrack;
   nodes.add?.addEventListener("click", openSheet);
   nodes.emptyAdd?.addEventListener("click", openSheet);
+  nodes.homeAdd?.addEventListener("click", openSheet);
+  nodes.homeSearch?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
   nodes.sheetClose?.addEventListener("click", closeLearnAddSheet);
   nodes.sheet?.addEventListener("click", (event) => { if (event.target === nodes.sheet) closeLearnAddSheet(); });
   nodes.playlistBack?.addEventListener("click", hidePlaylist);
@@ -453,6 +456,10 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
     } else nodes.spotifyNote.textContent = "Spotify credentials are not configured on this server yet.";
   });
   window.addEventListener("learn:refresh-library", () => refreshLearnLibrary().catch(() => {}));
+  window.addEventListener("learn:navigate", (event) => {
+    if (event.detail?.destination === "search") window.dispatchEvent(new CustomEvent("learn:open-search"));
+    else switchLibraryTab(event.detail?.destination === "music" ? "music" : "home");
+  });
   window.addEventListener("learn:search-opened", () => {
     activePlaylist = null; nodes.playlistPage.hidden = true; nodes.library.hidden = true;
     nodes.libraryNav?.classList.remove("active"); nodes.musicNav?.classList.remove("active");

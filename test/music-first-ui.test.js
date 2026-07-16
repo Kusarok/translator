@@ -12,6 +12,7 @@ const search = read("src/client/assets/js/learn-search.js");
 const artist = read("src/client/assets/js/artist-hub.js");
 const mediaApp = read("src/client/assets/js/media-app.js");
 const mediaCss = read("src/client/assets/css/media.css");
+const app = read("src/client/assets/js/app.js");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -37,6 +38,14 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnMiniOpen",
     "learnMiniPlay",
     "learnMiniProgress",
+    "musicHomeHero",
+    "musicHomeSearch",
+    "musicHomeAdd",
+    "toolsBottomNav",
+    "toolsHomeNav",
+    "toolsSearchNav",
+    "toolsLibraryNav",
+    "toolsAppsNav",
     "lessonNowPlayingTab",
     "lessonLearnTab",
     "lessonNowPlayingPanel",
@@ -55,6 +64,17 @@ test("music-first shell keeps every primary destination and the persistent mini 
   assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(4,1fr\)/s);
   assert.match(mediaCss, /body\.mini-player-active\s+\.learn-library[\s\S]*?\{[^}]*padding-bottom:/s,
     "library content must not be hidden behind the player");
+});
+
+test("the music-first home exposes one clear discovery path and global navigation", () => {
+  assert.match(html, /id="musicHomeHero"[\s\S]*?Your music speaks every language\./);
+  assert.match(html, /id="musicHomeSearch"[^>]*>[^<]*<span[^>]*>[^<]*<\/span> Find music<\/button>/);
+  assert.match(html, /id="musicHomeAdd"[^>]*>＋ Add link<\/button>/);
+  assert.match(library, /homeSearch.*musicHomeSearch/s);
+  assert.match(library, /homeAdd.*musicHomeAdd/s);
+  assert.match(library, /learn:navigate/);
+  assert.match(app, /openMusicDestination/);
+  assert.match(mediaCss, /\.music-home-hero\s*\{/);
 });
 
 test("bottom navigation has real Home, Search, Your Music, and Tools destinations", () => {
