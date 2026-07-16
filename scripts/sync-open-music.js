@@ -19,19 +19,6 @@ const CATALOG = Object.freeze({
   licenseCode: "CC BY 4.0",
   licenseUrl: "https://creativecommons.org/licenses/by/4.0/"
 });
-const HOLIZNA = Object.freeze({
-  id: "holiznacc0-orphaned-media", artist: "HoliznaCC0", album: "Orphaned Media",
-  pageUrl: "https://freemusicarchive.org/music/holiznacc0/orphaned-media",
-  licenseCode: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/"
-});
-const KEVIN = Object.freeze({
-  id: "kevin-macleod", artist: "Kevin MacLeod",
-  catalogUrl: "https://incompetech.com/music/royalty-free/pieces.json",
-  licensePage: "https://incompetech.com/music/royalty-free/licenses/",
-  detailBase: "https://incompetech.com/music/royalty-free/index.html?isrc=",
-  audioBase: "https://incompetech.com/music/royalty-free/mp3-royaltyfree/",
-  licenseCode: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/"
-});
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -91,6 +78,7 @@ export const parseJoshWoodwardSong = (html, pageUrl) => {
   const licenseUrl = String(metadata.license || "").replace(/\/+$/, "/");
   if (licenseUrl !== CATALOG.licenseUrl) return null;
   const lyrics = String(metadata.recordingOf?.lyrics?.text || "").replaceAll("\r\n", "\n").trim();
+  if (!lyrics) return null;
   return {
     externalId: `${CATALOG.id}:${new URL(pageUrl).pathname.split("/").filter(Boolean).at(-1)}`,
     title: String(metadata.name || "").trim(), artist: CATALOG.artist,
@@ -105,61 +93,6 @@ const songUrls = async () => {
   const xml = await (await fetchRetry(CATALOG.sitemap)).text();
   return [...xml.matchAll(/<loc>(https:\/\/www\.joshwoodward\.com\/song\/[^<]+)<\/loc>/g)]
     .map((match) => htmlDecode(match[1]));
-};
-
-const holiznaSongs = async () => {
-  const html = await (await fetchRetry(HOLIZNA.pageUrl)).text();
-  if (!/CC0 1\.0 Universal/i.test(html)) throw new Error("The HoliznaCC0 album no longer declares CC0.");
-  const artworkUrl = htmlDecode(html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i)?.[1] || "");
-  const seen = new Set();
-  return [...html.matchAll(/data-track-info='([^']+)'/g)].flatMap((match) => {
-    try {
-      const item = JSON.parse(htmlDecode(match[1]));
-      if (!item.id || !item.fileUrl || seen.has(item.id)) return [];
-      seen.add(item.id);
-      return [{ externalId: `holiznacc0:${item.id}`, title: item.title, artist: HOLIZNA.artist,
-        album: item.albumTitle || HOLIZNA.album, lyrics: "", pageUrl: item.url,
-        audioUrl: item.fileUrl, artworkUrl, declaredBytes: null,
-        licenseCode: HOLIZNA.licenseCode, licenseUrl: HOLIZNA.licenseUrl }];
-    } catch { return []; }
-  });
-};
-
-const kevinSongs = async () => {
-  const [pieces, licenseHtml] = await Promise.all([
-    fetchRetry(KEVIN.catalogUrl).then((response) => response.json()),
-    fetchRetry(KEVIN.licensePage).then((response) => response.text())
-  ]);
-  if (!/creativecommons\.org\/licenses\/by\/4\.0/i.test(licenseHtml)) {
-    throw new Error("The Incompetech catalog no longer declares CC BY 4.0.");
-  }
-  const songs = (Array.isArray(pieces) ? pieces : []).flatMap((item) => {
-    if (!item?.isrc || !item?.filename || !item?.title) return [];
-    return [{ externalId: `kevin-macleod:${item.isrc}`, title: item.title, artist: KEVIN.artist,
-      album: "Incompetech", lyrics: "", pageUrl: `${KEVIN.detailBase}${encodeURIComponent(item.isrc)}`,
-      audioUrl: `${KEVIN.audioBase}${encodeURIComponent(item.filename)}`, artworkUrl: "", declaredBytes: null,
-      licenseCode: KEVIN.licenseCode, licenseUrl: KEVIN.licenseUrl }];
-  });
-  return { songs, evidenceHtml: licenseHtml };
-};
-
-const syncSongList = async (songs, evidenceHtml, counters, concurrency, label) => {
-  counters.discovered += songs.length;
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < songs.length) {
-      const index = cursor++; const song = songs[index];
-      try {
-        counters.eligible += 1;
-        const result = await persist(song, evidenceHtml); counters[result] += 1;
-        process.stdout.write(`[${label} ${index + 1}/${songs.length}] ${result}: ${song.title}\n`);
-      } catch (error) {
-        counters.failed += 1;
-        process.stderr.write(`[${label} ${index + 1}/${songs.length}] failed: ${song.title}: ${error.message}\n`);
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: concurrency }, worker));
 };
 
 const durationOf = (target) => {
@@ -302,24 +235,6 @@ const main = async () => {
     }
   };
   await Promise.all(Array.from({ length: options.concurrency }, worker));
-  if (!options.dryRun && options.limit === Infinity) {
-    const holizna = await holiznaSongs();
-    counters.discovered += holizna.length;
-    for (const [offset, song] of holizna.entries()) {
-      try {
-        const evidenceHtml = await (await fetchRetry(song.pageUrl)).text();
-        if (!/CC0 1\.0 Universal/i.test(evidenceHtml)) throw new Error("The track page does not declare CC0.");
-        counters.eligible += 1;
-        const result = await persist(song, evidenceHtml); counters[result] += 1;
-        process.stdout.write(`[Holizna ${offset + 1}/${holizna.length}] ${result}: ${song.title}\n`);
-      } catch (error) {
-        counters.failed += 1;
-        process.stderr.write(`[Holizna ${offset + 1}/${holizna.length}] failed: ${song.title}: ${error.message}\n`);
-      }
-    }
-    const kevin = await kevinSongs();
-    await syncSongList(kevin.songs, kevin.evidenceHtml, counters, options.concurrency, "Kevin");
-  }
   process.stdout.write(`${JSON.stringify(counters)}\n`);
   if (counters.failed) process.exitCode = 2;
 };

@@ -261,7 +261,7 @@ const pollTranslation = (target, token, delay = 4_000) => {
 };
 
 const setPlayerMode = (mode, { focus = false } = {}) => {
-  playerMode = mode === "learn" && track?.hasLyrics !== false && track?.lines?.length ? "learn" : "now";
+  playerMode = mode === "learn" ? "learn" : "now";
   const learning = playerMode === "learn";
   el.lesson.classList.toggle("is-learning-mode", learning);
   el.nowPanel.hidden = learning;
@@ -535,7 +535,6 @@ const showPreparedTrack = () => {
   el.nowArtist.textContent = track.artist;
   el.original.href = track.sourceUrl;
   el.original.hidden = !track.sourceUrl;
-  el.lessonLearnTab.hidden = track.hasLyrics === false || !track.lines?.length;
   el.license.hidden = !track.license?.url;
   if (track.license?.url) {
     el.license.href = track.license.evidenceUrl || track.license.url;

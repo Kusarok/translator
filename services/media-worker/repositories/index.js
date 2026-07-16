@@ -236,12 +236,13 @@ export const createRepositories = (db) => ({
     catalog(userId = "usr_legacy", limit = 500) {
       return db.prepare(`SELECT t.*,lp.status AS learning_status,lp.completion_percent,lp.last_opened_at,
         a.id AS artwork_id,m.id AS media_id,tl.license_code,tl.license_url,tl.rights_holder,
-        tl.attribution_text,tl.evidence_url,EXISTS(SELECT 1 FROM lyrics lx WHERE lx.track_id=t.id) AS has_lyrics
+        tl.attribution_text,tl.evidence_url
         FROM tracks t
         JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
         LEFT JOIN user_lesson_progress lp ON lp.track_id=t.id AND lp.user_id=?
         LEFT JOIN artwork_assets a ON a.track_id=t.id
         LEFT JOIN track_licenses tl ON tl.track_id=t.id
+        WHERE EXISTS(SELECT 1 FROM lyrics l WHERE l.track_id=t.id)
         ORDER BY m.updated_at DESC,t.updated_at DESC LIMIT ?`).all(userId, limit);
     },
     continueLearning(userId = "usr_legacy", limit = 8) {
