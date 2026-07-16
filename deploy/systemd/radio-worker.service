@@ -1,0 +1,20 @@
+[Unit]
+Description=Translator Live Radio Worker (inside vpnns namespace)
+After=vpnns.service network-online.target
+BindsTo=vpnns.service
+Wants=network-online.target
+PartOf=translator.target vpnns.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/github/translator
+Environment=RADIO_WORKER_HOST=0.0.0.0
+Environment=RADIO_WORKER_PORT=8091
+Environment=RADIO_STORAGE_DIR=/root/github/translator/data/radio
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/ip netns exec vpnns /usr/bin/node services/radio-worker/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=translator.target vpnns.service

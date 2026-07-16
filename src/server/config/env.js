@@ -50,6 +50,7 @@ export const env = {
   groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
   groqSttModel: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
   mediaWorkerUrl: process.env.MEDIA_WORKER_URL || "http://127.0.0.1:8090",
+  radioWorkerUrl: process.env.RADIO_WORKER_URL || "http://127.0.0.1:8091",
   spotifyClientId: process.env.SPOTIFY_CLIENT_ID || "",
   spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
   spotifyRedirectUri: process.env.SPOTIFY_REDIRECT_URI || "",
