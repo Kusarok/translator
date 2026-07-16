@@ -21,7 +21,10 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const user = await authenticateAccount(req.body || {});
+  const user = await authenticateAccount(req.body || {}) || legacyOwnerLogin({
+    username: req.body?.email,
+    password: req.body?.password
+  });
   if (!user) throw new HttpError(401, "Email or password is incorrect.");
   setSessionCookie(res, req, user);
   res.json({ ok: true, user });

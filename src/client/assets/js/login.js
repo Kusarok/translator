@@ -18,6 +18,7 @@ const selectMode = (next) => {
   document.querySelectorAll("[data-auth-mode]").forEach((item) => item.classList.toggle("active", item.dataset.authMode === mode));
   nameInput.hidden = mode !== "register";
   nameInput.required = mode === "register";
+  document.getElementById("loginEmail").placeholder = mode === "register" ? "Email address" : "Email or owner username";
   passwordInput.autocomplete = mode === "register" ? "new-password" : "current-password";
   btn.textContent = mode === "register" ? "Create account" : "Sign in";
   errorEl.hidden = true;
