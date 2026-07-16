@@ -68,9 +68,12 @@ const startStation = (station) => {
   if (stopping || currentState(station.id).running) return;
   prepareStationDirectory(station);
   const previous = currentState(station.id);
+  const sources = [station.sourceUrl, ...(station.fallbackUrls || [])];
+  const sourceIndex = Number(previous.sourceIndex || 0) % sources.length;
   const state = {
     ...previous, running: true, ready: false, lastError: "",
-    listeners: previous.listeners || new Set(), buffer: [], bufferBytes: 0
+    listeners: previous.listeners || new Set(), buffer: [], bufferBytes: 0,
+    sourceIndex
   };
   states.set(station.id, state);
 
@@ -82,7 +85,7 @@ const startStation = (station) => {
     "-nostdin", "-hide_banner", "-loglevel", "warning",
     "-rw_timeout", "15000000",
     "-re",
-    "-i", station.sourceUrl,
+    "-i", sources[sourceIndex],
     "-map", "0:a:0", "-vn",
     "-c:a", "libmp3lame", "-b:a", "96k", "-ar", "48000", "-ac", "2",
     "-f", "mp3", "-write_xing", "0", "pipe:1"
@@ -98,6 +101,7 @@ const startStation = (station) => {
     latest.ready = false;
     latest.child = null;
     latest.attempts += 1;
+    latest.sourceIndex = (sourceIndex + 1) % sources.length;
     latest.lastError = errorTail.trim().split("\n").at(-1) || "Stream disconnected";
     endListeners(latest);
     states.set(station.id, latest);

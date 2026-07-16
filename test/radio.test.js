@@ -3,16 +3,19 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { publicStation, stations } from "../services/radio-worker/stations.js";
 
-test("live radio exposes two stable audio stations without leaking IPTV sources", () => {
+test("live radio exposes four stable audio stations without leaking IPTV sources", () => {
   assert.deepEqual(stations.map(({ id, name }) => ({ id, name })), [
     { id: "rad_kurdish", name: "Kurdish" },
-    { id: "rad_persian_nostalgia", name: "Persian Nostalgia" }
+    { id: "rad_persian_nostalgia", name: "Persian Nostalgia" },
+    { id: "rad_navahang", name: "Navahang" },
+    { id: "rad_radio_javan", name: "Radio Javan" }
   ]);
   for (const station of stations) {
     assert.match(station.sourceUrl, /^https:\/\//);
     const visible = publicStation(station, { ready: true });
     assert.equal(visible.live, true);
     assert.equal("sourceUrl" in visible, false);
+    assert.equal("fallbackUrls" in visible, false);
     assert.equal(visible.streamUrl, `/api/radio/stations/${station.id}/live.mp3`);
   }
 });
@@ -26,6 +29,8 @@ test("radio worker creates one native background stream shared by every listener
   assert.match(source, /state\.listeners/);
   assert.match(source, /PREBUFFER_BYTES = 180_000/);
   assert.match(source, /Buffer\.concat\(state\.buffer/);
+  assert.match(source, /station\.fallbackUrls/);
+  assert.match(source, /sourceIndex \+ 1/);
   assert.match(server, /"Content-Type": "audio\/mpeg"/);
 });
 

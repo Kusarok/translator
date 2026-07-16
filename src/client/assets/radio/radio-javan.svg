@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="r-bg" x1=".06" y1="0" x2=".94" y2="1"><stop stop-color="#191933"/><stop offset=".5" stop-color="#662c69"/><stop offset="1" stop-color="#fa526c"/></linearGradient>
+    <linearGradient id="r-wave" x1="0" x2="1"><stop stop-color="#75e8f2"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#ffc76c"/></linearGradient>
+    <filter id="r-glow"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="800" height="800" rx="96" fill="url(#r-bg)"/>
+  <circle cx="400" cy="390" r="260" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="2"/>
+  <circle cx="400" cy="390" r="205" fill="#111526" fill-opacity=".48" stroke="#fff" stroke-opacity=".14" stroke-width="3"/>
+  <circle cx="400" cy="390" r="130" fill="#ff5f74" opacity=".24" filter="url(#r-glow)"/>
+  <g fill="url(#r-wave)"><rect x="205" y="348" width="30" height="84" rx="15"/><rect x="251" y="290" width="30" height="200" rx="15"/><rect x="297" y="326" width="30" height="128" rx="15"/><rect x="343" y="244" width="30" height="292" rx="15"/><rect x="389" y="306" width="30" height="168" rx="15"/><rect x="435" y="260" width="30" height="260" rx="15"/><rect x="481" y="320" width="30" height="140" rx="15"/><rect x="527" y="282" width="30" height="216" rx="15"/><rect x="573" y="350" width="30" height="80" rx="15"/></g>
+  <circle cx="400" cy="390" r="52" fill="#fff" opacity=".92"/><path d="m385 360 48 30-48 30Z" fill="#fa526c"/>
+</svg>

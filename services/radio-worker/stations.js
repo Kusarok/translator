@@ -18,6 +18,27 @@ export const stations = [
     artwork: "/assets/radio/persian-nostalgia.svg",
     accent: "#68ead8",
     accentAlt: "#6878ee"
+  },
+  {
+    id: "rad_navahang",
+    name: "Navahang",
+    language: "Persian",
+    languageCode: "fa",
+    sourceUrl: "https://simahls.wns.live/hls/stream.m3u8",
+    fallbackUrls: ["https://hls.navahang.live/hls/stream.m3u8"],
+    artwork: "/assets/radio/navahang.svg",
+    accent: "#ffca6b",
+    accentAlt: "#f05b8d"
+  },
+  {
+    id: "rad_radio_javan",
+    name: "Radio Javan",
+    language: "Persian",
+    languageCode: "fa",
+    sourceUrl: "https://rjtvhls.wns.live/hls/stream.m3u8",
+    artwork: "/assets/radio/radio-javan.svg",
+    accent: "#ff5f74",
+    accentAlt: "#765cff"
   }
 ];
 
