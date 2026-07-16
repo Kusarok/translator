@@ -51,3 +51,20 @@ test("users can register, receive a private session, and sign out", async () => 
   const logout = await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { Cookie: cookie } });
   assert.equal(logout.status, 200);
 });
+
+test("a repeated Google callback returns an authenticated browser to the app", async () => {
+  const registration = await fetch(`${base}/api/auth/register`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "oauth-repeat@example.com", password: "correct-horse", displayName: "OAuth Listener" })
+  });
+  assert.equal(registration.status, 201);
+  const cookie = registration.headers.get("set-cookie").split(";", 1)[0];
+
+  const callback = await fetch(`${base}/api/auth/google/callback?state=already-used&code=already-used`, {
+    headers: { Cookie: cookie },
+    redirect: "manual"
+  });
+
+  assert.equal(callback.status, 302);
+  assert.equal(callback.headers.get("location"), "/?auth=google_success");
+});
