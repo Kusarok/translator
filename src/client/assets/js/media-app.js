@@ -11,6 +11,7 @@ const el = Object.fromEntries(Object.entries({
   progress: "mediaProgressBar", result: "mediaResult", resultSource: "mediaResultSource",
   title: "mediaResultTitle", meta: "mediaResultMeta", artwork: "mediaArtwork", player: "mediaPlayerWrap",
   disclosure: "mediaDisclosure", original: "mediaOriginal", remove: "mediaRemove", start: "mediaStartLearning",
+  license: "mediaLicense",
   view: "mediaView", resultBack: "mediaResultBack",
   addPlaylist: "mediaAddPlaylist",
   mini: "learnMiniPlayer", miniOpen: "learnMiniOpen", miniCover: "learnMiniCover",
@@ -534,6 +535,12 @@ const showPreparedTrack = () => {
   el.nowArtist.textContent = track.artist;
   el.original.href = track.sourceUrl;
   el.original.hidden = !track.sourceUrl;
+  el.license.hidden = !track.license?.url;
+  if (track.license?.url) {
+    el.license.href = track.license.evidenceUrl || track.license.url;
+    el.license.textContent = `${track.license.code} · ${track.license.rightsHolder}`;
+    el.license.title = track.license.attribution || "Open music license";
+  }
   if (track.artwork) {
     el.artwork.src = track.artwork; el.artwork.hidden = false;
     el.nowCover.src = track.artwork; el.nowCover.hidden = false; el.nowFallback.hidden = true;

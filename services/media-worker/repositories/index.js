@@ -26,6 +26,26 @@ export const createRepositories = (db) => ({
       return this.findByExternalId(input.source, input.externalId);
     }
   },
+  licenses: {
+    findForTrack: (trackId) => db.prepare("SELECT * FROM track_licenses WHERE track_id=?").get(trackId) || null,
+    upsert(input) {
+      const current = this.findForTrack(input.trackId);
+      const stamp = now(), id = current?.id || input.id || createId("license");
+      db.prepare(`INSERT INTO track_licenses(id,track_id,license_code,license_url,rights_holder,attribution_text,
+        evidence_url,evidence_hash,evidence_relative_path,covers_recording,covers_composition,covers_lyrics,
+        verified_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(track_id) DO UPDATE SET license_code=excluded.license_code,license_url=excluded.license_url,
+        rights_holder=excluded.rights_holder,attribution_text=excluded.attribution_text,evidence_url=excluded.evidence_url,
+        evidence_hash=excluded.evidence_hash,evidence_relative_path=excluded.evidence_relative_path,
+        covers_recording=excluded.covers_recording,covers_composition=excluded.covers_composition,
+        covers_lyrics=excluded.covers_lyrics,verified_at=excluded.verified_at,updated_at=excluded.updated_at`)
+        .run(id, input.trackId, input.licenseCode, input.licenseUrl, input.rightsHolder, input.attributionText,
+          input.evidenceUrl, input.evidenceHash, relativePath(input.evidenceRelativePath),
+          input.coversRecording ? 1 : 0, input.coversComposition ? 1 : 0, input.coversLyrics ? 1 : 0,
+          input.verifiedAt || stamp, current?.created_at || stamp, stamp);
+      return this.findForTrack(input.trackId);
+    }
+  },
   lyrics: {
     findById: (id) => db.prepare("SELECT * FROM lyrics WHERE id = ?").get(id) || null,
     findByExternalId: (source, externalId) => db.prepare(`SELECT * FROM lyrics WHERE source=? AND
@@ -213,13 +233,15 @@ export const createRepositories = (db) => ({
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
         WHERE ul.user_id=? ORDER BY COALESCE(lp.last_opened_at,ul.saved_at) DESC LIMIT ?`).all(userId, limit);
     },
-    catalog(userId = "usr_legacy", limit = 100) {
+    catalog(userId = "usr_legacy", limit = 500) {
       return db.prepare(`SELECT t.*,lp.status AS learning_status,lp.completion_percent,lp.last_opened_at,
-        a.id AS artwork_id,m.id AS media_id
+        a.id AS artwork_id,m.id AS media_id,tl.license_code,tl.license_url,tl.rights_holder,
+        tl.attribution_text,tl.evidence_url
         FROM tracks t
         JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
         LEFT JOIN user_lesson_progress lp ON lp.track_id=t.id AND lp.user_id=?
         LEFT JOIN artwork_assets a ON a.track_id=t.id
+        LEFT JOIN track_licenses tl ON tl.track_id=t.id
         WHERE EXISTS(SELECT 1 FROM lyrics l WHERE l.track_id=t.id)
         ORDER BY m.updated_at DESC,t.updated_at DESC LIMIT ?`).all(userId, limit);
     },

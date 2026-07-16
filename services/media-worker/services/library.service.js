@@ -18,7 +18,11 @@ const trackView = (row) => ({
   ready: Boolean(row.media_id),
   learningStatus: row.learning_status || "new",
   completionPercent: Number(row.completion_percent || 0),
-  lastOpenedAt: row.last_opened_at || null
+  lastOpenedAt: row.last_opened_at || null,
+  license: row.license_code ? {
+    code: row.license_code, url: row.license_url, rightsHolder: row.rights_holder,
+    attribution: row.attribution_text, evidenceUrl: row.evidence_url
+  } : null
 });
 
 const playlistView = (row) => ({

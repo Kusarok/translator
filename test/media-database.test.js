@@ -11,7 +11,7 @@ test("database lives under the injected storage root and migrations are idempote
   const db = openDatabase({ storageRoot: root });
   assert.equal(databasePath(root), path.join(root, "database", "translator.sqlite"));
   assert.equal(db.prepare("PRAGMA foreign_keys").get().foreign_keys, 1);
-  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 11);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 12);
   db.close();
   openDatabase({ storageRoot: root }).close();
   fs.rmSync(root, { recursive: true, force: true });
@@ -26,6 +26,10 @@ test("repositories cache entities with independent prefixed ids and relative pat
   const lyrics = repo.lyrics.upsert({ trackId: track.id, source: "lrclib", externalId: "42", contentHash: "hash", relativePath: "lyrics/lyr_x/original.json" });
   const translation = repo.translations.upsert({ lyricsId: lyrics.id, targetLanguage: "fa", provider: "openai", model: "model", promptVersion: "1", contentHash: "trhash", relativePath: "translations/trn_x/fa.json" });
   const media = repo.media.upsert({ trackId: track.id, provider: "youtube", providerMediaId: "yt1", relativePath: "media/med_x/audio.mp3", sizeBytes: 10 });
+  const license = repo.licenses.upsert({ trackId: track.id, licenseCode: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    rightsHolder: "Artist", attributionText: "Song by Artist — CC BY 4.0", evidenceUrl: "https://example.com/song",
+    evidenceHash: "evidence-hash", evidenceRelativePath: "licenses/lic_x/evidence.json",
+    coversRecording: true, coversComposition: true, coversLyrics: true });
   const artwork = repo.artwork.upsert({ trackId: track.id, remoteUrl: "https://example.com/cover.jpg", relativePath: "artwork/art_x/cover.jpg", sizeBytes: 10 });
   const job = repo.jobs.create({ trackId: track.id, jobType: "audio" });
   const translationJob = repo.lyricTranslationJobs.schedule({ trackId: track.id, targetLanguage: "fa" });
@@ -35,6 +39,7 @@ test("repositories cache entities with independent prefixed ids and relative pat
   assert.match(lyrics.id, /^lyr_/);
   assert.match(translation.id, /^trn_/);
   assert.match(media.id, /^med_/);
+  assert.match(license.id, /^lic_/);
   assert.match(artwork.id, /^art_/);
   assert.match(job.id, /^job_/);
   assert.match(translationJob.id, /^ltj_/);

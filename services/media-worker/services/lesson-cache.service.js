@@ -94,6 +94,7 @@ const lessonForTrack = (track) => {
   const translations = translation ? readJson(translation.relative_path) : null;
   const media = repositories.media.findReadyForTrack(track.id);
   const artwork = repositories.artwork.findForTrack(track.id);
+  const license = repositories.licenses.findForTrack(track.id);
   const mediaExists = media && fs.existsSync(path.resolve(config.dataDir, media.relative_path));
   return {
     spotifyId: track.source === "spotify" ? track.external_id : null, sourceUrl: track.source_url, title: track.title, artist: track.artist,
@@ -104,7 +105,11 @@ const lessonForTrack = (track) => {
     mediaId: mediaExists ? media.id : null,
     streamUrl: mediaExists ? `/api/media/${media.id}/stream` : null,
     downloadUrl: mediaExists ? `/api/media/${media.id}/download` : null,
-    media: mediaExists ? { id: media.id, streamUrl: `/api/media/${media.id}/stream`, downloadUrl: `/api/media/${media.id}/download` } : null
+    media: mediaExists ? { id: media.id, streamUrl: `/api/media/${media.id}/stream`, downloadUrl: `/api/media/${media.id}/download` } : null,
+    license: license ? {
+      code: license.license_code, url: license.license_url, rightsHolder: license.rights_holder,
+      attribution: license.attribution_text, evidenceUrl: license.evidence_url
+    } : null
   };
 };
 

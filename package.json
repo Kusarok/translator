@@ -9,6 +9,7 @@
     "start:web": "node src/server/index.js",
     "start:media": "node services/media-worker/server.js",
     "media:install": "node scripts/install-media-tools.js",
+    "music:sync-open": "node scripts/sync-open-music.js",
     "test": "node --test"
   },
   "dependencies": {
