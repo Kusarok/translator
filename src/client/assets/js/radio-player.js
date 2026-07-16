@@ -7,6 +7,8 @@ const ui = {
   name: byId("radioPlayerName"), language: byId("radioPlayerLanguage"), status: byId("radioPlayerStatus"),
   play: byId("radioPlayerPlay"), favorite: byId("radioFavorite"), sleep: byId("radioSleep"),
   sleepLabel: byId("radioSleepLabel"), switcher: byId("radioStationSwitcher"), audio: byId("radioAudio"),
+  stationTrigger: byId("radioStationTrigger"), stationSheet: byId("radioStationSheet"),
+  stationSheetClose: byId("radioStationSheetClose"), stationSheetBackdrop: byId("radioStationSheetBackdrop"),
   mini: byId("radioMiniPlayer"), miniOpen: byId("radioMiniOpen"), miniArtwork: byId("radioMiniArtwork"),
   miniName: byId("radioMiniName"), miniLanguage: byId("radioMiniLanguage"), miniPlay: byId("radioMiniPlay"),
   miniClose: byId("radioMiniClose")
@@ -15,6 +17,7 @@ const ui = {
 const FAVORITES_KEY = "translator_radio_favorites";
 const LAST_STATION_KEY = "translator_radio_last_station";
 const HISTORY_KEY = "translatorRadioOpen";
+const PICKER_HISTORY_KEY = "translatorRadioStationPicker";
 const sleepOptions = [0, 15, 30, 60];
 let stations = [];
 let active = null;
@@ -197,11 +200,34 @@ function renderSwitcher() {
     button.className = active?.id === station.id ? "active" : "";
     button.innerHTML = `<img alt=""><span><strong></strong><small></small></span><i></i>`;
     button.querySelector("img").src = station.artwork;
+    button.querySelector("img").alt = "";
     button.querySelector("strong").textContent = station.name;
     button.querySelector("small").textContent = station.language;
-    button.addEventListener("click", () => selectStation(station, { open: false }));
+    button.setAttribute("aria-label", `${active?.id === station.id ? "Current station" : "Play"} ${station.name}`);
+    button.addEventListener("click", () => {
+      selectStation(station, { open: false });
+      closeStationPicker();
+    });
     return button;
   }));
+}
+
+const openStationPicker = () => {
+  if (!ui.stationSheet?.hidden) return;
+  ui.stationSheet.hidden = false;
+  ui.stationTrigger?.setAttribute("aria-expanded", "true");
+  if (!history.state?.[PICKER_HISTORY_KEY]) {
+    history.pushState({ ...(history.state || {}), [HISTORY_KEY]: true, [PICKER_HISTORY_KEY]: true }, "");
+  }
+  requestAnimationFrame(() => ui.switcher?.querySelector("button.active,button")?.focus({ preventScroll: true }));
+};
+
+function closeStationPicker({ fromHistory = false } = {}) {
+  if (!ui.stationSheet || ui.stationSheet.hidden) return;
+  ui.stationSheet.hidden = true;
+  ui.stationTrigger?.setAttribute("aria-expanded", "false");
+  if (!fromHistory && history.state?.[PICKER_HISTORY_KEY]) history.back();
+  else if (fromHistory) ui.stationTrigger?.focus({ preventScroll: true });
 }
 
 const openPlayer = () => {
@@ -211,6 +237,7 @@ const openPlayer = () => {
 };
 
 const closePlayer = ({ fromHistory = false } = {}) => {
+  closeStationPicker({ fromHistory: true });
   ui.player.hidden = true;
   document.body.classList.remove("radio-player-open");
   if (!fromHistory && history.state?.[HISTORY_KEY]) history.back();
@@ -255,13 +282,22 @@ export const initRadio = async () => {
   ui.favorite.addEventListener("click", toggleFavorite);
   ui.sleep.addEventListener("click", setSleepTimer);
   ui.share.addEventListener("click", share);
+  ui.stationTrigger?.addEventListener("click", openStationPicker);
+  ui.stationSheetClose?.addEventListener("click", () => closeStationPicker());
+  ui.stationSheetBackdrop?.addEventListener("click", () => closeStationPicker());
+  ui.stationSheet?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { event.preventDefault(); closeStationPicker(); }
+  });
   ui.audio.addEventListener("playing", () => { cancelReconnect(); setPlayingUi(true); setStatus("Live now", "live"); });
   ui.audio.addEventListener("timeupdate", cancelReconnect);
   ui.audio.addEventListener("pause", () => setPlayingUi(false));
   ui.audio.addEventListener("waiting", () => wantsPlayback && scheduleReconnect());
   ui.audio.addEventListener("stalled", () => scheduleReconnect());
   ui.audio.addEventListener("error", () => scheduleReconnect(2_000));
-  window.addEventListener("popstate", (event) => { if (!event.state?.[HISTORY_KEY] && !ui.player.hidden) closePlayer({ fromHistory: true }); });
+  window.addEventListener("popstate", (event) => {
+    if (!event.state?.[PICKER_HISTORY_KEY] && !ui.stationSheet?.hidden) closeStationPicker({ fromHistory: true });
+    if (!event.state?.[HISTORY_KEY] && !ui.player.hidden) closePlayer({ fromHistory: true });
+  });
   document.addEventListener("translator:song-play", () => { if (active && (!ui.audio.paused || !ui.mini.hidden)) stop(); });
 
   const loadCatalog = async () => {

@@ -41,11 +41,17 @@ test("music home includes a persistent animated radio player and background cont
   assert.match(html, /id="radioHome"/);
   assert.match(html, /id="radioPlayer"/);
   assert.match(html, /id="radioMiniPlayer"/);
+  assert.match(html, /id="radioStationTrigger"/);
+  assert.match(html, /id="radioStationSheet" hidden/);
+  assert.match(html, /id="radioStationSwitcher"/);
   assert.match(client, /navigator\.mediaSession/);
   assert.match(client, /new MediaMetadata/);
   assert.match(client, /scheduleReconnect = \(delay = 12_000\)/);
   assert.match(client, /timeupdate.*cancelReconnect/);
+  assert.match(client, /PICKER_HISTORY_KEY/);
   assert.doesNotMatch(client, /window\.Hls/);
   assert.match(client, /new MediaMetadata/);
   assert.match(css, /\.radio-equalizer/);
+  assert.match(css, /grid-template-rows: auto minmax\(0,1fr\) auto 30px auto/);
+  assert.match(css, /radio-station-sheet-backdrop/);
 });

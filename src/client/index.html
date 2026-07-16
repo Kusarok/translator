@@ -449,7 +449,9 @@
               <div class="radio-player-ambient" aria-hidden="true"><span></span><span></span><span></span></div>
               <header class="radio-player-header">
                 <button id="radioPlayerBack" type="button" aria-label="Close live radio"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-                <div><span>LIVE RADIO</span><strong>On air</strong></div>
+                <button class="radio-station-trigger" id="radioStationTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="radioStationSheet">
+                  <span>LIVE RADIO</span><strong id="radioPlayerName">Choose station</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+                </button>
                 <button id="radioPlayerShare" type="button" aria-label="Share station"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
               </header>
               <div class="radio-player-stage">
@@ -459,7 +461,6 @@
               </div>
               <div class="radio-now-copy">
                 <span id="radioPlayerLanguage"></span>
-                <h1 id="radioPlayerName"></h1>
                 <p id="radioPlayerStatus" role="status" aria-live="polite">Ready to play</p>
               </div>
               <div class="radio-equalizer" id="radioEqualizer" aria-hidden="true">
@@ -472,7 +473,14 @@
                 </button>
                 <button class="radio-side-control" id="radioSleep" type="button" aria-label="Sleep timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="radioSleepLabel">Sleep</span></button>
               </div>
-              <div class="radio-station-switcher" id="radioStationSwitcher"></div>
+              <div class="radio-station-sheet" id="radioStationSheet" hidden>
+                <button class="radio-station-sheet-backdrop" id="radioStationSheetBackdrop" type="button" aria-label="Close station list"></button>
+                <section class="radio-station-sheet-card" role="dialog" aria-modal="true" aria-labelledby="radioStationSheetTitle">
+                  <div class="radio-station-sheet-handle" aria-hidden="true"></div>
+                  <header><div><span>LIVE RADIO</span><h2 id="radioStationSheetTitle">Choose a station</h2></div><button id="radioStationSheetClose" type="button" aria-label="Close station list">×</button></header>
+                  <div class="radio-station-switcher" id="radioStationSwitcher"></div>
+                </section>
+              </div>
               <audio id="radioAudio" preload="none"></audio>
             </section>
             <nav class="learn-bottom-nav" aria-label="Music navigation">

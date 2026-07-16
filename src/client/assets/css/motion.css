@@ -162,6 +162,8 @@
 @keyframes radio-ambient-drift { to { transform: translate3d(28px,-20px,0) scale(1.18); } }
 @keyframes radio-eq { 0%,100% { transform: scaleY(.18); opacity: .35; } 30% { transform: scaleY(1); opacity: .95; } 62% { transform: scaleY(.46); opacity: .62; } }
 @keyframes radio-play-breathe { to { transform: scale(1.045); box-shadow: 0 22px 60px -14px var(--radio-accent); } }
+@keyframes radio-sheet-rise { from { opacity: 0; transform: translateY(34px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes radio-sheet-fade { from { opacity: 0; } to { opacity: 1; } }
 
 body.radio-is-playing .radio-card-bars i,body.radio-is-playing .radio-mini-bars i { animation: radio-bars .8s ease-in-out infinite; }
 body.radio-is-playing .radio-card-bars i:nth-child(2),body.radio-is-playing .radio-mini-bars i:nth-child(2) { animation-delay: -.36s; animation-duration: .64s; }
@@ -179,6 +181,8 @@ body.radio-is-playing .radio-station-card.is-active > img { animation: motion-mi
 .radio-player.is-playing .radio-equalizer i:nth-child(4n) { animation-delay: -.68s; animation-duration: 1.12s; }
 .radio-player.is-playing .radio-equalizer i:nth-child(5n) { animation-delay: -.21s; animation-duration: .82s; }
 .radio-player.is-playing .radio-main-play { animation: radio-play-breathe 2.6s ease-in-out infinite alternate; }
+.radio-station-sheet:not([hidden]) .radio-station-sheet-card { animation: radio-sheet-rise .34s cubic-bezier(.2,.85,.2,1) both; }
+.radio-station-sheet:not([hidden]) .radio-station-sheet-backdrop { animation: radio-sheet-fade .24s ease-out both; }
 
 .lyric-pair {
   transform-origin: left center;
@@ -215,5 +219,6 @@ body.radio-is-playing .radio-station-card.is-active > img { animation: motion-mi
     opacity: 1 !important;
   }
   .radio-card-skeleton,.radio-card-bars i,.radio-mini-bars i,.radio-orbit,.radio-art-shell,
-  .radio-player-ambient span,.radio-equalizer i,.radio-main-play,.radio-station-card.is-active > img { animation: none !important; }
+  .radio-player-ambient span,.radio-equalizer i,.radio-main-play,.radio-station-card.is-active > img,
+  .radio-station-sheet-card,.radio-station-sheet-backdrop { animation: none !important; }
 }
