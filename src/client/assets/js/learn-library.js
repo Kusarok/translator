@@ -158,11 +158,12 @@ const renderLibraryView = () => {
   nodes.recentSection.hidden = musicView && libraryFilter !== "songs";
   nodes.artistsSection.hidden = !musicView || libraryFilter !== "artists";
   nodes.playlistsSection.hidden = !musicView || libraryFilter !== "playlists";
-  nodes.recentTitle.textContent = musicView ? "Songs" : "Recently added";
+  const visibleTracks = musicView ? snapshot.recent : snapshot.catalog || [];
+  nodes.recentTitle.textContent = musicView ? "Saved songs" : "Available now";
   nodes.artistsTitle.textContent = "Artists";
   nodes.playlistsTitle.textContent = "Playlists";
-  nodes.recent.replaceChildren(...(musicView ? snapshot.recent : snapshot.recent.slice(0, 6)).map((track) => trackRow(track)));
-  nodes.empty.hidden = Boolean(snapshot.recent.length);
+  nodes.recent.replaceChildren(...(musicView ? visibleTracks : visibleTracks.slice(0, 12)).map((track) => trackRow(track)));
+  nodes.empty.hidden = Boolean(visibleTracks.length);
   nodes.artistsEmpty.hidden = Boolean(snapshot.artists?.length);
 };
 
@@ -284,7 +285,7 @@ const createSheet = (eyebrow, title) => {
 const showSongPicker = async (playlist) => {
   const data = await getLearnLibrary();
   const existing = new Set(playlist.tracks.map((track) => track.id));
-  const available = data.recent.filter((track) => !existing.has(track.id));
+  const available = (data.catalog || data.recent).filter((track) => !existing.has(track.id));
   const { sheet, dismiss } = createSheet("Your library", "Add songs");
   const list = document.createElement("div"); list.className = "learn-track-list learn-song-picker";
   if (!available.length) list.innerHTML = "<div class='learn-picker-empty'>Every downloaded song is already in this playlist.</div>";

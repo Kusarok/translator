@@ -213,6 +213,16 @@ export const createRepositories = (db) => ({
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
         WHERE ul.user_id=? ORDER BY COALESCE(lp.last_opened_at,ul.saved_at) DESC LIMIT ?`).all(userId, limit);
     },
+    catalog(userId = "usr_legacy", limit = 100) {
+      return db.prepare(`SELECT t.*,lp.status AS learning_status,lp.completion_percent,lp.last_opened_at,
+        a.id AS artwork_id,m.id AS media_id
+        FROM tracks t
+        JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
+        LEFT JOIN user_lesson_progress lp ON lp.track_id=t.id AND lp.user_id=?
+        LEFT JOIN artwork_assets a ON a.track_id=t.id
+        WHERE EXISTS(SELECT 1 FROM lyrics l WHERE l.track_id=t.id)
+        ORDER BY m.updated_at DESC,t.updated_at DESC LIMIT ?`).all(userId, limit);
+    },
     continueLearning(userId = "usr_legacy", limit = 8) {
       if (typeof userId === "number") { limit = userId; userId = "usr_legacy"; }
       return db.prepare(`SELECT t.*, lp.status AS learning_status, lp.playback_seconds, lp.completion_percent, lp.last_opened_at,

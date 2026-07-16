@@ -31,6 +31,7 @@ const playlistView = (row) => ({
 export const libraryOverview = (userId) => ({
   continueLearning: repositories.library.continueLearning(userId).map(trackView),
   recent: repositories.library.recent(userId).map(trackView),
+  catalog: repositories.library.catalog(userId).map(trackView),
   playlists: repositories.playlists.list(userId).map(playlistView),
   artists: repositories.artists.list(userId).map((row) => ({
     id: row.id, name: row.name, status: row.scan_status, discoveredCount: row.discovered_count,
