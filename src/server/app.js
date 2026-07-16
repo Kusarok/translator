@@ -22,7 +22,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientPath = path.resolve(__dirname, "../client");
 const indexPath = path.join(clientPath, "index.html");
-const hlsClientPath = path.resolve(__dirname, "../../node_modules/hls.js/dist/hls.min.js");
 const assetVersion = String(Date.now());
 
 const sendIndex = (res) => {
@@ -94,10 +93,6 @@ export const createApp = () => {
 
   app.use(express.json({ limit: "15mb" }));
   app.get("/", (_req, res) => sendIndex(res));
-  app.get("/vendor/hls.min.js", (_req, res) => {
-    res.set("Cache-Control", "public, max-age=31536000, immutable");
-    res.type("application/javascript").sendFile(hlsClientPath);
-  });
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 

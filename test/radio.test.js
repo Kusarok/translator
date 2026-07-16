@@ -13,15 +13,17 @@ test("live radio exposes two stable audio stations without leaking IPTV sources"
     const visible = publicStation(station, { ready: true });
     assert.equal(visible.live, true);
     assert.equal("sourceUrl" in visible, false);
-    assert.equal(visible.streamUrl, `/api/radio/stations/${station.id}/live.m3u8`);
+    assert.equal(visible.streamUrl, `/api/radio/stations/${station.id}/live.mp3`);
   }
 });
 
-test("radio worker creates shared audio-only HLS with restart-safe segments", () => {
+test("radio worker creates one native background stream shared by every listener", () => {
   const source = fs.readFileSync("services/radio-worker/stream-manager.js", "utf8");
-  assert.match(source, /"-map", "0:a:0", "-vn", "-c:a", "copy"/);
-  assert.match(source, /"-hls_start_number_source", "epoch"/);
-  assert.match(source, /data.*radio|storageDir/);
+  const server = fs.readFileSync("services/radio-worker/server.js", "utf8");
+  assert.match(source, /"-map", "0:a:0", "-vn"/);
+  assert.match(source, /"-c:a", "libmp3lame", "-b:a", "128k"/);
+  assert.match(source, /state\.listeners/);
+  assert.match(server, /"Content-Type": "audio\/mpeg"/);
 });
 
 test("music home includes a persistent animated radio player and background controls", () => {
@@ -33,7 +35,7 @@ test("music home includes a persistent animated radio player and background cont
   assert.match(html, /id="radioMiniPlayer"/);
   assert.match(client, /navigator\.mediaSession/);
   assert.match(client, /new MediaMetadata/);
-  assert.match(client, /window\.Hls/);
-  assert.match(html, /\/vendor\/hls\.min\.js\?v=__ASSET_VERSION__/);
+  assert.doesNotMatch(client, /window\.Hls/);
+  assert.match(client, /new MediaMetadata/);
   assert.match(css, /\.radio-equalizer/);
 });

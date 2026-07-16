@@ -18,7 +18,6 @@ const HISTORY_KEY = "translatorRadioOpen";
 const sleepOptions = [0, 15, 30, 60];
 let stations = [];
 let active = null;
-let hls = null;
 let wantsPlayback = false;
 let reconnectTimer = 0;
 let sleepTimer = 0;
@@ -62,11 +61,9 @@ const updateMediaSession = () => {
   }
 };
 
-const destroyHls = () => {
+const destroyStream = () => {
   clearTimeout(reconnectTimer);
   reconnectTimer = 0;
-  hls?.destroy();
-  hls = null;
   ui.audio.pause();
   ui.audio.removeAttribute("src");
   ui.audio.load();
@@ -83,53 +80,24 @@ const reconnect = () => {
 
 const attachStream = () => {
   if (!active) return;
-  destroyHls();
+  destroyStream();
   setStatus(active.live ? "Connecting to live stream…" : "Station is connecting…", "connecting");
   const source = `${active.streamUrl}?v=${Date.now()}`;
-  if (ui.audio.canPlayType("application/vnd.apple.mpegurl")) {
-    ui.audio.src = source;
-    ui.audio.load();
-    if (wantsPlayback) ui.audio.play().catch(reconnect);
-    return;
-  }
-  if (window.Hls?.isSupported()) {
-    hls = new window.Hls({
-      enableWorker: true,
-      lowLatencyMode: false,
-      liveSyncDurationCount: 3,
-      liveMaxLatencyDurationCount: 8,
-      backBufferLength: 0,
-      maxBufferLength: 30,
-      manifestLoadingMaxRetry: 8,
-      fragLoadingMaxRetry: 8
-    });
-    hls.loadSource(source);
-    hls.attachMedia(ui.audio);
-    hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-      setStatus("Live now", "live");
-      if (wantsPlayback) ui.audio.play().catch(() => setStatus("Tap play to listen", "ready"));
-    });
-    hls.on(window.Hls.Events.ERROR, (_event, data) => {
-      if (!data.fatal) return;
-      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) hls?.startLoad();
-      else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) hls?.recoverMediaError();
-      else reconnect();
-    });
-    return;
-  }
-  setStatus("Live radio is not supported by this browser.", "error");
+  ui.audio.src = source;
+  ui.audio.load();
+  if (wantsPlayback) ui.audio.play().catch(reconnect);
 };
 
 const play = async () => {
   if (!active) return;
   wantsPlayback = true;
   document.dispatchEvent(new CustomEvent("translator:radio-play"));
-  if (!ui.audio.currentSrc && !hls) attachStream();
+  if (!ui.audio.currentSrc) attachStream();
   try {
     await ui.audio.play();
     setStatus("Live now", "live");
   } catch {
-    if (!hls && !ui.audio.currentSrc) attachStream();
+    if (!ui.audio.currentSrc) attachStream();
   }
 };
 
@@ -141,7 +109,7 @@ const pause = () => {
 
 const stop = () => {
   wantsPlayback = false;
-  destroyHls();
+  destroyStream();
   setPlayingUi(false);
   ui.mini.hidden = true;
   document.body.classList.remove("radio-mini-active");
@@ -179,7 +147,7 @@ const paintActive = () => {
 const selectStation = (station, { autoplay = true, open = true } = {}) => {
   const changed = active?.id !== station.id;
   active = station;
-  if (changed) destroyHls();
+  if (changed) destroyStream();
   paintActive();
   if (open) openPlayer();
   if (autoplay) play();

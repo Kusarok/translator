@@ -8,34 +8,18 @@ const states = new Map();
 const timers = new Set();
 let stopping = false;
 
-const stationDir = (id) => path.join(config.storageDir, "stations", id, "hls");
-const manifestPath = (id) => path.join(stationDir(id), "live.m3u8");
-const currentState = (id) => states.get(id) || { running: false, ready: false, attempts: 0, lastError: "", updatedAt: null };
-
-const clearOutput = (station) => {
-  const directory = stationDir(station.id);
-  fs.mkdirSync(directory, { recursive: true });
-  for (const name of fs.readdirSync(directory)) {
-    if (name === "live.m3u8" || /^segment-\d+\.ts$/.test(name)) fs.rmSync(path.join(directory, name), { force: true });
-  }
-  return directory;
+const stationDir = (id) => path.join(config.storageDir, "stations", id, "stream");
+const currentState = (id) => states.get(id) || {
+  running: false, ready: false, attempts: 0, lastError: "", lastChunkAt: 0, listeners: new Set()
 };
 
-const refreshReady = (station) => {
-  const state = currentState(station.id);
-  try {
-    const age = Date.now() - fs.statSync(manifestPath(station.id)).mtimeMs;
-    state.ready = age < config.staleAfterMs;
-    if (state.ready) {
-      state.updatedAt = new Date().toISOString();
-      state.attempts = 0;
-      state.lastError = "";
-    }
-  } catch {
-    state.ready = false;
-  }
-  states.set(station.id, state);
-  return state;
+const prepareStationDirectory = (station) => {
+  const directory = stationDir(station.id);
+  fs.mkdirSync(directory, { recursive: true });
+  // Remove obsolete HLS output from the first implementation. Live audio is now
+  // broadcast as one native MP3 stream and does not continuously write segments.
+  const oldHls = path.join(config.storageDir, "stations", station.id, "hls");
+  if (fs.existsSync(oldHls)) fs.rmSync(oldHls, { recursive: true, force: true });
 };
 
 const schedule = (callback, delay) => {
@@ -43,26 +27,55 @@ const schedule = (callback, delay) => {
   timers.add(timer);
 };
 
+const endListeners = (state) => {
+  for (const response of state.listeners) {
+    if (!response.destroyed) response.end();
+  }
+  state.listeners.clear();
+};
+
+const broadcast = (state, chunk) => {
+  state.lastChunkAt = Date.now();
+  state.ready = true;
+  state.attempts = 0;
+  state.lastError = "";
+  for (const response of state.listeners) {
+    if (response.destroyed || response.writableEnded) {
+      state.listeners.delete(response);
+      continue;
+    }
+    // A disconnected/very slow listener must not grow the server's memory forever.
+    // One MiB still gives a mobile connection roughly a minute to recover.
+    if (response.writableLength > 1024 * 1024) {
+      response.destroy();
+      state.listeners.delete(response);
+      continue;
+    }
+    response.write(chunk);
+  }
+};
+
 const startStation = (station) => {
   if (stopping || currentState(station.id).running) return;
-  const directory = clearOutput(station);
-  const state = { ...currentState(station.id), running: true, ready: false, lastError: "" };
+  prepareStationDirectory(station);
+  const previous = currentState(station.id);
+  const state = { ...previous, running: true, ready: false, lastError: "", listeners: previous.listeners || new Set() };
   states.set(station.id, state);
 
+  // Transcode once per station, never once per listener. A continuous MP3 stream is
+  // handled by Android's native media pipeline and remains alive when JS is throttled
+  // after the screen turns off. 128 kbps is transparent enough for these source feeds.
   const child = spawn(config.ffmpeg, [
     "-nostdin", "-hide_banner", "-loglevel", "warning",
     "-rw_timeout", "15000000",
     "-i", station.sourceUrl,
-    "-map", "0:a:0", "-vn", "-c:a", "copy",
-    "-f", "hls", "-hls_time", String(config.segmentSeconds),
-    "-hls_list_size", String(config.playlistSegments),
-    "-hls_start_number_source", "epoch",
-    "-hls_flags", "delete_segments+omit_endlist+program_date_time",
-    "-hls_segment_filename", path.join(directory, "segment-%09d.ts"),
-    path.join(directory, "live.m3u8")
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+    "-map", "0:a:0", "-vn",
+    "-c:a", "libmp3lame", "-b:a", "128k", "-ar", "48000", "-ac", "2",
+    "-f", "mp3", "-write_xing", "0", "pipe:1"
+  ], { stdio: ["ignore", "pipe", "pipe"] });
   state.child = child;
   let errorTail = "";
+  child.stdout.on("data", (chunk) => broadcast(state, chunk));
   child.stderr.on("data", (chunk) => { errorTail = `${errorTail}${chunk}`.slice(-1200); });
   child.on("error", (error) => { errorTail = error.message; });
   child.on("exit", () => {
@@ -72,6 +85,7 @@ const startStation = (station) => {
     latest.child = null;
     latest.attempts += 1;
     latest.lastError = errorTail.trim().split("\n").at(-1) || "Stream disconnected";
+    endListeners(latest);
     states.set(station.id, latest);
     if (!stopping) schedule(() => startStation(station), Math.min(30_000, 2_000 * latest.attempts));
   });
@@ -82,10 +96,10 @@ export const startStreams = () => {
   for (const station of stations) startStation(station);
   const watchdog = setInterval(() => {
     for (const station of stations) {
-      const state = refreshReady(station);
-      if (state.running && state.updatedAt && Date.now() - Date.parse(state.updatedAt) > config.staleAfterMs) {
-        state.child?.kill("SIGTERM");
-      } else if (!state.running) startStation(station);
+      const state = currentState(station.id);
+      state.ready = state.running && Date.now() - state.lastChunkAt < config.staleAfterMs;
+      if (state.running && state.lastChunkAt && !state.ready) state.child?.kill("SIGTERM");
+      else if (!state.running) startStation(station);
     }
   }, 5_000);
   timers.add(watchdog);
@@ -95,13 +109,25 @@ export const stopStreams = () => {
   stopping = true;
   for (const timer of timers) clearTimeout(timer);
   timers.clear();
-  for (const state of states.values()) state.child?.kill("SIGTERM");
+  for (const state of states.values()) {
+    endListeners(state);
+    state.child?.kill("SIGTERM");
+  }
 };
 
-export const stationState = (id) => refreshReady(stations.find((item) => item.id === id) || { id });
-export const radioFile = (id, filename) => {
-  if (!stations.some((station) => station.id === id)) return null;
-  if (filename !== "live.m3u8" && !/^segment-\d+\.ts$/.test(filename)) return null;
-  const filePath = path.join(stationDir(id), filename);
-  return fs.existsSync(filePath) ? filePath : null;
+export const stationState = (id) => {
+  const state = currentState(id);
+  state.ready = state.running && Date.now() - state.lastChunkAt < config.staleAfterMs;
+  return state;
+};
+
+export const addListener = (id, response) => {
+  if (!stations.some((station) => station.id === id)) return false;
+  const state = currentState(id);
+  if (!state.running) return false;
+  state.listeners.add(response);
+  const remove = () => state.listeners.delete(response);
+  response.once("close", remove);
+  response.once("error", remove);
+  return true;
 };

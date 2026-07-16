@@ -1,8 +1,7 @@
-import fs from "node:fs";
 import http from "node:http";
 import { config } from "./config.js";
 import { publicStation, stations } from "./stations.js";
-import { radioFile, startStreams, stationState, stopStreams } from "./stream-manager.js";
+import { addListener, startStreams, stationState, stopStreams } from "./stream-manager.js";
 import { seedStations } from "./database.js";
 
 seedStations(stations);
@@ -23,19 +22,21 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/stations") {
     return json(res, 200, { stations: stations.map((station) => publicStation(station, stationState(station.id))) });
   }
-  const match = /^\/stations\/(rad_[a-z_]+)\/(live\.m3u8|segment-\d+\.ts)$/.exec(url.pathname);
+  const match = /^\/stations\/(rad_[a-z_]+)\/live\.mp3$/.exec(url.pathname);
   if (!match) return json(res, 404, { error: "Radio stream not found." });
-  const filePath = radioFile(match[1], match[2]);
-  if (!filePath) return json(res, 503, { error: "This station is reconnecting." });
-  const manifest = match[2].endsWith(".m3u8");
-  const stat = fs.statSync(filePath);
+  if (!stationState(match[1]).running) return json(res, 503, { error: "This station is reconnecting." });
   res.writeHead(200, {
-    "Content-Type": manifest ? "application/vnd.apple.mpegurl" : "video/mp2t",
-    "Content-Length": stat.size,
-    "Cache-Control": manifest ? "no-store, max-age=0" : "public, max-age=120, immutable",
-    "Access-Control-Allow-Origin": "*"
+    "Content-Type": "audio/mpeg",
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Accept-Ranges": "none",
+    "X-Accel-Buffering": "no",
+    "Access-Control-Allow-Origin": "*",
+    "icy-name": stations.find((station) => station.id === match[1])?.name || "Live Radio",
+    "icy-genre": "Music",
+    "icy-br": "128"
   });
-  fs.createReadStream(filePath).pipe(res);
+  res.flushHeaders();
+  if (!addListener(match[1], res)) res.end();
 });
 
 server.listen(config.port, config.host, () => {

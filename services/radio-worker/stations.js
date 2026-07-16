@@ -31,5 +31,5 @@ export const publicStation = (station, state = {}) => ({
   accentAlt: station.accentAlt,
   live: Boolean(state.ready),
   status: state.ready ? "live" : state.running ? "connecting" : "offline",
-  streamUrl: `/api/radio/stations/${station.id}/live.m3u8`
+  streamUrl: `/api/radio/stations/${station.id}/live.mp3`
 });
