@@ -146,35 +146,36 @@ export const createRepositories = (db) => ({
     }
   },
   playlists: {
-    findById: (id) => db.prepare("SELECT * FROM playlists WHERE id=?").get(id) || null,
-    findByExternalId: (source, externalId) => db.prepare("SELECT * FROM playlists WHERE source=? AND external_id=?").get(source, externalId) || null,
-    list: () => db.prepare(`SELECT p.*, COUNT(pt.id) AS track_count,
+    findById: (id, userId = "usr_legacy") => db.prepare("SELECT * FROM playlists WHERE id=? AND user_id=?").get(id, userId) || null,
+    findByExternalId: (source, externalId, userId = "usr_legacy") => db.prepare("SELECT * FROM playlists WHERE source=? AND external_id=? AND user_id=?").get(source, externalId, userId) || null,
+    list: (userId = "usr_legacy") => db.prepare(`SELECT p.*, COUNT(pt.id) AS track_count,
       (SELECT a.id FROM playlist_tracks x LEFT JOIN artwork_assets a ON a.track_id=x.track_id WHERE x.playlist_id=p.id ORDER BY x.position LIMIT 1) AS first_artwork_id,
       (SELECT t.artwork_url FROM playlist_tracks x JOIN tracks t ON t.id=x.track_id WHERE x.playlist_id=p.id ORDER BY x.position LIMIT 1) AS first_artwork_url
       FROM playlists p LEFT JOIN playlist_tracks pt ON pt.playlist_id=p.id
-      GROUP BY p.id ORDER BY p.updated_at DESC`).all(),
+      WHERE p.user_id=? GROUP BY p.id ORDER BY p.updated_at DESC`).all(userId),
     create(input) {
       const stamp = now(), id = input.id || createId("playlist");
-      db.prepare(`INSERT INTO playlists VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      db.prepare(`INSERT INTO playlists(id,source,external_id,name,description,source_url,artwork_url,snapshot_id,created_at,updated_at,last_synced_at,user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(id, input.source || "local", clean(input.externalId), input.name, input.description || "",
-          clean(input.sourceUrl), clean(input.artworkUrl), clean(input.snapshotId), stamp, stamp, clean(input.lastSyncedAt));
-      return this.findById(id);
+          clean(input.sourceUrl), clean(input.artworkUrl), clean(input.snapshotId), stamp, stamp, clean(input.lastSyncedAt), input.userId || "usr_legacy");
+      return this.findById(id, input.userId || "usr_legacy");
     },
     upsertExternal(input) {
-      const existing = this.findByExternalId(input.source, input.externalId);
+      const existing = this.findByExternalId(input.source, input.externalId, input.userId);
       if (!existing) return this.create(input);
       db.prepare(`UPDATE playlists SET name=?, description=?, source_url=?, artwork_url=?, snapshot_id=?, updated_at=?, last_synced_at=? WHERE id=?`)
         .run(input.name, input.description || "", clean(input.sourceUrl), clean(input.artworkUrl), clean(input.snapshotId), now(), now(), existing.id);
-      return this.findById(existing.id);
+      return this.findById(existing.id, input.userId);
     },
-    update(id, input) {
-      const current = this.findById(id);
+    update(id, input, userId = "usr_legacy") {
+      const current = this.findById(id, userId);
       if (!current) return null;
       db.prepare("UPDATE playlists SET name=?,description=?,updated_at=? WHERE id=?")
         .run(String(input.name ?? current.name).trim() || current.name, String(input.description ?? current.description).trim(), now(), id);
-      return this.findById(id);
+      return this.findById(id, userId);
     },
-    delete(id) { return db.prepare("DELETE FROM playlists WHERE id=?").run(id).changes > 0; },
+    delete(id, userId = "usr_legacy") { return db.prepare("DELETE FROM playlists WHERE id=? AND user_id=?").run(id, userId).changes > 0; },
     addTrack(playlistId, trackId, position) {
       const id = createId("playlistTrack"), stamp = now();
       db.prepare(`INSERT INTO playlist_tracks(id,playlist_id,track_id,position,added_at) VALUES (?,?,?,?,?)
@@ -186,67 +187,80 @@ export const createRepositories = (db) => ({
       if (removed) db.prepare("UPDATE playlists SET updated_at=? WHERE id=?").run(now(), playlistId);
       return removed;
     },
-    tracks(playlistId) {
+    tracks(playlistId, userId = "usr_legacy") {
       return db.prepare(`SELECT t.*, pt.position, pt.id AS playlist_track_id,
         lp.status AS learning_status, lp.completion_percent,
         a.id AS artwork_id, m.id AS media_id
         FROM playlist_tracks pt JOIN tracks t ON t.id=pt.track_id
-        LEFT JOIN lesson_progress lp ON lp.track_id=t.id
+        LEFT JOIN user_lesson_progress lp ON lp.track_id=t.id AND lp.user_id=?
         LEFT JOIN artwork_assets a ON a.track_id=t.id
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
-        WHERE pt.playlist_id=? ORDER BY pt.position`).all(playlistId);
+        WHERE pt.playlist_id=? AND EXISTS(SELECT 1 FROM playlists p WHERE p.id=pt.playlist_id AND p.user_id=?) ORDER BY pt.position`).all(userId, playlistId, userId);
     }
   },
   library: {
-    recent(limit = 20) {
+    save(userId, trackId) {
+      db.prepare(`INSERT INTO user_library_tracks(user_id,track_id,saved_at) VALUES (?,?,?)
+        ON CONFLICT(user_id,track_id) DO UPDATE SET saved_at=excluded.saved_at`).run(userId, trackId, now());
+    },
+    recent(userId = "usr_legacy", limit = 20) {
+      if (typeof userId === "number") { limit = userId; userId = "usr_legacy"; }
       return db.prepare(`SELECT t.*, lp.status AS learning_status, lp.completion_percent, lp.last_opened_at,
         a.id AS artwork_id, m.id AS media_id
-        FROM tracks t
-        LEFT JOIN lesson_progress lp ON lp.track_id=t.id
+        FROM user_library_tracks ul JOIN tracks t ON t.id=ul.track_id
+        LEFT JOIN user_lesson_progress lp ON lp.track_id=t.id AND lp.user_id=ul.user_id
         LEFT JOIN artwork_assets a ON a.track_id=t.id
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
-        ORDER BY COALESCE(lp.last_opened_at,t.updated_at) DESC LIMIT ?`).all(limit);
+        WHERE ul.user_id=? ORDER BY COALESCE(lp.last_opened_at,ul.saved_at) DESC LIMIT ?`).all(userId, limit);
     },
-    continueLearning(limit = 8) {
+    continueLearning(userId = "usr_legacy", limit = 8) {
+      if (typeof userId === "number") { limit = userId; userId = "usr_legacy"; }
       return db.prepare(`SELECT t.*, lp.status AS learning_status, lp.playback_seconds, lp.completion_percent, lp.last_opened_at,
         a.id AS artwork_id, m.id AS media_id
-        FROM lesson_progress lp JOIN tracks t ON t.id=lp.track_id
+        FROM user_lesson_progress lp JOIN tracks t ON t.id=lp.track_id
         LEFT JOIN artwork_assets a ON a.track_id=t.id
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
-        WHERE lp.status!='completed' ORDER BY lp.last_opened_at DESC LIMIT ?`).all(limit);
+        WHERE lp.user_id=? AND lp.status!='completed' ORDER BY lp.last_opened_at DESC LIMIT ?`).all(userId, limit);
     },
-    touchProgress(trackId, patch = {}) {
+    touchProgress(userId, trackId, patch = {}) {
+      if (typeof trackId === "object") { patch = trackId; trackId = userId; userId = "usr_legacy"; }
       const stamp = now();
-      db.prepare(`INSERT INTO lesson_progress(track_id,status,playback_seconds,completion_percent,opened_count,last_opened_at,updated_at)
-        VALUES (?,?,?,?,?,?,?) ON CONFLICT(track_id) DO UPDATE SET
-        status=COALESCE(excluded.status,lesson_progress.status), playback_seconds=excluded.playback_seconds,
-        completion_percent=excluded.completion_percent, opened_count=lesson_progress.opened_count+excluded.opened_count,
+      this.save(userId, trackId);
+      db.prepare(`INSERT INTO user_lesson_progress(user_id,track_id,status,playback_seconds,completion_percent,opened_count,last_opened_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(user_id,track_id) DO UPDATE SET
+        status=COALESCE(excluded.status,user_lesson_progress.status), playback_seconds=excluded.playback_seconds,
+        completion_percent=excluded.completion_percent, opened_count=user_lesson_progress.opened_count+excluded.opened_count,
         last_opened_at=excluded.last_opened_at, updated_at=excluded.updated_at`)
-        .run(trackId, patch.status || "learning", patch.playbackSeconds || 0, patch.completionPercent || 0,
+        .run(userId, trackId, patch.status || "learning", patch.playbackSeconds || 0, patch.completionPercent || 0,
           patch.incrementOpen ? 1 : 0, stamp, stamp);
     }
   },
   spotifyAccounts: {
-    current: () => db.prepare("SELECT * FROM spotify_accounts ORDER BY updated_at DESC LIMIT 1").get() || null,
-    upsert(input) {
+    current: (userId = "usr_legacy") => db.prepare("SELECT * FROM spotify_accounts WHERE user_id=? ORDER BY updated_at DESC LIMIT 1").get(userId) || null,
+    upsert(input, userId = "usr_legacy") {
       const existing = db.prepare("SELECT * FROM spotify_accounts WHERE spotify_user_id=?").get(input.spotifyUserId);
       const stamp = now(), id = existing?.id || input.id || createId("spotifyAccount");
-      db.prepare(`INSERT INTO spotify_accounts VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(spotify_user_id) DO UPDATE SET
+      db.prepare(`INSERT INTO spotify_accounts(id,spotify_user_id,display_name,access_token_ciphertext,refresh_token_ciphertext,scopes,expires_at,created_at,updated_at,user_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(spotify_user_id) DO UPDATE SET
         display_name=excluded.display_name, access_token_ciphertext=excluded.access_token_ciphertext,
         refresh_token_ciphertext=excluded.refresh_token_ciphertext, scopes=excluded.scopes,
-        expires_at=excluded.expires_at, updated_at=excluded.updated_at`)
+        expires_at=excluded.expires_at, updated_at=excluded.updated_at,user_id=excluded.user_id`)
         .run(id, input.spotifyUserId, input.displayName || "", input.accessTokenCiphertext,
-          input.refreshTokenCiphertext, input.scopes || "", input.expiresAt, existing?.created_at || stamp, stamp);
-      return this.current();
+          input.refreshTokenCiphertext, input.scopes || "", input.expiresAt, existing?.created_at || stamp, stamp, userId);
+      return this.current(userId);
     }
   },
   artists: {
     findById: (id) => db.prepare("SELECT * FROM artists WHERE id=?").get(id) || null,
     findByMusicBrainzId: (id) => db.prepare("SELECT * FROM artists WHERE musicbrainz_id=?").get(id) || null,
-    list: () => db.prepare(`SELECT ar.*,
+    list: (userId) => db.prepare(`SELECT ar.*,
       (SELECT aa.id FROM artist_catalog_items c JOIN artwork_assets aa ON aa.track_id=c.track_id WHERE c.artist_id=ar.id ORDER BY c.updated_at DESC LIMIT 1) AS artwork_id,
       (SELECT t.artwork_url FROM artist_catalog_items c JOIN tracks t ON t.id=c.track_id WHERE c.artist_id=ar.id AND t.artwork_url!='' ORDER BY c.updated_at DESC LIMIT 1) AS artwork_url
-      FROM artists ar ORDER BY ar.updated_at DESC`).all(),
+      FROM user_artists ua JOIN artists ar ON ar.id=ua.artist_id WHERE ua.user_id=? ORDER BY ua.added_at DESC`).all(userId),
+    addForUser(userId, artistId) {
+      db.prepare(`INSERT INTO user_artists(user_id,artist_id,added_at) VALUES (?,?,?)
+        ON CONFLICT(user_id,artist_id) DO NOTHING`).run(userId, artistId, now());
+    },
     upsert(input) {
       const current = this.findByMusicBrainzId(input.musicbrainzId), stamp = now();
       const id = current?.id || input.id || createId("artist");
@@ -304,6 +318,23 @@ export const createRepositories = (db) => ({
         LEFT JOIN artwork_assets a ON a.track_id=t.id
         LEFT JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
         WHERE c.title_rank=1 ORDER BY c.title COLLATE NOCASE`).all(artistId);
+    }
+  },
+  quota: {
+    status(userId, limit) {
+      const date = now().slice(0, 10);
+      const used = Number(db.prepare("SELECT COUNT(*) AS count FROM user_daily_song_additions WHERE user_id=? AND usage_date=?").get(userId, date).count);
+      const reset = new Date(`${date}T00:00:00Z`); reset.setUTCDate(reset.getUTCDate() + 1);
+      return { limit, used, remaining: Math.max(0, limit - used), resetsAt: reset.toISOString() };
+    },
+    consume(userId, trackKey, limit) {
+      const date = now().slice(0, 10);
+      const existing = db.prepare("SELECT 1 FROM user_daily_song_additions WHERE user_id=? AND usage_date=? AND track_key=?").get(userId, date, trackKey);
+      if (existing) return this.status(userId, limit);
+      const current = this.status(userId, limit);
+      if (current.remaining <= 0) return null;
+      db.prepare("INSERT INTO user_daily_song_additions(user_id,usage_date,track_key,created_at) VALUES (?,?,?,?)").run(userId, date, trackKey, now());
+      return this.status(userId, limit);
     }
   },
   search: {

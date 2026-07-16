@@ -70,7 +70,7 @@ test("health describes all platform adapters", async () => {
 test("job endpoint rejects unsupported hosts", async () => {
   const response = await fetch(`${base}/jobs`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Translator-User-Id": "usr_test" },
     body: JSON.stringify({ url: "https://example.com/file.mp4" })
   });
   assert.equal(response.status, 400);

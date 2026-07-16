@@ -21,6 +21,7 @@ export const config = {
   translationsDir: path.join(dataDir, "translations"),
   artworkDir: path.join(dataDir, "artwork"),
   jobsDir: path.join(dataDir, "jobs"),
+  dailyNewSongLimit: Number.parseInt(process.env.DAILY_NEW_SONG_LIMIT || "5", 10) || 5,
   python: process.env.MEDIA_PYTHON || path.join(serviceDir, ".venv", "bin", "python"),
   maxBytes: positive(process.env.MEDIA_MAX_BYTES, 350 * 1024 * 1024),
   maxDurationSeconds: positive(process.env.MEDIA_MAX_DURATION_SECONDS, 60 * 60),

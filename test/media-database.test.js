@@ -11,7 +11,7 @@ test("database lives under the injected storage root and migrations are idempote
   const db = openDatabase({ storageRoot: root });
   assert.equal(databasePath(root), path.join(root, "database", "translator.sqlite"));
   assert.equal(db.prepare("PRAGMA foreign_keys").get().foreign_keys, 1);
-  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 8);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 10);
   db.close();
   openDatabase({ storageRoot: root }).close();
   fs.rmSync(root, { recursive: true, force: true });

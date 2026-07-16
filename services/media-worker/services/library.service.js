@@ -28,25 +28,28 @@ const playlistView = (row) => ({
   trackCount: Number(row.track_count || 0), updatedAt: row.updated_at, lastSyncedAt: row.last_synced_at
 });
 
-export const libraryOverview = () => ({
-  continueLearning: repositories.library.continueLearning().map(trackView),
-  recent: repositories.library.recent().map(trackView),
-  playlists: repositories.playlists.list().map(playlistView),
-  artists: repositories.artists.list().map((row) => ({
+export const libraryOverview = (userId) => ({
+  continueLearning: repositories.library.continueLearning(userId).map(trackView),
+  recent: repositories.library.recent(userId).map(trackView),
+  playlists: repositories.playlists.list(userId).map(playlistView),
+  artists: repositories.artists.list(userId).map((row) => ({
     id: row.id, name: row.name, status: row.scan_status, discoveredCount: row.discovered_count,
     learnableCount: row.learnable_count, artwork: row.artwork_id ? `/api/media/artwork/${row.artwork_id}` : row.artwork_url || ""
   })),
-  spotify: { connected: Boolean(repositories.spotifyAccounts.current()), configured: Boolean(config.spotifyClientId && config.spotifyClientSecret) }
+  quota: repositories.quota.status(userId, config.dailyNewSongLimit),
+  spotify: { connected: Boolean(repositories.spotifyAccounts.current(userId)), configured: Boolean(config.spotifyClientId && config.spotifyClientSecret) }
 });
 
-export const createLearningPlaylist = (payload) => playlistView(repositories.playlists.create({
+export const createLearningPlaylist = (userId, payload) => playlistView(repositories.playlists.create({
+  userId,
   source: "local", name: String(payload?.name || "").trim() || "New playlist",
   description: String(payload?.description || "").trim()
 }));
 
-export const importSpotifyPlaylist = (payload) => {
+export const importSpotifyPlaylist = (userId, payload) => {
   if (!payload?.spotifyId || !Array.isArray(payload.tracks)) throw new TypeError("Spotify playlist metadata and tracks are required.");
   const playlist = repositories.playlists.upsertExternal({
+    userId,
     source: "spotify", externalId: payload.spotifyId, name: payload.name || "Spotify playlist",
     description: payload.description || "", sourceUrl: payload.sourceUrl, artworkUrl: payload.artwork,
     snapshotId: payload.snapshotId, lastSyncedAt: new Date().toISOString()
@@ -57,46 +60,49 @@ export const importSpotifyPlaylist = (payload) => {
       durationSeconds: item.duration, artworkUrl: item.artwork });
     repositories.playlists.addTrack(playlist.id, track.id, item.position ?? position);
   });
-  return getPlaylistDetail(playlist.id);
+  return getPlaylistDetail(userId, playlist.id);
 };
 
-export const getPlaylistDetail = (id) => {
-  const playlist = repositories.playlists.findById(id);
+export const getPlaylistDetail = (userId, id) => {
+  const playlist = repositories.playlists.findById(id, userId);
   if (!playlist) return null;
-  return { ...playlistView(playlist), tracks: repositories.playlists.tracks(id).map(trackView) };
+  return { ...playlistView(playlist), tracks: repositories.playlists.tracks(id, userId).map(trackView) };
 };
 
-export const updateLearningPlaylist = (id, payload) => {
-  const playlist = repositories.playlists.update(id, payload);
-  return playlist ? getPlaylistDetail(id) : null;
+export const updateLearningPlaylist = (userId, id, payload) => {
+  const playlist = repositories.playlists.update(id, payload, userId);
+  return playlist ? getPlaylistDetail(userId, id) : null;
 };
 
-export const deleteLearningPlaylist = (id) => repositories.playlists.delete(id);
+export const deleteLearningPlaylist = (userId, id) => repositories.playlists.delete(id, userId);
 
-export const removeTrackFromPlaylist = (playlistId, trackId) => repositories.playlists.removeTrack(playlistId, trackId);
+export const removeTrackFromPlaylist = (userId, playlistId, trackId) => repositories.playlists.findById(playlistId, userId) && repositories.playlists.removeTrack(playlistId, trackId);
 
-export const addTrackToPlaylist = (playlistId, payload) => {
-  const playlist = repositories.playlists.findById(playlistId);
+export const addTrackToPlaylist = (userId, playlistId, payload) => {
+  const playlist = repositories.playlists.findById(playlistId, userId);
   if (!playlist) return null;
   const track = payload.trackId
     ? repositories.tracks.findById(payload.trackId)
     : repositories.tracks.findByExternalId("spotify", payload.spotifyId);
   if (!track) throw new Error("Prepare this song before adding it to a playlist.");
-  repositories.playlists.addTrack(playlistId, track.id, repositories.playlists.tracks(playlistId).length);
-  return getPlaylistDetail(playlistId);
+  repositories.library.save(userId, track.id);
+  repositories.playlists.addTrack(playlistId, track.id, repositories.playlists.tracks(playlistId, userId).length);
+  return getPlaylistDetail(userId, playlistId);
 };
 
-export const openLibraryTrack = (trackId) => {
+export const openLibraryTrack = (userId, trackId) => {
   const track = repositories.tracks.findById(trackId);
   if (!track) return null;
-  repositories.library.touchProgress(track.id, { status: "learning", incrementOpen: true });
+  repositories.library.save(userId, track.id);
+  repositories.library.touchProgress(userId, track.id, { status: "learning", incrementOpen: true });
   return getCachedLessonByTrackId(track.id);
 };
 
-export const updateTrackProgress = (trackId, payload) => {
+export const updateTrackProgress = (userId, trackId, payload) => {
   const track = repositories.tracks.findById(trackId);
   if (!track) return null;
-  repositories.library.touchProgress(trackId, payload);
+  repositories.library.save(userId, track.id);
+  repositories.library.touchProgress(userId, trackId, payload);
   return { ok: true };
 };
 

@@ -79,6 +79,33 @@ test("playlist CRUD is idempotent and deleting a playlist preserves library trac
   closeAndRemove(fixture);
 });
 
+test("library, recent activity, artists, playlists, and daily quota are isolated per user", () => {
+  const fixture = temporaryDatabase();
+  const { repo } = fixture;
+  const alice = "usr_alice", bob = "usr_bob";
+  const track = repo.tracks.upsert({ source: "lrclib", externalId: "shared-cache", title: "Shared", artist: "Artist" });
+  const artist = repo.artists.upsert({ musicbrainzId: "shared-artist", name: "Artist" });
+  repo.library.save(alice, track.id);
+  repo.library.touchProgress(alice, track.id, { status: "learning", playbackSeconds: 10, incrementOpen: true });
+  repo.artists.addForUser(alice, artist.id);
+  const playlist = repo.playlists.create({ userId: alice, name: "Alice mix" });
+  repo.playlists.addTrack(playlist.id, track.id, 0);
+
+  assert.equal(repo.library.recent(alice).length, 1);
+  assert.equal(repo.library.recent(bob).length, 0);
+  assert.equal(repo.artists.list(alice).length, 1);
+  assert.equal(repo.artists.list(bob).length, 0);
+  assert.equal(repo.playlists.list(alice).length, 1);
+  assert.equal(repo.playlists.list(bob).length, 0);
+  assert.equal(repo.playlists.findById(playlist.id, bob), null);
+
+  for (let index = 0; index < 5; index += 1) assert.ok(repo.quota.consume(alice, `track:${index}`, 5));
+  assert.equal(repo.quota.consume(alice, "track:5", 5), null);
+  assert.equal(repo.quota.consume(alice, "track:0", 5).remaining, 0, "the same song must not consume quota twice");
+  assert.equal(repo.quota.status(bob, 5).remaining, 5);
+  closeAndRemove(fixture);
+});
+
 test("search jobs deduplicate active queries, cache completed results, and survive restart", () => {
   const fixture = temporaryDatabase();
   const { root, repo } = fixture;
@@ -98,4 +125,3 @@ test("search jobs deduplicate active queries, cache completed results, and survi
   reopened.close();
   fs.rmSync(root, { recursive: true, force: true });
 });
-
