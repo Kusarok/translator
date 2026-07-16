@@ -56,7 +56,7 @@ test("music-first shell keeps every primary destination and the persistent mini 
   for (const id of requiredIds) assert.ok(pageIds.has(id), `missing music UI #${id}`);
   assert.equal(ids(html).length, pageIds.size, "duplicate ids make navigation and playback unpredictable");
 
-  assert.match(html, /<\/div>\s*<nav class="learn-bottom-nav"[\s\S]*?<div class="learn-mini-player"/,
+  assert.match(html, /<\/div>\s*(?:<section class="radio-player"[\s\S]*?<\/section>\s*)?<nav class="learn-bottom-nav"[\s\S]*?<div class="learn-mini-player"/,
     "persistent navigation and mini player must stay outside scrolling page content");
   assert.match(mediaCss, /\.learn-mini-player\s*\{[^}]*position:\s*fixed/s);
   assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(3,1fr\)/s);

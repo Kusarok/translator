@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#102d35"/><stop offset=".52" stop-color="#174f55"/><stop offset="1" stop-color="#65517f"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#8bf4de" stop-opacity=".72"/><stop offset="1" stop-color="#59dbc5" stop-opacity="0"/></radialGradient>
+    <linearGradient id="gold"><stop stop-color="#f4d58d"/><stop offset="1" stop-color="#b88e52"/></linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="96" fill="url(#bg)"/>
+  <circle cx="170" cy="130" r="290" fill="url(#glow)"/>
+  <g transform="translate(400 410)">
+    <circle r="250" fill="#0a1720" opacity=".68" stroke="#87e9d7" stroke-opacity=".3" stroke-width="4"/>
+    <circle r="190" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="2"/>
+    <circle r="132" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width="2"/>
+    <circle r="72" fill="url(#gold)"/>
+    <circle r="17" fill="#152933"/>
+    <path d="M-36-4c31-47 72-44 98-16-20-10-39 2-43 24-4 26-20 46-50 49-24 2-42-11-47-31 13 10 31 4 42-8 7-8 8-12 0-18-13-9-27 4-40 17 8-29 23-43 40-17Z" fill="#1a3540" opacity=".85"/>
+  </g>
+  <path d="M548 110c68 95 107 212 91 319-10 71-43 110-92 139" fill="none" stroke="#f1d493" stroke-width="14" stroke-linecap="round" opacity=".82"/>
+  <circle cx="540" cy="584" r="42" fill="url(#gold)"/>
+  <g fill="#85e9d6" opacity=".82"><rect x="104" y="563" width="18" height="70" rx="9"/><rect x="137" y="532" width="18" height="132" rx="9"/><rect x="170" y="584" width="18" height="32" rx="9"/><rect x="203" y="548" width="18" height="104" rx="9"/></g>
+</svg>

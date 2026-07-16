@@ -38,6 +38,7 @@ import { initViewportSizing } from "./viewport.js";
 import { initMedia } from "./media-app.js";
 import { checkAuth } from "./login.js";
 import { initMotion } from "./motion.js";
+import { initRadio } from "./radio-player.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
@@ -494,6 +495,7 @@ const boot = async () => {
 
   initViewportSizing();
   initMedia();
+  initRadio();
   bindEvents();
   initTheme();
   populateLanguageSelects();

@@ -240,6 +240,15 @@
                   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
                 </form>
+                <section class="radio-home" id="radioHome" aria-labelledby="radioHomeTitle">
+                  <header class="radio-home-heading">
+                    <div><span class="radio-live-dot" aria-hidden="true"></span><h2 id="radioHomeTitle">Live Radio</h2></div>
+                    <span>24/7 MUSIC</span>
+                  </header>
+                  <div class="radio-station-rail" id="radioStationRail" aria-live="polite">
+                    <div class="radio-card-skeleton"></div><div class="radio-card-skeleton"></div>
+                  </div>
+                </section>
                 <section class="music-home-hero" id="musicHomeHero">
                   <svg class="music-home-wave" viewBox="0 0 180 150" aria-hidden="true"><path d="M18 80c18-54 34 54 52 0s34 54 52 0 34 54 50 0"/><path d="M18 104c18-34 34 34 52 0s34 34 52 0 34 34 50 0"/></svg>
                   <div class="music-home-copy">
@@ -436,6 +445,36 @@
                 <p class="media-disclosure" id="mediaDisclosure" hidden></p>
               </article>
             </div>
+            <section class="radio-player" id="radioPlayer" hidden aria-label="Live radio player">
+              <div class="radio-player-ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+              <header class="radio-player-header">
+                <button id="radioPlayerBack" type="button" aria-label="Close live radio"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+                <div><span>LIVE RADIO</span><strong>On air</strong></div>
+                <button id="radioPlayerShare" type="button" aria-label="Share station"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
+              </header>
+              <div class="radio-player-stage">
+                <div class="radio-orbit radio-orbit-one" aria-hidden="true"></div>
+                <div class="radio-orbit radio-orbit-two" aria-hidden="true"></div>
+                <div class="radio-art-shell"><img id="radioPlayerArtwork" alt=""><span class="radio-live-badge">LIVE</span></div>
+              </div>
+              <div class="radio-now-copy">
+                <span id="radioPlayerLanguage"></span>
+                <h1 id="radioPlayerName"></h1>
+                <p id="radioPlayerStatus" role="status" aria-live="polite">Ready to play</p>
+              </div>
+              <div class="radio-equalizer" id="radioEqualizer" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <div class="radio-player-controls">
+                <button class="radio-side-control" id="radioFavorite" type="button" aria-label="Add to favorites"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>Favorite</span></button>
+                <button class="radio-main-play" id="radioPlayerPlay" type="button" aria-label="Play live radio">
+                  <svg class="radio-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="radio-pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                </button>
+                <button class="radio-side-control" id="radioSleep" type="button" aria-label="Sleep timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="radioSleepLabel">Sleep</span></button>
+              </div>
+              <div class="radio-station-switcher" id="radioStationSwitcher"></div>
+              <audio id="radioAudio" preload="none"></audio>
+            </section>
             <nav class="learn-bottom-nav" aria-label="Music navigation">
               <button class="active" id="learnLibraryNav" type="button" aria-current="page">
                 <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home
@@ -459,6 +498,14 @@
               </button>
               <button class="mini-close-button" id="learnMiniClose" type="button" aria-label="Close player">×</button>
               <span class="mini-progress"><span id="learnMiniProgress"></span></span>
+            </div>
+            <div class="radio-mini-player" id="radioMiniPlayer" hidden>
+              <button class="radio-mini-open" id="radioMiniOpen" type="button" aria-label="Open live radio">
+                <img id="radioMiniArtwork" alt=""><span><strong id="radioMiniName"></strong><small><i></i> LIVE · <span id="radioMiniLanguage"></span></small></span>
+              </button>
+              <span class="radio-mini-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <button class="radio-mini-play" id="radioMiniPlay" type="button" aria-label="Play live radio"><svg class="radio-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="radio-pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+              <button class="radio-mini-close" id="radioMiniClose" type="button" aria-label="Stop radio">×</button>
             </div>
           </section>
         </main>
@@ -645,6 +692,7 @@
       </section>
     </main>
 
+    <script src="/vendor/hls.min.js" defer></script>
     <script type="module" src="/assets/js/app.js?v=__ASSET_VERSION__"></script>
   </body>
 </html>

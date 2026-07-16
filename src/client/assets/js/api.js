@@ -81,6 +81,7 @@ export const unlockOwner = (payload) => request("/api/auth/unlock", {
 export const logoutOwner = () => request("/api/auth/logout", { method: "POST" });
 
 export const getMediaHealth = () => request("/api/media/health");
+export const getRadioStations = () => request("/api/radio/stations");
 
 export const createMediaJob = (url) => request("/api/media/jobs", {
   method: "POST",

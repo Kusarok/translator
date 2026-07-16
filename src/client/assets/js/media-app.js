@@ -429,6 +429,7 @@ const mountAudioPlayer = (streamUrl) => {
     persistLearningProgress();
   });
   audioEl.addEventListener("play", () => {
+    document.dispatchEvent(new CustomEvent("translator:song-play"));
     setPlaying(true);
     cancelAnimationFrame(syncFrame);
     syncFrame = requestAnimationFrame(syncLoop);
@@ -831,6 +832,9 @@ function applyLayer(layer) {
 }
 
 export const initMedia = () => {
+  document.addEventListener("translator:radio-play", () => {
+    if (audioEl) cleanupAudio();
+  });
   const hadLearnHistory = history.state?.[HISTORY_VERSION_KEY] === HISTORY_VERSION &&
     LAYERS.has(history.state?.[HISTORY_KEY]);
   if (!hadLearnHistory) history.replaceState(historyState("input"), "");
