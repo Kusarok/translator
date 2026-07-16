@@ -10,7 +10,7 @@ const nodes = {
   empty: $("learnLibraryEmpty"), add: $("learnAddButton"), emptyAdd: $("learnEmptyAdd"),
   homeSearch: $("musicHomeSearch"), homeAdd: $("musicHomeAdd"),
   sheet: $("learnAddSheet"), sheetClose: $("learnAddClose"), newPlaylist: $("learnNewPlaylist"),
-  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), toolsNav: $("learnToolsNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
+  searchNav: $("learnSearchNav"), musicNav: $("learnMusicNav"), dailyLimit: $("learnDailyLimit"), playlistPage: $("learnPlaylistPage"), playlistBack: $("learnPlaylistBack"),
   playlistHero: $("learnPlaylistHero"), playlistTracks: $("learnPlaylistTracks"), playlistMenu: $("learnPlaylistMenu"), spotifyNote: $("learnSpotifyNote"),
   connectSpotify: $("learnConnectSpotify"), filters: $("learnLibraryFilters"),
   songsFilter: $("learnSongsFilter"), artistsFilter: $("learnArtistsFilter"), playlistsFilter: $("learnPlaylistsFilter")
@@ -441,7 +441,6 @@ export const initLearnLibrary = ({ onOpenTrack, onPrepareTrack } = {}) => {
   nodes.libraryNav?.addEventListener("click", () => switchLibraryTab("home"));
   nodes.searchNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("learn:open-search")));
   nodes.musicNav?.addEventListener("click", () => switchLibraryTab("music"));
-  nodes.toolsNav?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("app:switch-view", { detail: { view: "translator" } })));
   nodes.songsFilter?.addEventListener("click", () => selectLibraryFilter("songs"));
   nodes.artistsFilter?.addEventListener("click", () => selectLibraryFilter("artists"));
   nodes.playlistsFilter?.addEventListener("click", () => selectLibraryFilter("playlists"));

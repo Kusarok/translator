@@ -56,11 +56,6 @@ const account = {
   initial: document.getElementById("accountInitial"), name: document.getElementById("accountName"),
   email: document.getElementById("accountEmail"), logout: document.getElementById("accountLogout")
 };
-const toolsNav = {
-  home: document.getElementById("toolsHomeNav"), search: document.getElementById("toolsSearchNav"),
-  library: document.getElementById("toolsLibraryNav"), apps: document.getElementById("toolsAppsNav")
-};
-
 const renderAccount = () => {
   const user = state.auth?.user;
   if (!user) return;
@@ -448,14 +443,6 @@ const bindEvents = () => {
   });
 
   elements.serverStatus.addEventListener("click", loadHealth);
-  const openMusicDestination = (destination) => {
-    switchView("media");
-    requestAnimationFrame(() => window.dispatchEvent(new CustomEvent("learn:navigate", { detail: { destination } })));
-  };
-  toolsNav.home?.addEventListener("click", () => openMusicDestination("home"));
-  toolsNav.search?.addEventListener("click", () => openMusicDestination("search"));
-  toolsNav.library?.addEventListener("click", () => openMusicDestination("music"));
-  toolsNav.apps?.addEventListener("click", () => switchView("translator"));
   document.querySelectorAll("[data-translate-example]").forEach((button) => button.addEventListener("click", () => {
     elements.inputText.value = button.dataset.translateExample || "";
     updateDirection(elements.inputText); autoGrowInput(); updateCharacterCount();

@@ -421,9 +421,6 @@
               <button id="learnMusicNav" type="button">
                 <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 2v6M16 2v6M8 13h8M8 17h5"/></svg></span>Your Music
               </button>
-              <button id="learnToolsNav" type="button">
-                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>Tools
-              </button>
             </nav>
             <div class="learn-mini-player" id="learnMiniPlayer" hidden>
               <button class="mini-track-open" id="learnMiniOpen" type="button" aria-label="Open now playing">
@@ -441,13 +438,6 @@
           </section>
         </main>
 
-        <nav class="tools-bottom-nav" id="toolsBottomNav" aria-label="Main navigation">
-          <button id="toolsHomeNav" type="button"><span aria-hidden="true">⌂</span>Home</button>
-          <button id="toolsSearchNav" type="button"><span aria-hidden="true">⌕</span>Search</button>
-          <button id="toolsLibraryNav" type="button"><span aria-hidden="true">▦</span>Library</button>
-          <button class="active" id="toolsAppsNav" type="button" aria-current="page"><span aria-hidden="true">✦</span>Tools</button>
-        </nav>
-
         <div class="overlay" id="appSettingsPanel">
           <div class="sheet" role="dialog" aria-modal="true" aria-label="Settings">
             <div class="sheet-handle" aria-hidden="true"></div>
@@ -456,7 +446,7 @@
               <button class="icon-btn small" id="appSettingsClose" type="button" aria-label="Close">✕</button>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="sourceLanguage">Language</label>
               <div class="lang-row">
                 <select class="select" id="sourceLanguage" name="sourceLanguage" data-i18n-aria="sourceLanguage" aria-label="Source language"></select>
@@ -465,7 +455,7 @@
               </div>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="selectTone">Preset</label>
               <select class="select full" id="toneSelect" data-i18n-aria="selectTone" aria-label="Select tone">
                 <option value="default">Default</option>
@@ -502,8 +492,9 @@
               </button>
             </div>
 
-            <div class="sheet-section row-between">
-              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
+            <div class="sheet-section settings-support">
+              <span class="settings-support-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/></svg></span>
+              <span><strong data-i18n="feedbackTitle">Help &amp; Support</strong><small>Questions, feedback, or account help</small></span>
               <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
             </div>
           </div>
