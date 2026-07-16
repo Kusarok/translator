@@ -26,6 +26,7 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "learnArtistPage",
     "learnPlaylistsSection",
     "learnMusicNav",
+    "learnToolsNav",
     "learnLibraryFilters",
     "learnSongsFilter",
     "learnArtistsFilter",
@@ -40,6 +41,8 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "lessonLearnTab",
     "lessonNowPlayingPanel",
     "lessonContent"
+    ,"lessonTranslationState"
+    ,"lessonTranslationRetry"
   ];
 
   const pageIds = new Set(ids(html));
@@ -49,14 +52,15 @@ test("music-first shell keeps every primary destination and the persistent mini 
   assert.match(html, /<\/div>\s*<nav class="learn-bottom-nav"[\s\S]*?<div class="learn-mini-player"/,
     "persistent navigation and mini player must stay outside scrolling page content");
   assert.match(mediaCss, /\.learn-mini-player\s*\{[^}]*position:\s*fixed/s);
-  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(3,1fr\)/s);
+  assert.match(mediaCss, /\.learn-bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(4,1fr\)/s);
   assert.match(mediaCss, /body\.mini-player-active\s+\.learn-library[\s\S]*?\{[^}]*padding-bottom:/s,
     "library content must not be hidden behind the player");
 });
 
-test("bottom navigation has real Home, Search, and Your Music destinations", () => {
+test("bottom navigation has real Home, Search, Your Music, and Tools destinations", () => {
   assert.match(library, /searchNav.*learnSearchNav/s);
   assert.match(library, /musicNav.*learnMusicNav/s);
+  assert.match(library, /toolsNav.*learnToolsNav/s);
   assert.match(library, /learn:open-search/);
   assert.match(library, /learnLibraryTab/);
   assert.match(search, /learn:search-opened/);
@@ -140,4 +144,26 @@ test("full player defaults to listening and keeps learning in a separate swipeab
   assert.match(mediaApp, /setPlayerMode\(dx < 0 \? "learn" : "now"\)/);
   assert.match(mediaCss, /\.lesson-mode-tabs\s*\{/);
   assert.match(mediaCss, /\.lesson-now-playing\s*\{/);
+});
+
+test("switching songs invalidates rendered lyrics and refreshes late translations", () => {
+  assert.match(mediaApp, /const invalidateLyrics = \(\) => \{[\s\S]*?el\.lyrics\.replaceChildren\(\)/,
+    "changing tracks must remove lyric rows and their old click handlers");
+  assert.match(mediaApp, /const beginPreparation = \(\) => \{[\s\S]*?invalidateLyrics\(\)/,
+    "search and artist preparation must invalidate the previous song lyrics");
+  assert.match(mediaApp, /if \(track\?\.trackId !== lesson\.trackId\) \{[\s\S]*?invalidateLyrics\(\)/,
+    "opening a different cached library song must invalidate the previous lyrics even without an audio element");
+  assert.match(mediaApp, /renderedLyricsTrack !== lyricsTrackKey\(\) \|\| renderedLyricsLines !== track\?\.lines/,
+    "the learning view must rerender when either the song or translated lines change");
+});
+
+test("lyrics translation retries stay simple and refresh without reloading", () => {
+  assert.match(mediaApp, /getLyricsTranslationStatus/);
+  assert.match(mediaApp, /Preparing translation…/);
+  assert.match(mediaApp, /Translation isn’t ready yet\./);
+  assert.match(mediaApp, /pollTranslation\(target, token/);
+  assert.match(mediaApp, /translationRetry\?\.addEventListener\("click"/);
+  const playerTranslationCopy = html.match(/<div class="lesson-translation-state"[\s\S]*?<\/div>/)?.[0] || "";
+  assert.doesNotMatch(playerTranslationCopy, /rate limit|provider|queue|API quota/i,
+    "technical translation failures must not be exposed in player copy");
 });

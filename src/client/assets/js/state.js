@@ -6,7 +6,7 @@ export const state = {
   model: "gemma-4-31b",
   models: [],
   selectedModel: "gemma-4-31b",
-  auth: { gateEnabled: false, authenticated: true },
+  auth: { gateEnabled: true, authenticated: false, owner: false, user: null },
   catalog: [],
   free: { enabled: false, provider: "cerebras", model: "gemma-4-31b", rateLimit: 5 },
   transcription: { available: false, model: "" },

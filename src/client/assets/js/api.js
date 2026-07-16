@@ -109,6 +109,8 @@ export const translateSpotifyLyrics = (payload, signal) => request("/api/media/l
   signal
 });
 
+export const getLyricsTranslationStatus = (trackId, signal) => request(`/api/media/lyrics/translation/${encodeURIComponent(trackId)}`, { signal });
+
 export const getLearnLibrary = () => request("/api/media/library");
 export const discoverLearnArtists = (name) => request("/api/media/library/artists/discover", { method: "POST", body: JSON.stringify({ name }) });
 export const createLearnArtist = (payload) => request("/api/media/library/artists", { method: "POST", body: JSON.stringify(payload) });

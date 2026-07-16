@@ -11,7 +11,7 @@ test("database lives under the injected storage root and migrations are idempote
   const db = openDatabase({ storageRoot: root });
   assert.equal(databasePath(root), path.join(root, "database", "translator.sqlite"));
   assert.equal(db.prepare("PRAGMA foreign_keys").get().foreign_keys, 1);
-  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 7);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM schema_migrations").get().count, 11);
   db.close();
   openDatabase({ storageRoot: root }).close();
   fs.rmSync(root, { recursive: true, force: true });
@@ -28,6 +28,7 @@ test("repositories cache entities with independent prefixed ids and relative pat
   const media = repo.media.upsert({ trackId: track.id, provider: "youtube", providerMediaId: "yt1", relativePath: "media/med_x/audio.mp3", sizeBytes: 10 });
   const artwork = repo.artwork.upsert({ trackId: track.id, remoteUrl: "https://example.com/cover.jpg", relativePath: "artwork/art_x/cover.jpg", sizeBytes: 10 });
   const job = repo.jobs.create({ trackId: track.id, jobType: "audio" });
+  const translationJob = repo.lyricTranslationJobs.schedule({ trackId: track.id, targetLanguage: "fa" });
   assert.equal(repo.jobs.pending()[0].id, job.id);
   const playlist = repo.playlists.create({ name: "Learning mix" });
   repo.playlists.addTrack(playlist.id, track.id, 0);
@@ -36,6 +37,13 @@ test("repositories cache entities with independent prefixed ids and relative pat
   assert.match(media.id, /^med_/);
   assert.match(artwork.id, /^art_/);
   assert.match(job.id, /^job_/);
+  assert.match(translationJob.id, /^ltj_/);
+  assert.equal(repo.lyricTranslationJobs.due(2)[0].id, translationJob.id);
+  assert.equal(repo.lyricTranslationJobs.start(translationJob.id).attempts, 1);
+  const retryAt = new Date(Date.now() + 60_000).toISOString();
+  assert.equal(repo.lyricTranslationJobs.retry(translationJob.id, { nextAttemptAt: retryAt, lastError: "temporary" }).status, "retry");
+  assert.equal(repo.lyricTranslationJobs.due(2).length, 0);
+  assert.equal(repo.lyricTranslationJobs.complete(translationJob.id).status, "completed");
   assert.match(playlist.id, /^pls_/);
   assert.equal(repo.playlists.tracks(playlist.id).length, 1);
   assert.equal(repo.playlists.update(playlist.id, { name: "Updated mix", description: "Favorites" }).name, "Updated mix");

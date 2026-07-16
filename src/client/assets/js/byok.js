@@ -73,7 +73,7 @@ export const freeTierAvailable = () => Boolean(state.free?.enabled);
 // A request runs on the free tier when there is no BYOK key and no owner session,
 // but the server offers a free tier. Owner + BYOK always take priority.
 export const isFreeMode = () =>
-  !getRuntime() && !state.auth?.authenticated && freeTierAvailable();
+  !getRuntime() && !state.auth?.owner && freeTierAvailable();
 
 export const hasUsableKey = () =>
-  Boolean(getRuntime()) || Boolean(state.auth?.authenticated) || freeTierAvailable();
+  Boolean(getRuntime()) || Boolean(state.auth?.owner) || freeTierAvailable();

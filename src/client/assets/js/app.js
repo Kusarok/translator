@@ -51,6 +51,19 @@ const views = {
 };
 
 let lastTranslation = "";
+const account = {
+  toggle: document.getElementById("accountToggle"), menu: document.getElementById("accountMenu"),
+  initial: document.getElementById("accountInitial"), name: document.getElementById("accountName"),
+  email: document.getElementById("accountEmail"), logout: document.getElementById("accountLogout")
+};
+
+const renderAccount = () => {
+  const user = state.auth?.user;
+  if (!user) return;
+  account.name.textContent = user.displayName || "Account";
+  account.email.textContent = user.email || "";
+  account.initial.textContent = (user.displayName || user.email || "U").trim().slice(0, 1).toUpperCase();
+};
 
 const closeModeMenu = () => {
   modeMenu.classList.remove("open");
@@ -92,6 +105,7 @@ const loadHealth = async () => {
   try {
     const health = await getHealth();
     setHealth(health);
+    renderAccount();
     applyHealth();
     updateDirectionLabel();
     setLiveAvailable(health.live?.available);
@@ -336,6 +350,8 @@ const clearAll = () => {
   clearMessages();
   resetConversation();
   lastTranslation = "";
+  elements.clearButton.hidden = true;
+  elements.copyLastButton.hidden = true;
   elements.inputText.value = "";
   updateDirection(elements.inputText);
   autoGrowInput();
@@ -428,6 +444,15 @@ const bindEvents = () => {
   });
 
   elements.serverStatus.addEventListener("click", loadHealth);
+  account.toggle?.addEventListener("click", (event) => {
+    event.stopPropagation(); account.menu.hidden = !account.menu.hidden;
+    account.toggle.setAttribute("aria-expanded", String(!account.menu.hidden));
+  });
+  account.menu?.addEventListener("click", (event) => event.stopPropagation());
+  account.logout?.addEventListener("click", async () => {
+    account.logout.disabled = true;
+    try { await fetch("/api/auth/logout", { method: "POST" }); } finally { window.location.replace("/"); }
+  });
 
   modeBtn.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -435,7 +460,7 @@ const bindEvents = () => {
     modeBtn.setAttribute("aria-expanded", open ? "true" : "false");
   });
 
-  document.addEventListener("click", closeModeMenu);
+  document.addEventListener("click", () => { closeModeMenu(); if (account.menu) account.menu.hidden = true; });
 
   menuTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -469,7 +494,8 @@ const boot = async () => {
   initLangPicker(elements);
   initScrollAwareTopbar();
   setLanguage(localStorage.getItem("lang") || "en");
-  switchView("translator");
+  window.addEventListener("app:switch-view", (event) => switchView(event.detail?.view || "media"));
+  switchView("media");
   initSettings(loadHealth);
   initByokUi(refreshAccessAfterKeyChange);
   initLive();

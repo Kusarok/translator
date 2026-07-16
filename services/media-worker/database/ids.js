@@ -15,6 +15,7 @@ const prefixes = Object.freeze({
   ,searchResult: "srs"
   ,artist: "ast"
   ,artistCatalogItem: "aci"
+  ,lyricsTranslationJob: "ltj"
 });
 
 export const createId = (type) => {

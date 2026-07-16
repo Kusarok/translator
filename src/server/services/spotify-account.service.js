@@ -22,8 +22,8 @@ const open = (value) => {
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 };
 
-const signedState = () => {
-  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + 10 * 60 * 1000, nonce: crypto.randomUUID() })).toString("base64url");
+const signedState = (userId) => {
+  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + 10 * 60 * 1000, nonce: crypto.randomUUID(), userId })).toString("base64url");
   const signature = crypto.createHmac("sha256", env.ownerPassword).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 };
@@ -33,7 +33,10 @@ const verifyState = (state) => {
   if (!payload || !signature) return false;
   const expected = crypto.createHmac("sha256", env.ownerPassword).update(payload).digest("base64url");
   if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false;
-  try { return JSON.parse(Buffer.from(payload, "base64url").toString()).exp > Date.now(); } catch { return false; }
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
+    return decoded.exp > Date.now() ? decoded : null;
+  } catch { return null; }
 };
 
 const ensureConfigured = () => {
@@ -60,7 +63,7 @@ const spotifyJson = async (url, accessToken) => {
   return data;
 };
 
-const saveTokens = async ({ profile, tokens, oldRefreshToken = "" }) => saveSpotifyAccount({
+const saveTokens = async ({ userId, profile, tokens, oldRefreshToken = "" }) => saveSpotifyAccount(userId, {
   spotifyUserId: profile.id,
   displayName: profile.display_name || "Spotify",
   accessTokenCiphertext: seal(tokens.access_token),
@@ -69,37 +72,38 @@ const saveTokens = async ({ profile, tokens, oldRefreshToken = "" }) => saveSpot
   expiresAt: new Date(Date.now() + Number(tokens.expires_in || 3600) * 1000).toISOString()
 });
 
-export const spotifyConnectUrl = () => {
+export const spotifyConnectUrl = (userId) => {
   ensureConfigured();
-  return `${authorizeUrl}?${new URLSearchParams({ client_id: env.spotifyClientId, response_type: "code", redirect_uri: env.spotifyRedirectUri, scope: scopes, state: signedState() })}`;
+  return `${authorizeUrl}?${new URLSearchParams({ client_id: env.spotifyClientId, response_type: "code", redirect_uri: env.spotifyRedirectUri, scope: scopes, state: signedState(userId) })}`;
 };
 
-export const completeSpotifyConnection = async ({ code, state }) => {
+export const completeSpotifyConnection = async ({ userId, code, state }) => {
   ensureConfigured();
-  if (!verifyState(state) || !code) throw new HttpError(400, "Invalid or expired Spotify connection state.");
+  const decoded = verifyState(state);
+  if (!decoded || decoded.userId !== userId || !code) throw new HttpError(400, "Invalid or expired Spotify connection state.");
   const tokens = await tokenRequest({ grant_type: "authorization_code", code, redirect_uri: env.spotifyRedirectUri });
   const profile = await spotifyJson("https://api.spotify.com/v1/me", tokens.access_token);
-  await saveTokens({ profile, tokens });
+  await saveTokens({ userId, profile, tokens });
 };
 
-const activeAccess = async () => {
+const activeAccess = async (userId) => {
   ensureConfigured();
-  const result = await getSpotifyAccount();
+  const result = await getSpotifyAccount(userId);
   const account = result.data;
   let accessToken = open(account.access_token_ciphertext);
   if (Date.parse(account.expires_at) <= Date.now() + 60_000) {
     const refreshToken = open(account.refresh_token_ciphertext);
     const tokens = await tokenRequest({ grant_type: "refresh_token", refresh_token: refreshToken });
-    await saveTokens({ profile: { id: account.spotify_user_id, display_name: account.display_name }, tokens, oldRefreshToken: refreshToken });
+    await saveTokens({ userId, profile: { id: account.spotify_user_id, display_name: account.display_name }, tokens, oldRefreshToken: refreshToken });
     accessToken = tokens.access_token;
   }
   return accessToken;
 };
 
-export const importConnectedSpotifyPlaylist = async (playlistUrl) => {
+export const importConnectedSpotifyPlaylist = async (userId, playlistUrl) => {
   const id = String(playlistUrl || "").match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?playlist\/([A-Za-z0-9]{22})/i)?.[1];
   if (!id) throw new HttpError(400, "A valid Spotify playlist link is required.");
-  const accessToken = await activeAccess();
+  const accessToken = await activeAccess(userId);
   const playlist = await spotifyJson(`https://api.spotify.com/v1/playlists/${id}`, accessToken);
   const tracks = [];
   let next = `https://api.spotify.com/v1/playlists/${id}/items?limit=50`;
@@ -118,5 +122,5 @@ export const importConnectedSpotifyPlaylist = async (playlistUrl) => {
   const payload = { spotifyId: playlist.id, name: playlist.name, description: playlist.description || "",
     sourceUrl: playlist.external_urls?.spotify, artwork: playlist.images?.[0]?.url || "",
     snapshotId: playlist.snapshot_id, tracks };
-  return (await importSpotifyPlaylistCache(payload)).data;
+  return (await importSpotifyPlaylistCache(userId, payload)).data;
 };

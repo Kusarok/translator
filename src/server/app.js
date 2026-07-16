@@ -8,7 +8,7 @@ import { env } from "./config/env.js";
 import { chatConfig } from "./config/chat.config.js";
 import { providerCatalog, publicModels } from "./config/providers.js";
 import { getPublicState } from "./services/settings.store.js";
-import { gateEnabled, isOwnerAuthenticated } from "./services/auth.service.js";
+import { gateEnabled, googleLoginEnabled, isOwnerAuthenticated, readSession } from "./services/auth.service.js";
 import { freeTierEnabled, freeTierInfo } from "./services/free-tier.service.js";
 import { translateRouter } from "./routes/translate.routes.js";
 import { transcribeRouter } from "./routes/transcribe.routes.js";
@@ -95,26 +95,22 @@ export const createApp = () => {
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 
-  // ── Owner-only gate ──────────────────────────────────────────────
-  // When owner credentials are configured, block ALL API routes except
-  // /api/health (so the frontend can check auth status) and /api/auth/*
-  // (login/logout). Static files and the HTML page are always served so
-  // the login screen can render. This is a hard server-side gate — there
-  // is no client-side bypass.
+  // Every personal API is behind a real user session. Health and auth stay public
+  // so the sign-in screen can render and create an account.
   const PUBLIC_API = /^\/(health|auth)/;
   app.use("/api", (req, res, next) => {
-    if (!gateEnabled() || isOwnerAuthenticated(req)) return next();
+    if (readSession(req)) return next();
     if (PUBLIC_API.test(req.path)) return next();
     return res.status(401).json({ error: "Authentication required." });
   });
 
   app.get("/api/health", (req, res) => {
-    const authenticated = isOwnerAuthenticated(req);
+    const user = readSession(req);
+    const authenticated = Boolean(user);
 
-    // When the gate is active and the visitor is not the owner, only
-    // expose auth status — no provider configs, models, or capabilities.
-    if (gateEnabled() && !authenticated) {
-      return res.json({ ok: true, auth: { gateEnabled: true, authenticated: false } });
+    // Signed-out visitors only receive what the account screen needs.
+    if (!authenticated) {
+      return res.json({ ok: true, auth: { gateEnabled: true, authenticated: false, owner: false, googleEnabled: googleLoginEnabled() } });
     }
 
     const state = getPublicState();
@@ -129,10 +125,10 @@ export const createApp = () => {
       models: active.models,
       maxTextLength: env.maxTextLength,
       chat: { ...chatConfig, models: active.models, defaultModel: active.selectedModel },
-      live: { available: Boolean(google?.configured) && authenticated, model: "gemini-3.5-live-translate-preview" },
-      transcription: { available: authenticated && Boolean(env.groqApiKey), model: env.groqSttModel },
+      live: { available: Boolean(google?.configured) && user.role === "owner", model: "gemini-3.5-live-translate-preview" },
+      transcription: { available: user.role === "owner" && Boolean(env.groqApiKey), model: env.groqSttModel },
       catalog: providerCatalog.map((provider) => ({ id: provider.id, label: provider.label, models: publicModels(provider) })),
-      auth: { gateEnabled: gateEnabled(), authenticated },
+      auth: { gateEnabled: gateEnabled(), authenticated, owner: user.role === "owner", googleEnabled: googleLoginEnabled(), user },
       free: freeTierInfo()
     });
   });

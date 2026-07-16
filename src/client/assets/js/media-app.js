@@ -1,5 +1,5 @@
 import { t } from "./i18n.js";
-import { getSpotifyLyrics, translateSpotifyLyrics, createSearchMediaJob, getMediaJob, importSpotifyPlaylist, saveLearnProgress } from "./api.js";
+import { getSpotifyLyrics, translateSpotifyLyrics, getLyricsTranslationStatus, createSearchMediaJob, getMediaJob, importSpotifyPlaylist, saveLearnProgress } from "./api.js";
 import { getRequestPayload } from "./byok.js";
 import { closeLearnAddSheet, initLearnLibrary, refreshLearnLibrary, showPlaylistPicker } from "./learn-library.js";
 import { initLearnSearch } from "./learn-search.js";
@@ -20,7 +20,8 @@ const el = Object.fromEntries(Object.entries({
   lessonTitle: "mediaLessonTitle", lessonArtist: "mediaLessonArtist", lessonCover: "mediaLessonCover",
   lessonNowTab: "lessonNowPlayingTab", lessonLearnTab: "lessonLearnTab", lessonContent: "lessonContent",
   nowPanel: "lessonNowPlayingPanel", nowCover: "mediaNowPlayingCover", nowFallback: "mediaNowPlayingFallback",
-  nowTitle: "mediaNowPlayingTitle", nowArtist: "mediaNowPlayingArtist", openLyrics: "lessonOpenLyrics"
+  nowTitle: "mediaNowPlayingTitle", nowArtist: "mediaNowPlayingArtist", openLyrics: "lessonOpenLyrics",
+  translationState: "lessonTranslationState", translationText: "lessonTranslationText", translationRetry: "lessonTranslationRetry"
 }).map(([key, id]) => [key, document.getElementById(id)]));
 
 let track = null;
@@ -37,6 +38,17 @@ let sessionWriteTimer = 0;
 let lastProgressSave = 0;
 let playerMode = "now";
 let swipeStart = null;
+let renderedLyricsTrack = null;
+let renderedLyricsLines = null;
+let translationPollTimer = 0;
+let translationRequestTrack = null;
+let translationUiState = "idle";
+const notify = (message) => {
+  let toast = document.querySelector(".learn-toast");
+  if (!toast) { toast = document.createElement("div"); toast.className = "learn-toast"; toast.setAttribute("role", "status"); document.body.append(toast); }
+  toast.textContent = message; toast.classList.add("is-visible");
+  clearTimeout(notify.timer); notify.timer = setTimeout(() => toast.classList.remove("is-visible"), 3600);
+};
 // Slow-first cycle: language learners lean on 0.75× / 0.5× to catch every syllable.
 const SPEEDS = [1, 0.75, 0.5, 1.25, 1.5];
 const player = {};
@@ -172,6 +184,79 @@ const showMiniPlayer = (visible = true) => {
   setPlaying(!audioEl.paused);
 };
 
+const lyricsTrackKey = (target = track) => target?.lyricsId || target?.trackId || target?.spotifyId || null;
+
+const invalidateLyrics = () => {
+  activeIndex = -1;
+  renderedLyricsTrack = null;
+  renderedLyricsLines = null;
+  el.lyrics.replaceChildren();
+  el.lyrics.scrollTop = 0;
+  if (el.miniLyric) el.miniLyric.textContent = "";
+  if (el.miniArtist) el.miniArtist.hidden = false;
+};
+
+const paintTranslationState = (state = translationUiState) => {
+  translationUiState = state;
+  const visible = playerMode === "learn" && (state === "pending" || state === "failed");
+  el.translationState.hidden = !visible;
+  el.translationText.textContent = state === "failed" ? "Translation isn’t ready yet." : "Preparing translation…";
+  el.translationRetry.hidden = state !== "failed";
+};
+
+const stopTranslationPolling = () => {
+  clearTimeout(translationPollTimer);
+  translationPollTimer = 0;
+};
+
+const applyTranslations = (target, translations) => {
+  if (track !== target || !Array.isArray(translations)) return false;
+  target.lines = target.lines.map((line, index) => ({ ...line, translation: translations[index] || "" }));
+  target.translationCached = true;
+  target.translationPending = false;
+  target.translationError = null;
+  translationRequestTrack = null;
+  stopTranslationPolling();
+  paintTranslationState("ready");
+  persistTrack();
+  if (!el.lesson.hidden && playerMode === "learn") {
+    const currentTime = audioEl?.currentTime || 0;
+    renderLyrics();
+    activeIndex = -1;
+    syncAt(currentTime);
+  }
+  return true;
+};
+
+const pollTranslation = (target, token, delay = 4_000) => {
+  stopTranslationPolling();
+  translationPollTimer = setTimeout(async () => {
+    if (track !== target || token !== operationId || target.translationCached) return;
+    try {
+      const result = await getLyricsTranslationStatus(target.trackId);
+      if (track !== target || token !== operationId) return;
+      if (result.status === "ready") return void applyTranslations(target, result.translations);
+      if (result.status === "missing" && translationRequestTrack === lyricsTrackKey(target)) {
+        pollTranslation(target, token, 3_000);
+        return;
+      }
+      if (result.status === "failed" || result.status === "missing") {
+        target.translationPending = false;
+        target.translationError = true;
+        translationRequestTrack = null;
+        persistTrack();
+        paintTranslationState("failed");
+        return;
+      }
+      target.translationPending = true;
+      paintTranslationState("pending");
+      pollTranslation(target, token, 8_000);
+    } catch {
+      pollTranslation(target, token, 12_000);
+    }
+  }, delay);
+};
+
 const setPlayerMode = (mode, { focus = false } = {}) => {
   playerMode = mode === "learn" ? "learn" : "now";
   const learning = playerMode === "learn";
@@ -188,10 +273,14 @@ const setPlayerMode = (mode, { focus = false } = {}) => {
     control.setAttribute("aria-hidden", String(!learning));
   }
   if (learning) {
-    if (!el.lyrics.children.length) renderLyrics();
+    if (renderedLyricsTrack !== lyricsTrackKey() || renderedLyricsLines !== track?.lines) renderLyrics();
     const time = audioEl?.currentTime || 0;
     activeIndex = -1;
     requestAnimationFrame(() => syncAt(time));
+    paintTranslationState(track?.translationCached ? "ready" : track?.translationError ? "failed" : "pending");
+    if (track?.trackId && !track.translationCached && !translationPollTimer) pollTranslation(track, operationId, 500);
+  } else {
+    paintTranslationState("idle");
   }
   if (track && audioEl) persistPlaybackSoon();
   if (focus) (learning ? el.lessonLearnTab : el.lessonNowTab).focus({ preventScroll: true });
@@ -400,7 +489,7 @@ const startAudioDownload = (onDone) => {
     })
     .catch((error) => {
       if (error?.name === "AbortError" || token !== operationId || track !== target) return;
-      target.downloadError = "Could not start audio download from YouTube Music.";
+      target.downloadError = error.message || "This song could not be prepared.";
       persistTrack();
       onDone();
     });
@@ -464,6 +553,10 @@ const showPreparedTrack = () => {
 };
 
 const renderLyrics = () => {
+  if (!track || !Array.isArray(track.lines)) {
+    invalidateLyrics();
+    return;
+  }
   el.lyrics.replaceChildren(...track.lines.map((line, index) => {
     const row = document.createElement("button");
     row.type = "button";
@@ -480,6 +573,8 @@ const renderLyrics = () => {
     });
     return row;
   }));
+  renderedLyricsTrack = lyricsTrackKey();
+  renderedLyricsLines = track.lines;
 };
 
 const syncAt = (seconds) => {
@@ -519,17 +614,26 @@ const beginPreparation = () => {
   const token = operationId;
   requestController?.abort();
   requestController = new AbortController();
+  stopTranslationPolling();
+  translationRequestTrack = null;
+  paintTranslationState("idle");
   cleanupPlayer();
   track = null; activeIndex = -1;
   cancelAnimationFrame(syncFrame);
   el.player.replaceChildren();
+  invalidateLyrics();
   el.result.hidden = true;
   setBusy(true);
   return token;
 };
 
 const prepareTranslation = async (target, token) => {
-  if (target.translationCached || !target.lines?.length) return;
+  if (target.translationCached || !target.lines?.length || translationRequestTrack === lyricsTrackKey(target)) return;
+  translationRequestTrack = lyricsTrackKey(target);
+  target.translationPending = true;
+  target.translationError = null;
+  paintTranslationState("pending");
+  persistTrack();
   try {
     const result = await translateSpotifyLyrics({
       spotifyId: target.spotifyId,
@@ -538,19 +642,17 @@ const prepareTranslation = async (target, token) => {
       ...getRequestPayload()
     }, requestController.signal);
     if (token !== operationId || track !== target) return;
-    target.lines = target.lines.map((line, index) => ({ ...line, translation: result.translations[index] || "" }));
-    target.translationCached = true;
-    persistTrack();
-    if (!el.lesson.hidden && playerMode === "learn") {
-      const currentTime = audioEl?.currentTime || 0;
-      activeIndex = -1;
-      renderLyrics();
-      syncAt(currentTime);
+    if (result.status === "pending") {
+      pollTranslation(target, token, 3_000);
+      return;
     }
+    applyTranslations(target, result.translations);
   } catch (error) {
     if (error?.name !== "AbortError" && token === operationId && track === target) {
-      target.translationError = "Translation will be available when you try again.";
+      target.translationPending = true;
+      translationRequestTrack = null;
       persistTrack();
+      pollTranslation(target, token, 3_000);
     }
   }
 };
@@ -559,25 +661,24 @@ const completePreparedTrack = async (prepared, token) => {
   if (token !== operationId) return;
   track = prepared;
   persistTrack();
-  navigateTo("result");
-  showPreparedTrack();
   void prepareTranslation(track, token);
   if (track.streamUrl) {
-    status("Ready", "Ready to play.", 100);
+    navigateTo("result");
+    showPreparedTrack();
     openAndPlay();
     return;
   }
-  status("Downloading", "Getting your song ready…", 30);
-  el.result.scrollIntoView({ behavior: "smooth", block: "start" });
+  showInput();
+  notify("Song added. We’ll keep preparing it while you browse.");
+  await refreshLearnLibrary().catch(() => {});
   startAudioDownload(() => {
-    if (currentLayer() === "input") return;
     if (track.streamUrl) {
-      showPreparedTrack();
-      status("Ready", "Ready to play.", 100);
-      openAndPlay();
+      if (!audioEl) mountAudioPlayer(track.streamUrl);
+      showMiniPlayer(true);
+      refreshLearnLibrary().catch(() => {});
+      notify(`${track.title} is ready to play.`);
     } else {
-      showPreparedTrack();
-      status("Download failed", track.downloadError || "This song could not be played.", 0, true);
+      notify(track.downloadError || "This song could not be prepared. Try again later.");
     }
   });
 };
@@ -757,7 +858,7 @@ export const initMedia = () => {
     persistLearningProgress(true);
     cleanupAudio();
     el.player.replaceChildren();
-    el.lyrics.replaceChildren();
+    invalidateLyrics();
   });
   el.lessonNowTab?.addEventListener("click", () => setPlayerMode("now"));
   el.lessonLearnTab?.addEventListener("click", () => setPlayerMode("learn"));
@@ -766,6 +867,15 @@ export const initMedia = () => {
     event.preventDefault(); setPlayerMode(event.key === "ArrowRight" ? "learn" : "now", { focus: true });
   });
   el.openLyrics?.addEventListener("click", () => setPlayerMode("learn", { focus: true }));
+  el.translationRetry?.addEventListener("click", () => {
+    if (!track || track.translationCached) return;
+    track.translationError = null;
+    track.translationPending = false;
+    translationRequestTrack = null;
+    if (!requestController || requestController.signal.aborted) requestController = new AbortController();
+    paintTranslationState("pending");
+    void prepareTranslation(track, operationId);
+  });
   el.lessonContent?.addEventListener("touchstart", (event) => {
     const touch = event.touches[0];
     swipeStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
@@ -782,10 +892,10 @@ export const initMedia = () => {
   initLearnLibrary({
     onOpenTrack: async (lesson) => {
       if (track?.trackId !== lesson.trackId) playerMode = "now";
-      if (audioEl && track?.trackId !== lesson.trackId) {
+      if (track?.trackId !== lesson.trackId) {
         cleanupAudio();
         el.player.replaceChildren();
-        el.lyrics.replaceChildren();
+        invalidateLyrics();
       }
       if (!lesson.translationCached) {
         const token = beginPreparation();

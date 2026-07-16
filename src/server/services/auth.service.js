@@ -1,90 +1,54 @@
 import crypto from "node:crypto";
 import { env } from "../config/env.js";
+import { createOwnerAccount, createSession, deleteSession, readAccountSession } from "./account.store.js";
 import { HttpError } from "../utils/http-error.js";
 
-const COOKIE_NAME = "owner_session";
-
-const ttlMs = () => env.sessionTtlHours * 3600 * 1000;
-
-const sign = (payload) => {
-  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto.createHmac("sha256", env.ownerPassword).update(data).digest("base64url");
-  return `${data}.${signature}`;
-};
-
-const verify = (token) => {
-  const [data, signature] = String(token || "").split(".");
-  if (!data || !signature) return null;
-
-  const expected = crypto.createHmac("sha256", env.ownerPassword).update(data).digest("base64url");
-  const actual = Buffer.from(signature);
-  const wanted = Buffer.from(expected);
-
-  if (actual.length !== wanted.length || !crypto.timingSafeEqual(actual, wanted)) {
-    return null;
-  }
-
-  try {
-    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf8"));
-    if (!payload.exp || payload.exp < Date.now()) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-};
+const COOKIE_NAME = "translator_session";
+const ttlSeconds = () => env.sessionTtlHours * 3600;
 
 const timingSafeEqualStr = (a, b) => {
-  const bufA = crypto.createHash("sha256").update(String(a ?? "")).digest();
-  const bufB = crypto.createHash("sha256").update(String(b ?? "")).digest();
-  return crypto.timingSafeEqual(bufA, bufB);
+  const left = crypto.createHash("sha256").update(String(a ?? "")).digest();
+  const right = crypto.createHash("sha256").update(String(b ?? "")).digest();
+  return crypto.timingSafeEqual(left, right);
 };
 
-const parseCookies = (header) => {
+export const parseCookies = (header) => {
   const cookies = {};
   for (const part of String(header || "").split(";")) {
     const index = part.indexOf("=");
-    if (index === -1) continue;
+    if (index < 0) continue;
     const key = part.slice(0, index).trim();
-    const value = part.slice(index + 1).trim();
-    if (key) cookies[key] = decodeURIComponent(value);
+    if (key) cookies[key] = decodeURIComponent(part.slice(index + 1).trim());
   }
   return cookies;
 };
 
-export const gateEnabled = () => Boolean(env.ownerUsername && env.ownerPassword);
+export const gateEnabled = () => true;
+export const googleLoginEnabled = () => Boolean(env.googleClientId && env.googleClientSecret && env.googleRedirectUri);
+export const verifyCredentials = ({ username, password }) => Boolean(env.ownerUsername && env.ownerPassword) &&
+  timingSafeEqualStr(username, env.ownerUsername) && timingSafeEqualStr(password, env.ownerPassword);
 
-export const verifyCredentials = ({ username, password }) => {
-  if (!gateEnabled()) return false;
-  return timingSafeEqualStr(username, env.ownerUsername) && timingSafeEqualStr(password, env.ownerPassword);
-};
+export const readSessionToken = (req) => parseCookies(req.headers?.cookie)[COOKIE_NAME] || "";
+export const readSession = (req) => readAccountSession(readSessionToken(req));
+export const isUserAuthenticated = (req) => Boolean(readSession(req));
+export const isOwnerAuthenticated = (req) => readSession(req)?.role === "owner";
 
-export const readSession = (req) => {
-  const token = parseCookies(req.headers?.cookie)[COOKIE_NAME];
-  return token ? verify(token) : null;
-};
-
-export const isOwnerAuthenticated = (req) => (gateEnabled() ? Boolean(readSession(req)) : true);
-
-export const setSessionCookie = (res, req) => {
-  const token = sign({ exp: Date.now() + ttlMs() });
-  const attrs = [
-    `${COOKIE_NAME}=${encodeURIComponent(token)}`,
-    "HttpOnly",
-    "SameSite=Lax",
-    "Path=/",
-    `Max-Age=${Math.floor(ttlMs() / 1000)}`
-  ];
-  if (req?.secure) attrs.push("Secure");
+export const setSessionCookie = (res, req, user) => {
+  const token = createSession(user.id);
+  const attrs = [`${COOKIE_NAME}=${encodeURIComponent(token)}`, "HttpOnly", "SameSite=Lax", "Path=/", `Max-Age=${ttlSeconds()}`];
+  if (req?.secure || req?.headers?.["x-forwarded-proto"] === "https") attrs.push("Secure");
   res.setHeader("Set-Cookie", attrs.join("; "));
 };
 
-export const clearSessionCookie = (res) => {
+export const clearSessionCookie = (res, req) => {
+  deleteSession(readSessionToken(req));
   res.setHeader("Set-Cookie", `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
 };
 
-export const requireOwner = (req, _res, next) => {
-  if (isOwnerAuthenticated(req)) {
-    return next();
-  }
-  next(new HttpError(401, "Owner login required to manage server-side keys."));
+export const legacyOwnerLogin = ({ username, password }) => {
+  if (!verifyCredentials({ username, password })) return null;
+  return createOwnerAccount({ email: String(username).includes("@") ? username : "owner@local.invalid" });
 };
+
+export const requireUser = (req, _res, next) => readSession(req) ? next() : next(new HttpError(401, "Sign in to continue."));
+export const requireOwner = (req, _res, next) => isOwnerAuthenticated(req) ? next() : next(new HttpError(403, "Owner access required."));
