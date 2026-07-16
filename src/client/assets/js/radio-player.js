@@ -23,6 +23,7 @@ let wantsPlayback = false;
 let reconnectTimer = 0;
 let sleepTimer = 0;
 let sleepIndex = 0;
+let catalogRetry = 0;
 
 const favorites = () => {
   try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { return new Set(); }
@@ -279,14 +280,19 @@ export const initRadio = async () => {
   window.addEventListener("popstate", (event) => { if (!event.state?.[HISTORY_KEY] && !ui.player.hidden) closePlayer({ fromHistory: true }); });
   document.addEventListener("translator:song-play", () => { if (active && (!ui.audio.paused || !ui.mini.hidden)) stop(); });
 
-  try {
-    const result = await getRadioStations();
-    stations = Array.isArray(result.stations) ? result.stations : [];
-    renderCards();
-    const remembered = stations.find((station) => station.id === localStorage.getItem(LAST_STATION_KEY));
-    if (remembered) { active = remembered; paintActive(); ui.mini.hidden = true; document.body.classList.remove("radio-mini-active"); }
-    if (!stations.length) throw new Error("No stations");
-  } catch {
-    ui.rail.innerHTML = `<div class="radio-unavailable"><strong>Live radio is reconnecting</strong><small>It will be back in a moment.</small></div>`;
-  }
+  const loadCatalog = async () => {
+    try {
+      const result = await getRadioStations();
+      stations = Array.isArray(result.stations) ? result.stations : [];
+      renderCards();
+      const remembered = stations.find((station) => station.id === localStorage.getItem(LAST_STATION_KEY));
+      if (remembered) { active = remembered; paintActive(); ui.mini.hidden = true; document.body.classList.remove("radio-mini-active"); }
+      if (!stations.length) throw new Error("No stations");
+    } catch {
+      ui.rail.innerHTML = `<div class="radio-unavailable"><strong>Live radio is reconnecting</strong><small>It will be back in a moment.</small></div>`;
+      clearTimeout(catalogRetry);
+      catalogRetry = setTimeout(loadCatalog, 5_000);
+    }
+  };
+  await loadCatalog();
 };
