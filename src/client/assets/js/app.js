@@ -37,6 +37,7 @@ import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiv
 import { initViewportSizing } from "./viewport.js";
 import { initMedia } from "./media-app.js";
 import { checkAuth } from "./login.js";
+import { initMotion } from "./motion.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
@@ -501,6 +502,7 @@ const boot = async () => {
   setLanguage(localStorage.getItem("lang") || "en");
   window.addEventListener("app:switch-view", (event) => switchView(event.detail?.view || "media"));
   switchView("media");
+  initMotion();
   initSettings(loadHealth);
   initByokUi(refreshAccessAfterKeyChange);
   initLive();

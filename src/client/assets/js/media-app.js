@@ -163,6 +163,8 @@ const setPlaying = (playing) => {
   player.play?.setAttribute("aria-label", playing ? "Pause" : "Play");
   el.mini?.classList.toggle("is-playing", playing);
   el.miniPlay?.setAttribute("aria-label", playing ? "Pause" : "Play");
+  el.lesson?.classList.toggle("is-playing", playing);
+  document.body.classList.toggle("media-is-playing", playing);
 };
 
 const showMiniPlayer = (visible = true) => {
@@ -766,6 +768,7 @@ const cleanupPlayer = () => {
 
 const cleanupAudio = () => {
   if (audioEl) { audioEl.pause(); audioEl.src = ""; audioEl = null; }
+  setPlaying(false);
   showMiniPlayer(false);
   if (el.miniProgress) el.miniProgress.style.width = "0%";
 };

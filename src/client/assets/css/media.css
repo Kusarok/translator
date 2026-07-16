@@ -45,8 +45,10 @@
 .music-quota-row { position: absolute; inset-inline-end: 15px; bottom: 14px; display: flex; align-items: center; color: rgba(255,255,255,.42); }
 .music-quota-row .learn-daily-limit { margin: 0; color: inherit; }
 .learn-search-bar { height: 48px; margin: 0 0 14px; display: grid; grid-template-columns: 22px minmax(0,1fr); align-items: center; gap: 9px; padding: 0 15px; border: 1px solid var(--line-soft); border-radius: 15px; background: color-mix(in srgb,var(--surface-2) 92%,transparent); color: var(--muted); box-shadow: 0 10px 28px rgba(0,0,0,.1); }
-.learn-search-bar:focus-within { border-color: color-mix(in srgb,var(--accent) 55%,var(--line)); box-shadow: var(--ring); }
+.learn-search-bar { transition: border-color var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard), transform var(--dur-press) var(--ease-spring); }
+.learn-search-bar:focus-within { border-color: color-mix(in srgb,var(--accent) 38%,var(--line)); background: color-mix(in srgb,var(--surface-2) 98%,transparent); box-shadow: 0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent),0 12px 34px rgba(0,0,0,.16); transform: translateY(-1px); }
 .learn-search-bar input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; box-shadow: none !important; }
+.media-view .learn-search-bar input:focus,.media-view .learn-search-bar input:focus-visible { outline: 0 !important; border: 0 !important; box-shadow: none !important; }
 .learn-search-bar input::placeholder { color: var(--muted); }
 .learn-section { margin-bottom: var(--music-section-gap); }
 .learn-section[hidden], .learn-library-filters[hidden] { display: none; }
