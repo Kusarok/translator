@@ -169,21 +169,21 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 
 /* ---- Playlist page ---- */
 .learn-playlist-page { min-height: 100%; padding-bottom: 50px; }
-.learn-subpage-nav { position: sticky; z-index: 20; top: -26px; min-height: 58px; margin: -10px -16px 0; padding: 10px 16px 0; display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; text-align: center; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; background: linear-gradient(180deg,var(--page) 75%,transparent); }
+.learn-subpage-nav { position: sticky; z-index: 20; top: -20px; min-height: 52px; margin: -8px -16px 0; padding: 7px 16px 0; display: grid; grid-template-columns: 40px minmax(0,1fr) 40px; align-items: center; text-align: center; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .11em; background: linear-gradient(180deg,var(--page) 78%,transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .learn-subpage-nav > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.learn-subpage-nav button { width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--text); display: grid; place-items: center; }
-.learn-playlist-hero { padding: 28px 0 24px; text-align: center; }
-.learn-playlist-hero .learn-playlist-cover { width: min(56vw,240px); margin: 0 auto 20px; }
-.learn-playlist-hero h1 { margin: 0 0 7px; font-size: 28px; letter-spacing: -.035em; }
+.learn-subpage-nav button { width: 38px; height: 38px; border: 1px solid var(--line-soft); border-radius: 13px; background: var(--surface-2); color: var(--text); display: grid; place-items: center; }
+.learn-playlist-hero { padding: 22px 2px 24px; display: grid; grid-template-columns: 94px minmax(0,1fr); grid-template-rows: auto auto 1fr; align-items: center; column-gap: 17px; text-align: start; }
+.learn-playlist-hero .learn-playlist-cover { grid-row: 1 / 4; width: 94px; margin: 0; }
+.learn-playlist-hero h1 { align-self: end; margin: 0 0 5px; overflow: hidden; text-overflow: ellipsis; font-size: 23px; letter-spacing: -.035em; }
 .learn-playlist-hero p { margin: 0; color: var(--muted); font-size: 12px; }
-.learn-playlist-add { min-width: 150px; height: 46px; margin: 20px auto 0; padding: 0 22px; border: 0; border-radius: 99px; background: var(--grad-accent); color: var(--accent-ink); font-weight: 900; }
+.learn-playlist-add { width: fit-content; min-width: 112px; height: 38px; margin: 12px 0 0; padding: 0 15px; border: 0; border-radius: 12px; background: var(--grad-accent); color: var(--accent-ink); font-size: 11px; font-weight: 900; }
 .learn-playlist-play { width: 58px; height: 58px; margin: 20px auto 0; border: 0; border-radius: 50%; background: var(--grad-accent); color: var(--accent-ink); font-size: 22px; box-shadow: var(--accent-glow); }
 
 /* ---- Artist hub ---- */
 .learn-artist-page { min-height: 100%; padding-bottom: 44px; }
-.learn-artist-hero { padding: 30px 12px 24px; text-align: center; }
-.learn-artist-avatar { width: 126px; height: 126px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg,var(--accent-soft),var(--surface-3)); color: var(--accent-strong); font-size: 48px; box-shadow: var(--elev-2); }
-.learn-artist-hero h1 { margin: 0; font-size: 31px; letter-spacing: -.04em; }
+.learn-artist-hero { padding: 22px 4px 20px; display: grid; grid-template-columns: 90px minmax(0,1fr); align-items: center; column-gap: 18px; text-align: start; }
+.learn-artist-avatar { grid-row: 1 / 3; width: 90px; height: 90px; margin: 0; display: grid; place-items: center; border-radius: 28px; background: linear-gradient(145deg,var(--accent-soft),var(--surface-3)); color: var(--accent-strong); font-size: 34px; box-shadow: var(--elev-1); }
+.learn-artist-hero h1 { align-self: end; margin: 0; overflow: hidden; text-overflow: ellipsis; font-size: 25px; letter-spacing: -.035em; }
 .learn-artist-hero p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
 .learn-artist-progress { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; padding: 13px 14px; border: 1px solid var(--line-soft); border-radius: 15px; background: var(--surface-2); }
 .learn-artist-progress[hidden] { display: none; }
@@ -216,7 +216,7 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 
 /* ---- Lyrics-first search ---- */
 .learn-search-page { min-height: 100%; padding-bottom: 40px; }
-.learn-search-bar-page { grid-template-columns: 22px minmax(0,1fr) 30px; margin: 18px 0 14px; background: var(--surface); }
+.learn-search-bar-page { position: sticky; z-index: 19; top: 40px; grid-template-columns: 22px minmax(0,1fr) 30px; margin: 12px 0 10px; background: color-mix(in srgb,var(--surface-2) 96%,transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
 .learn-search-bar-page button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--muted); font-size: 19px; }
 .learn-search-summary { min-height: 22px; margin: 0 3px 10px; color: var(--muted); font-size: 11px; }
 .learn-search-artist-banner { width: 100%; min-height: 68px; margin: 2px 0 14px; padding: 10px 12px; display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: center; gap: 11px; border: 1px solid color-mix(in srgb,var(--accent) 32%,var(--line)); border-radius: 16px; background: linear-gradient(110deg,var(--accent-soft),var(--surface-2) 62%); color: var(--text); text-align: left; }
@@ -231,10 +231,10 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 .learn-search-loading strong, .learn-search-loading small { display: block; }
 .learn-search-loading strong { font-size: 12px; }
 .learn-search-loading small { margin-top: 4px; color: var(--muted); font-size: 10px; }
-.learn-search-results { display: flex; flex-direction: column; gap: 10px; }
-.learn-search-result { position: relative; overflow: hidden; width: 100%; display: grid; grid-template-columns: 72px minmax(0,1fr) 42px; align-items: center; gap: 13px; padding: 10px; border: 1px solid var(--line-soft); border-radius: 17px; background: color-mix(in srgb,var(--surface-2) 88%,transparent); color: var(--text); text-align: left; }
-.learn-search-result:active { transform: scale(.985); background: var(--surface-3); }
-.learn-search-result img, .learn-search-result-art { width: 72px; height: 72px; border-radius: 11px; object-fit: cover; background: var(--surface-3); display: grid; place-items: center; color: var(--accent-strong); font-size: 25px; }
+.learn-search-results { display: flex; flex-direction: column; gap: 0; }
+.learn-search-result { position: relative; overflow: hidden; width: 100%; display: grid; grid-template-columns: 58px minmax(0,1fr) 42px; align-items: center; gap: 12px; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; color: var(--text); text-align: left; transition: background .16s ease,transform .12s ease; }
+.learn-search-result:active { transform: scale(.992); background: var(--surface-2); }
+.learn-search-result img, .learn-search-result-art { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; background: var(--surface-3); display: grid; place-items: center; color: var(--accent-strong); font-size: 22px; }
 .learn-search-result-copy { min-width: 0; }
 .learn-search-result-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .learn-search-result-copy > small { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 10px; }
@@ -246,7 +246,7 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
 .learn-search-badges span { padding: 3px 6px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-strong); font-size: 8px; font-weight: 900; text-transform: uppercase; }
 /* Verification is an implementation detail; listeners only need songs that work. */
 .learn-search-badges { display: none; }
-.learn-search-result-play { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--grad-accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 15px; }
+.learn-search-result-play { width: 40px; height: 40px; border: 0; border-radius: 13px; background: var(--accent-soft); color: var(--accent-strong); display: grid; place-items: center; font-size: 14px; }
 .learn-search-result-play:disabled { opacity: .65; }
 .learn-search-empty { padding: 55px 20px; text-align: center; color: var(--muted); }
 .learn-search-empty > span { display: block; color: var(--accent-strong); font-size: 42px; }
@@ -298,8 +298,8 @@ body.mini-player-active .learn-playlist-page { padding-bottom: 164px; }
   .learn-continue-card img { width: 78px; height: 78px; }
   .learn-track-row { grid-template-columns: 50px minmax(0,1fr) 40px; gap: 10px; }
   .learn-track-row img, .learn-track-art-fallback { width: 50px; height: 50px; }
-  .learn-search-result { grid-template-columns: 58px minmax(0,1fr) 44px; gap: 9px; padding: 9px; }
-  .learn-search-result img, .learn-search-result-art { width: 58px; height: 58px; }
+  .learn-search-result { grid-template-columns: 52px minmax(0,1fr) 40px; gap: 9px; padding: 9px 2px; }
+  .learn-search-result img, .learn-search-result-art { width: 52px; height: 52px; }
   .learn-search-badges { flex-wrap: wrap; }
   .learn-search-artist-banner { grid-template-columns: 40px minmax(0,1fr); }
   .learn-search-artist-banner > span:first-child { width: 40px; height: 40px; }

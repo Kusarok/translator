@@ -13,6 +13,7 @@ const artist = read("src/client/assets/js/artist-hub.js");
 const mediaApp = read("src/client/assets/js/media-app.js");
 const mediaCss = read("src/client/assets/css/media.css");
 const app = read("src/client/assets/js/app.js");
+const layoutCss = read("src/client/assets/css/layout.css");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -79,6 +80,22 @@ test("bottom navigation has focused Home, Search, and Library destinations", () 
   assert.match(library, /learnLibraryTab/);
   assert.match(search, /learn:search-opened/);
   assert.match(search, /learn:base-destination/);
+});
+
+test("settings stay above navigation and remain vertically scrollable on mobile", () => {
+  assert.match(layoutCss, /\.overlay\s*\{[^}]*z-index:\s*100/s);
+  assert.match(layoutCss, /\.sheet\s*\{[^}]*overflow-y:\s*auto[^}]*touch-action:\s*pan-y/s);
+  assert.match(html, /settings-support[\s\S]*?mailto:info@kafenet\.com/);
+  assert.match(layoutCss, /\[data-mode="media"\]\s+\.translator-setting\s*\{\s*display:\s*none/);
+});
+
+test("the primary app switcher uses a consistent SVG icon system instead of emoji logos", () => {
+  for (const icon of ["translate", "chat", "live", "music"]) {
+    assert.match(html, new RegExp(`id="icon-${icon}"`));
+    assert.match(html, new RegExp(`data-icon="${icon}"`));
+  }
+  assert.doesNotMatch(html.match(/<header class="topbar">[\s\S]*?<\/header>/)?.[0] || "", /🔤|💬|🎙️|▶️/);
+  assert.match(app, /modeIconUse\?\.setAttribute\("href", `#icon-/);
 });
 
 test("Your Music filters songs, artists, and playlists and remembers the choice", () => {
