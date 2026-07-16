@@ -24,6 +24,8 @@ test("radio worker creates one native background stream shared by every listener
   assert.match(source, /"-re"/);
   assert.match(source, /"-c:a", "libmp3lame", "-b:a", "96k"/);
   assert.match(source, /state\.listeners/);
+  assert.match(source, /PREBUFFER_BYTES = 180_000/);
+  assert.match(source, /Buffer\.concat\(state\.buffer/);
   assert.match(server, /"Content-Type": "audio\/mpeg"/);
 });
 
@@ -36,6 +38,8 @@ test("music home includes a persistent animated radio player and background cont
   assert.match(html, /id="radioMiniPlayer"/);
   assert.match(client, /navigator\.mediaSession/);
   assert.match(client, /new MediaMetadata/);
+  assert.match(client, /scheduleReconnect = \(delay = 12_000\)/);
+  assert.match(client, /timeupdate.*cancelReconnect/);
   assert.doesNotMatch(client, /window\.Hls/);
   assert.match(client, /new MediaMetadata/);
   assert.match(css, /\.radio-equalizer/);

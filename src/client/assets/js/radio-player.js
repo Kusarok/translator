@@ -69,13 +69,27 @@ const destroyStream = () => {
   ui.audio.load();
 };
 
-const reconnect = () => {
+const cancelReconnect = () => {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = 0;
+};
+
+const scheduleReconnect = (delay = 12_000) => {
   if (!active || !wantsPlayback || reconnectTimer) return;
-  setStatus("Reconnecting…", "connecting");
+  setStatus("Connection is slow…", "connecting");
   reconnectTimer = setTimeout(() => {
     reconnectTimer = 0;
     attachStream();
-  }, 2500);
+  }, delay);
+};
+
+const handlePlayFailure = (error) => {
+  if (error?.name === "NotAllowedError") {
+    wantsPlayback = false;
+    setStatus("Tap play to listen", "ready");
+    return;
+  }
+  scheduleReconnect(2_000);
 };
 
 const attachStream = () => {
@@ -85,7 +99,7 @@ const attachStream = () => {
   const source = `${active.streamUrl}?v=${Date.now()}`;
   ui.audio.src = source;
   ui.audio.load();
-  if (wantsPlayback) ui.audio.play().catch(reconnect);
+  if (wantsPlayback) ui.audio.play().catch(handlePlayFailure);
 };
 
 const play = async () => {
@@ -96,8 +110,9 @@ const play = async () => {
   try {
     await ui.audio.play();
     setStatus("Live now", "live");
-  } catch {
+  } catch (error) {
     if (!ui.audio.currentSrc) attachStream();
+    else handlePlayFailure(error);
   }
 };
 
@@ -240,11 +255,12 @@ export const initRadio = async () => {
   ui.favorite.addEventListener("click", toggleFavorite);
   ui.sleep.addEventListener("click", setSleepTimer);
   ui.share.addEventListener("click", share);
-  ui.audio.addEventListener("playing", () => { setPlayingUi(true); setStatus("Live now", "live"); });
+  ui.audio.addEventListener("playing", () => { cancelReconnect(); setPlayingUi(true); setStatus("Live now", "live"); });
+  ui.audio.addEventListener("timeupdate", cancelReconnect);
   ui.audio.addEventListener("pause", () => setPlayingUi(false));
-  ui.audio.addEventListener("waiting", () => wantsPlayback && setStatus("Connecting…", "connecting"));
-  ui.audio.addEventListener("stalled", reconnect);
-  ui.audio.addEventListener("error", reconnect);
+  ui.audio.addEventListener("waiting", () => wantsPlayback && scheduleReconnect());
+  ui.audio.addEventListener("stalled", () => scheduleReconnect());
+  ui.audio.addEventListener("error", () => scheduleReconnect(2_000));
   window.addEventListener("popstate", (event) => { if (!event.state?.[HISTORY_KEY] && !ui.player.hidden) closePlayer({ fromHistory: true }); });
   document.addEventListener("translator:song-play", () => { if (active && (!ui.audio.paused || !ui.mini.hidden)) stop(); });
 

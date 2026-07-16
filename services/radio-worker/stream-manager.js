@@ -7,10 +7,14 @@ import { stations } from "./stations.js";
 const states = new Map();
 const timers = new Set();
 let stopping = false;
+// Keep fifteen seconds of already-paced audio. A new listener receives this snapshot
+// immediately and starts slightly behind live with enough headroom for mobile jitter.
+const PREBUFFER_BYTES = 180_000;
 
 const stationDir = (id) => path.join(config.storageDir, "stations", id, "stream");
 const currentState = (id) => states.get(id) || {
-  running: false, ready: false, attempts: 0, lastError: "", lastChunkAt: 0, listeners: new Set()
+  running: false, ready: false, attempts: 0, lastError: "", lastChunkAt: 0,
+  listeners: new Set(), buffer: [], bufferBytes: 0
 };
 
 const prepareStationDirectory = (station) => {
@@ -39,6 +43,11 @@ const broadcast = (state, chunk) => {
   state.ready = true;
   state.attempts = 0;
   state.lastError = "";
+  state.buffer.push(chunk);
+  state.bufferBytes += chunk.length;
+  while (state.buffer.length > 1 && state.bufferBytes - state.buffer[0].length >= PREBUFFER_BYTES) {
+    state.bufferBytes -= state.buffer.shift().length;
+  }
   for (const response of state.listeners) {
     if (response.destroyed || response.writableEnded) {
       state.listeners.delete(response);
@@ -59,7 +68,10 @@ const startStation = (station) => {
   if (stopping || currentState(station.id).running) return;
   prepareStationDirectory(station);
   const previous = currentState(station.id);
-  const state = { ...previous, running: true, ready: false, lastError: "", listeners: previous.listeners || new Set() };
+  const state = {
+    ...previous, running: true, ready: false, lastError: "",
+    listeners: previous.listeners || new Set(), buffer: [], bufferBytes: 0
+  };
   states.set(station.id, state);
 
   // Transcode once per station, never once per listener. A continuous MP3 stream is
@@ -128,6 +140,7 @@ export const addListener = (id, response) => {
   const state = currentState(id);
   if (!state.running) return false;
   state.listeners.add(response);
+  if (state.bufferBytes) response.write(Buffer.concat(state.buffer, state.bufferBytes));
   const remove = () => state.listeners.delete(response);
   response.once("close", remove);
   response.once("error", remove);
