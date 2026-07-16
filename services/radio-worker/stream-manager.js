@@ -64,14 +64,15 @@ const startStation = (station) => {
 
   // Transcode once per station, never once per listener. A continuous MP3 stream is
   // handled by Android's native media pipeline and remains alive when JS is throttled
-  // after the screen turns off. 128 kbps is transparent enough for these source feeds.
+  // after the screen turns off. 96 kbps keeps music clear while remaining usable on
+  // weak mobile connections (about 43 MB per hour per listener).
   const child = spawn(config.ffmpeg, [
     "-nostdin", "-hide_banner", "-loglevel", "warning",
     "-rw_timeout", "15000000",
     "-re",
     "-i", station.sourceUrl,
     "-map", "0:a:0", "-vn",
-    "-c:a", "libmp3lame", "-b:a", "128k", "-ar", "48000", "-ac", "2",
+    "-c:a", "libmp3lame", "-b:a", "96k", "-ar", "48000", "-ac", "2",
     "-f", "mp3", "-write_xing", "0", "pipe:1"
   ], { stdio: ["ignore", "pipe", "pipe"] });
   state.child = child;

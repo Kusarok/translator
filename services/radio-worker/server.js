@@ -33,7 +33,7 @@ const server = http.createServer((req, res) => {
     "Access-Control-Allow-Origin": "*",
     "icy-name": stations.find((station) => station.id === match[1])?.name || "Live Radio",
     "icy-genre": "Music",
-    "icy-br": "128"
+    "icy-br": "96"
   });
   res.flushHeaders();
   if (!addListener(match[1], res)) res.end();
