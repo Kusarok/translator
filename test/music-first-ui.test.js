@@ -40,6 +40,8 @@ test("music-first shell keeps every primary destination and the persistent mini 
     "lessonLearnTab",
     "lessonNowPlayingPanel",
     "lessonContent"
+    ,"lessonTranslationState"
+    ,"lessonTranslationRetry"
   ];
 
   const pageIds = new Set(ids(html));
@@ -151,4 +153,15 @@ test("switching songs invalidates rendered lyrics and refreshes late translation
     "opening a different cached library song must invalidate the previous lyrics even without an audio element");
   assert.match(mediaApp, /renderedLyricsTrack !== lyricsTrackKey\(\) \|\| renderedLyricsLines !== track\?\.lines/,
     "the learning view must rerender when either the song or translated lines change");
+});
+
+test("lyrics translation retries stay simple and refresh without reloading", () => {
+  assert.match(mediaApp, /getLyricsTranslationStatus/);
+  assert.match(mediaApp, /Preparing translation…/);
+  assert.match(mediaApp, /Translation isn’t ready yet\./);
+  assert.match(mediaApp, /pollTranslation\(target, token/);
+  assert.match(mediaApp, /translationRetry\?\.addEventListener\("click"/);
+  const playerTranslationCopy = html.match(/<div class="lesson-translation-state"[\s\S]*?<\/div>/)?.[0] || "";
+  assert.doesNotMatch(playerTranslationCopy, /rate limit|provider|queue|API quota/i,
+    "technical translation failures must not be exposed in player copy");
 });

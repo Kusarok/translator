@@ -2,8 +2,10 @@ import { env } from "./config/env.js";
 import { createApp } from "./app.js";
 import { attachLiveSocket } from "./services/live.service.js";
 import { gateEnabled } from "./services/auth.service.js";
+import { startLyricsTranslationQueue } from "./services/lyrics-translation-queue.service.js";
 
 const app = createApp();
+startLyricsTranslationQueue();
 
 const isLoopbackHost = (host) => ["127.0.0.1", "localhost", "::1"].includes(host);
 

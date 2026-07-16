@@ -11,6 +11,7 @@ import path from "node:path";
 import { addTrackToPlaylist, createLearningPlaylist, deleteLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, removeTrackFromPlaylist, updateLearningPlaylist, updateTrackProgress } from "./services/library.service.js";
 import { createLyricsSearch, getLyricsSearch, prepareSearchResult } from "./modules/search/search.service.js";
 import { createArtistCatalog, discoverArtists, getArtistCatalog, prepareArtistCatalogItem } from "./modules/artists/artist.service.js";
+import { dueTranslationJobs, getTranslationJobForTrack, publicTranslationJob, scheduleTranslationJob, updateTranslationJob } from "./services/translation-job.service.js";
 
 reindexCachedLyrics();
 
@@ -109,6 +110,25 @@ const server = http.createServer(async (req, res) => {
       return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Artist track not found." });
     }
     if (req.method === "POST" && url.pathname === "/lyrics-search") return json(res, 202, createLyricsSearch((await body(req)).query));
+    if (req.method === "POST" && url.pathname === "/translation-jobs") {
+      const job = scheduleTranslationJob(await body(req));
+      return job ? json(res, 202, job) : json(res, 404, { error: "Track lyrics not found." });
+    }
+    if (req.method === "GET" && url.pathname === "/translation-jobs/due") {
+      return json(res, 200, { jobs: dueTranslationJobs(url.searchParams.get("limit")).map((job) => ({
+        id: job.id, trackId: job.track_id, targetLanguage: job.target_language, attempts: job.attempts
+      })) });
+    }
+    const translationTrackMatch = /^\/translation-jobs\/tracks\/(trk_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && translationTrackMatch) {
+      const job = getTranslationJobForTrack(translationTrackMatch[1]);
+      return job ? json(res, 200, job) : json(res, 404, { error: "Track lyrics not found." });
+    }
+    const translationJobMatch = /^\/translation-jobs\/(ltj_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "PATCH" && translationJobMatch) {
+      const job = updateTranslationJob(translationJobMatch[1], await body(req));
+      return job ? json(res, 200, publicTranslationJob(job)) : json(res, 404, { error: "Translation job not found." });
+    }
     const lyricsSearchMatch = /^\/lyrics-search\/(srj_[A-Za-z0-9-]+)$/.exec(url.pathname);
     if (req.method === "GET" && lyricsSearchMatch) {
       const job = getLyricsSearch(lyricsSearchMatch[1]);

@@ -52,6 +52,51 @@ export const createRepositories = (db) => ({
       return this.findCached(input);
     }
   },
+  lyricTranslationJobs: {
+    findById: (id) => db.prepare("SELECT * FROM lyric_translation_jobs WHERE id=?").get(id) || null,
+    findForTrack: (trackId, targetLanguage = "fa") => db.prepare(
+      "SELECT * FROM lyric_translation_jobs WHERE track_id=? AND target_language=?"
+    ).get(trackId, targetLanguage) || null,
+    due(limit = 4) {
+      return db.prepare(`SELECT * FROM lyric_translation_jobs
+        WHERE (status IN ('queued','retry') AND next_attempt_at<=?)
+          OR (status='running' AND updated_at<=?)
+        ORDER BY next_attempt_at,created_at LIMIT ?`).all(now(), new Date(Date.now() - 5 * 60 * 1000).toISOString(), limit);
+    },
+    schedule(input) {
+      const current = this.findForTrack(input.trackId, input.targetLanguage || "fa");
+      const stamp = now(), id = current?.id || input.id || createId("lyricsTranslationJob");
+      const nextAttemptAt = input.nextAttemptAt || stamp;
+      const attempts = input.attempts ?? current?.attempts ?? 0;
+      db.prepare(`INSERT INTO lyric_translation_jobs
+        (id,track_id,target_language,status,attempts,next_attempt_at,last_error,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(track_id,target_language) DO UPDATE SET
+          status=excluded.status,attempts=excluded.attempts,next_attempt_at=excluded.next_attempt_at,
+          last_error=excluded.last_error,updated_at=excluded.updated_at`)
+        .run(id, input.trackId, input.targetLanguage || "fa", input.status || "queued", attempts,
+          nextAttemptAt, clean(input.lastError), current?.created_at || stamp, stamp);
+      return this.findForTrack(input.trackId, input.targetLanguage || "fa");
+    },
+    start(id) {
+      db.prepare(`UPDATE lyric_translation_jobs SET status='running',attempts=attempts+1,
+        last_error=NULL,updated_at=? WHERE id=?`).run(now(), id);
+      return this.findById(id);
+    },
+    retry(id, input) {
+      db.prepare(`UPDATE lyric_translation_jobs SET status='retry',next_attempt_at=?,last_error=?,updated_at=?
+        WHERE id=?`).run(input.nextAttemptAt, clean(input.lastError), now(), id);
+      return this.findById(id);
+    },
+    complete(id) {
+      db.prepare(`UPDATE lyric_translation_jobs SET status='completed',last_error=NULL,updated_at=? WHERE id=?`).run(now(), id);
+      return this.findById(id);
+    },
+    fail(id, lastError) {
+      db.prepare(`UPDATE lyric_translation_jobs SET status='failed',last_error=?,updated_at=? WHERE id=?`).run(clean(lastError), now(), id);
+      return this.findById(id);
+    }
+  },
   artwork: {
     findById: (id) => db.prepare("SELECT * FROM artwork_assets WHERE id=?").get(id) || null,
     findForTrack: (trackId) => db.prepare("SELECT * FROM artwork_assets WHERE track_id=?").get(trackId) || null,

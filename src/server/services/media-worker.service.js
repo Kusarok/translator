@@ -43,6 +43,10 @@ export const getCachedLesson = (spotifyId) => workerRequest({ pathname: `/cache/
 export const getCachedLessonByTrackId = (trackId) => workerRequest({ pathname: `/cache/lessons/tracks/${encodeURIComponent(trackId)}` });
 export const cacheTrackLyrics = (track) => workerRequest({ method: "PUT", pathname: "/cache/lyrics", body: track });
 export const cacheLessonTranslation = (translation) => workerRequest({ method: "PUT", pathname: "/cache/translations", body: translation });
+export const scheduleLyricsTranslation = (payload) => workerRequest({ method: "POST", pathname: "/translation-jobs", body: payload });
+export const getLyricsTranslationStatus = (trackId) => workerRequest({ pathname: `/translation-jobs/tracks/${encodeURIComponent(trackId)}` });
+export const getDueLyricsTranslations = (limit = 2) => workerRequest({ pathname: `/translation-jobs/due?limit=${encodeURIComponent(limit)}` });
+export const updateLyricsTranslationJob = (id, payload) => workerRequest({ method: "PATCH", pathname: `/translation-jobs/${encodeURIComponent(id)}`, body: payload });
 export const getLibrary = () => workerRequest({ pathname: "/library" });
 export const discoverLibraryArtists = (name) => workerRequest({ method: "POST", pathname: "/artists/discover", body: { name } });
 export const createLibraryArtist = (payload) => workerRequest({ method: "POST", pathname: "/artists", body: payload });

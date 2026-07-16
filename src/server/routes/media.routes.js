@@ -1,7 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { asyncHandler } from "../utils/async-handler.js";
-import { addPlaylistTrack, artist, createArtist, createJob, createPlaylist, createSearch, createSearchJob, deleteMedia, deletePlaylist, discoverArtists, getJob, getLyrics, getSearch, health, library, openTrack, playlist, prepareArtistTrack, prepareSearchResult, removePlaylistTrack, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, trackProgress, translateSyncedLyrics, updatePlaylist } from "../controllers/media.controller.js";
+import { addPlaylistTrack, artist, createArtist, createJob, createPlaylist, createSearch, createSearchJob, deleteMedia, deletePlaylist, discoverArtists, getJob, getLyrics, getSearch, health, library, lyricsTranslationStatus, openTrack, playlist, prepareArtistTrack, prepareSearchResult, removePlaylistTrack, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, trackProgress, translateSyncedLyrics, updatePlaylist } from "../controllers/media.controller.js";
 
 export const mediaRouter = Router();
 const searchLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
@@ -28,6 +28,7 @@ mediaRouter.get("/spotify/callback", asyncHandler(spotifyCallback));
 mediaRouter.post("/spotify/import-playlist", asyncHandler(spotifyImportPlaylist));
 mediaRouter.post("/lyrics", asyncHandler(getLyrics));
 mediaRouter.post("/lyrics/translate", asyncHandler(translateSyncedLyrics));
+mediaRouter.get("/lyrics/translation/:id", asyncHandler(lyricsTranslationStatus));
 mediaRouter.post("/jobs", asyncHandler(createJob));
 mediaRouter.post("/search-jobs", asyncHandler(createSearchJob));
 mediaRouter.get("/jobs/:id", asyncHandler(getJob));

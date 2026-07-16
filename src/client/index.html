@@ -350,6 +350,10 @@
                     <button id="lessonLearnTab" type="button" role="tab" aria-selected="false" aria-controls="mediaLyrics">Lyrics &amp; Learn</button>
                   </div>
                   <div class="lesson-content" id="lessonContent">
+                    <div class="lesson-translation-state" id="lessonTranslationState" role="status" aria-live="polite" hidden>
+                      <span id="lessonTranslationText">Preparing translation…</span>
+                      <button id="lessonTranslationRetry" type="button" hidden>Try again</button>
+                    </div>
                     <section class="lesson-now-playing" id="lessonNowPlayingPanel" role="tabpanel" aria-labelledby="lessonNowPlayingTab">
                       <div class="lesson-now-art">
                         <img id="mediaNowPlayingCover" alt="" hidden>
