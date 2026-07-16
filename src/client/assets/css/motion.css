@@ -87,6 +87,21 @@
 
 @keyframes motion-ambient-turn { to { transform: rotate(1turn); } }
 
+.translator-orbit-ring-a { animation: translator-orbit-forward 18s linear infinite; }
+.translator-orbit-ring-b { animation: translator-orbit-back 14s linear infinite; }
+.translator-orbit-nodes { animation: translator-orbit-forward 11s linear infinite; }
+.translator-card-source { animation: translator-card-source 4.8s ease-in-out infinite alternate; transform-origin: 55px 72px; }
+.translator-card-target { animation: translator-card-target 5.2s ease-in-out .4s infinite alternate; transform-origin: 105px 89px; }
+.translator-flow { stroke-dasharray: 7 7; animation: translator-flow 2.8s linear infinite; }
+.translator-visual-glow { animation: translator-glow 4s ease-in-out infinite alternate; transform-origin: 80px 80px; }
+
+@keyframes translator-orbit-forward { to { transform: rotate(1turn); } }
+@keyframes translator-orbit-back { to { transform: rotate(-1turn); } }
+@keyframes translator-card-source { to { transform: translate3d(-2px,-3px,0) rotate(-1deg); } }
+@keyframes translator-card-target { to { transform: translate3d(2px,3px,0) rotate(1deg); } }
+@keyframes translator-flow { to { stroke-dashoffset: -28; } }
+@keyframes translator-glow { to { opacity: .62; transform: scale(1.08); } }
+
 .media-lesson.is-playing::before {
   animation: motion-player-ambient 14s ease-in-out infinite alternate;
 }
@@ -164,7 +179,9 @@
   .motion-reveal,.view:not([hidden]),.learn-search-page:not([hidden]),.learn-artist-page:not([hidden]),.learn-playlist-page:not([hidden]),
   .mode-menu.open,.music-home-wave,.music-home-hero::after,.media-lesson.is-playing::before,
   .media-lesson.is-playing .lesson-now-art,.lp-play.is-playing::after,.learn-mini-player.is-playing::before,
-  .learn-mini-player.is-playing .mini-track-open img,.learn-bottom-nav button.active span {
+  .learn-mini-player.is-playing .mini-track-open img,.learn-bottom-nav button.active span,
+  .translator-orbit-ring-a,.translator-orbit-ring-b,.translator-orbit-nodes,.translator-card-source,
+  .translator-card-target,.translator-flow,.translator-visual-glow {
     animation: none !important;
     transition: none !important;
     transform: none !important;

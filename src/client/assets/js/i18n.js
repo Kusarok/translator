@@ -10,7 +10,7 @@ export const setLang = (next) => {
 export const translations = {
   fa: {
     dir: "rtl",
-    title: "مترجم فارسی و انگلیسی",
+    title: "مترجم چندزبانه",
     appName: "مترجم",
     selectModel: "انتخاب مدل",
     selectTone: "انتخاب لحن",
@@ -183,7 +183,7 @@ export const translations = {
   },
   en: {
     dir: "ltr",
-    title: "Persian-English Translator",
+    title: "Multilingual AI Translator",
     appName: "Translator",
     selectModel: "Select model",
     selectTone: "Select tone",

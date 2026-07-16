@@ -117,14 +117,28 @@
             </div>
             <div class="messages" id="translatorMessages">
               <div class="translator-welcome" id="translatorEmptyState">
-                <span class="translator-welcome-icon" aria-hidden="true">Aa</span>
+                <div class="translator-welcome-visual" aria-hidden="true">
+                  <svg viewBox="0 0 160 160" role="presentation">
+                    <defs>
+                      <linearGradient id="translatorVisualGradient" x1="18" y1="18" x2="142" y2="142" gradientUnits="userSpaceOnUse"><stop stop-color="#58f1d5"/><stop offset="1" stop-color="#23aeda"/></linearGradient>
+                      <radialGradient id="translatorVisualGlow"><stop stop-color="#4ff0d0" stop-opacity=".28"/><stop offset="1" stop-color="#4ff0d0" stop-opacity="0"/></radialGradient>
+                    </defs>
+                    <circle class="translator-visual-glow" cx="80" cy="80" r="72" fill="url(#translatorVisualGlow)"/>
+                    <circle class="translator-orbit-ring translator-orbit-ring-a" cx="80" cy="80" r="61"/>
+                    <circle class="translator-orbit-ring translator-orbit-ring-b" cx="80" cy="80" r="48"/>
+                    <g class="translator-card translator-card-source"><rect x="28" y="48" width="54" height="48" rx="14"/><path d="M42 64h26M42 74h17M42 84h22"/></g>
+                    <g class="translator-card translator-card-target"><rect x="78" y="65" width="54" height="48" rx="14"/><path d="M92 81h26M99 91h19M94 101h24"/></g>
+                    <path class="translator-flow" d="M60 109c12 14 32 16 47 4M101 117l7-4-2 8"/>
+                    <g class="translator-orbit-nodes"><circle cx="80" cy="18" r="4"/><circle cx="140" cy="82" r="3"/><circle cx="35" cy="124" r="3.5"/></g>
+                  </svg>
+                </div>
                 <span class="translator-welcome-kicker">SMART TRANSLATION</span>
                 <h1>Translate anything</h1>
                 <p>Paste text in any language. We’ll detect it automatically and keep the meaning natural.</p>
                 <div class="translator-suggestions" aria-label="Translation examples">
-                  <button type="button" data-translate-example="What does this lyric mean?">Explain a lyric</button>
-                  <button type="button" data-translate-example="Translate this naturally into Persian: ">Natural Persian</button>
-                  <button type="button" data-translate-example="Help me understand this sentence: ">Understand a sentence</button>
+                  <button type="button" data-translate-example="Translate this message naturally: "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18.5 3.5 21l4-1.2A9 9 0 1 0 5 18.5Z"/></svg>Translate a message</button>
+                  <button type="button" data-translate-example="Make this translation sound natural: "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m18 15 .8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z"/></svg>Make it natural</button>
+                  <button type="button" data-translate-example="Explain the meaning and context of this text: "><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>Explain meaning</button>
                 </div>
               </div>
             </div>

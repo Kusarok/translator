@@ -16,6 +16,7 @@ const app = read("src/client/assets/js/app.js");
 const layoutCss = read("src/client/assets/css/layout.css");
 const motionCss = read("src/client/assets/css/motion.css");
 const motionJs = read("src/client/assets/js/motion.js");
+const i18n = read("src/client/assets/js/i18n.js");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -114,6 +115,16 @@ test("motion is progressive, scroll-aware, and respects reduced-motion preferenc
   assert.match(motionCss, /\.motion-enabled \.motion-reveal\.is-revealed/);
   assert.match(motionCss, /\.media-lesson\.is-playing \.lesson-now-art/);
   assert.match(motionCss, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("translator welcome is language-neutral and uses one animated SVG identity", () => {
+  const welcome = html.match(/<div class="translator-welcome"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)?.[0] || "";
+  assert.match(welcome, /translator-welcome-visual/);
+  assert.match(welcome, /translator-orbit-ring/);
+  assert.doesNotMatch(welcome, /Natural Persian|into Persian|>Aa<|abc|🔤/i);
+  assert.match(i18n, /title:\s*"Multilingual AI Translator"/);
+  assert.match(motionCss, /@keyframes translator-orbit-forward/);
+  assert.match(motionCss, /\.translator-flow[^}]*animation:/s);
 });
 
 test("Your Music filters songs, artists, and playlists and remembers the choice", () => {
