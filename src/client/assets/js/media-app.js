@@ -37,6 +37,8 @@ let sessionWriteTimer = 0;
 let lastProgressSave = 0;
 let playerMode = "now";
 let swipeStart = null;
+let renderedLyricsTrack = null;
+let renderedLyricsLines = null;
 // Slow-first cycle: language learners lean on 0.75× / 0.5× to catch every syllable.
 const SPEEDS = [1, 0.75, 0.5, 1.25, 1.5];
 const player = {};
@@ -172,6 +174,18 @@ const showMiniPlayer = (visible = true) => {
   setPlaying(!audioEl.paused);
 };
 
+const lyricsTrackKey = (target = track) => target?.lyricsId || target?.trackId || target?.spotifyId || null;
+
+const invalidateLyrics = () => {
+  activeIndex = -1;
+  renderedLyricsTrack = null;
+  renderedLyricsLines = null;
+  el.lyrics.replaceChildren();
+  el.lyrics.scrollTop = 0;
+  if (el.miniLyric) el.miniLyric.textContent = "";
+  if (el.miniArtist) el.miniArtist.hidden = false;
+};
+
 const setPlayerMode = (mode, { focus = false } = {}) => {
   playerMode = mode === "learn" ? "learn" : "now";
   const learning = playerMode === "learn";
@@ -188,7 +202,7 @@ const setPlayerMode = (mode, { focus = false } = {}) => {
     control.setAttribute("aria-hidden", String(!learning));
   }
   if (learning) {
-    if (!el.lyrics.children.length) renderLyrics();
+    if (renderedLyricsTrack !== lyricsTrackKey() || renderedLyricsLines !== track?.lines) renderLyrics();
     const time = audioEl?.currentTime || 0;
     activeIndex = -1;
     requestAnimationFrame(() => syncAt(time));
@@ -464,6 +478,10 @@ const showPreparedTrack = () => {
 };
 
 const renderLyrics = () => {
+  if (!track || !Array.isArray(track.lines)) {
+    invalidateLyrics();
+    return;
+  }
   el.lyrics.replaceChildren(...track.lines.map((line, index) => {
     const row = document.createElement("button");
     row.type = "button";
@@ -480,6 +498,8 @@ const renderLyrics = () => {
     });
     return row;
   }));
+  renderedLyricsTrack = lyricsTrackKey();
+  renderedLyricsLines = track.lines;
 };
 
 const syncAt = (seconds) => {
@@ -523,6 +543,7 @@ const beginPreparation = () => {
   track = null; activeIndex = -1;
   cancelAnimationFrame(syncFrame);
   el.player.replaceChildren();
+  invalidateLyrics();
   el.result.hidden = true;
   setBusy(true);
   return token;
@@ -757,7 +778,7 @@ export const initMedia = () => {
     persistLearningProgress(true);
     cleanupAudio();
     el.player.replaceChildren();
-    el.lyrics.replaceChildren();
+    invalidateLyrics();
   });
   el.lessonNowTab?.addEventListener("click", () => setPlayerMode("now"));
   el.lessonLearnTab?.addEventListener("click", () => setPlayerMode("learn"));
@@ -782,10 +803,10 @@ export const initMedia = () => {
   initLearnLibrary({
     onOpenTrack: async (lesson) => {
       if (track?.trackId !== lesson.trackId) playerMode = "now";
-      if (audioEl && track?.trackId !== lesson.trackId) {
+      if (track?.trackId !== lesson.trackId) {
         cleanupAudio();
         el.player.replaceChildren();
-        el.lyrics.replaceChildren();
+        invalidateLyrics();
       }
       if (!lesson.translationCached) {
         const token = beginPreparation();

@@ -141,3 +141,14 @@ test("full player defaults to listening and keeps learning in a separate swipeab
   assert.match(mediaCss, /\.lesson-mode-tabs\s*\{/);
   assert.match(mediaCss, /\.lesson-now-playing\s*\{/);
 });
+
+test("switching songs invalidates rendered lyrics and refreshes late translations", () => {
+  assert.match(mediaApp, /const invalidateLyrics = \(\) => \{[\s\S]*?el\.lyrics\.replaceChildren\(\)/,
+    "changing tracks must remove lyric rows and their old click handlers");
+  assert.match(mediaApp, /const beginPreparation = \(\) => \{[\s\S]*?invalidateLyrics\(\)/,
+    "search and artist preparation must invalidate the previous song lyrics");
+  assert.match(mediaApp, /if \(track\?\.trackId !== lesson\.trackId\) \{[\s\S]*?invalidateLyrics\(\)/,
+    "opening a different cached library song must invalidate the previous lyrics even without an audio element");
+  assert.match(mediaApp, /renderedLyricsTrack !== lyricsTrackKey\(\) \|\| renderedLyricsLines !== track\?\.lines/,
+    "the learning view must rerender when either the song or translated lines change");
+});
