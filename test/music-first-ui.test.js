@@ -61,9 +61,9 @@ test("music-first shell keeps every primary destination and the persistent mini 
 });
 
 test("the music-first home exposes one clear discovery path and global navigation", () => {
-  assert.match(html, /id="musicHomeHero"[\s\S]*?Your music speaks every language\./);
-  assert.match(html, /id="musicHomeSearch"[^>]*>[^<]*<span[^>]*>[^<]*<\/span> Find music<\/button>/);
-  assert.match(html, /id="musicHomeAdd"[^>]*>＋ Add link<\/button>/);
+  assert.match(html, /id="musicHomeHero"[\s\S]*?Find your next song/);
+  assert.match(html, /id="musicHomeSearch"[^>]*>[\s\S]*?Explore<\/button>/);
+  assert.match(html, /id="musicHomeAdd"[^>]*>[\s\S]*?Add link<\/button>/);
   assert.match(library, /homeSearch.*musicHomeSearch/s);
   assert.match(library, /homeAdd.*musicHomeAdd/s);
   assert.match(library, /learn:navigate/);

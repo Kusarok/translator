@@ -214,29 +214,30 @@
               <div class="learn-library" id="learnLibrary">
                 <header class="learn-library-header">
                   <div>
-                    <span class="learn-overline">LINGO MUSIC</span>
+                    <span class="learn-overline">FOR YOU</span>
                     <h1 id="learnLibraryTitle">Home</h1>
                   </div>
                   <button class="learn-add-button" id="learnAddButton" type="button" aria-label="Add music">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                 </header>
-                <section class="music-home-hero" id="musicHomeHero">
-                  <div class="music-home-copy">
-                    <span>LISTEN · UNDERSTAND · REPEAT</span>
-                    <h2>Your music speaks every language.</h2>
-                    <p>Play online, follow the lyrics, and learn without leaving the song.</p>
-                  </div>
-                  <div class="music-home-actions">
-                    <button class="music-home-primary" id="musicHomeSearch" type="button"><span aria-hidden="true">⌕</span> Find music</button>
-                    <button class="music-home-secondary" id="musicHomeAdd" type="button">＋ Add link</button>
-                  </div>
-                  <div class="music-quota-row"><span class="music-quota-dot" aria-hidden="true"></span><span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span></div>
-                </section>
                 <form class="learn-search-bar" id="learnSearchForm" role="search">
                   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
                   <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
                 </form>
+                <section class="music-home-hero" id="musicHomeHero">
+                  <svg class="music-home-wave" viewBox="0 0 180 150" aria-hidden="true"><path d="M18 80c18-54 34 54 52 0s34 54 52 0 34 54 50 0"/><path d="M18 104c18-34 34 34 52 0s34 34 52 0 34 34 50 0"/></svg>
+                  <div class="music-home-copy">
+                    <span>DISCOVER</span>
+                    <h2>Find your next song</h2>
+                    <p>Search by title, artist, or even a lyric you remember.</p>
+                  </div>
+                  <div class="music-home-actions">
+                    <button class="music-home-primary" id="musicHomeSearch" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg> Explore</button>
+                    <button class="music-home-secondary" id="musicHomeAdd" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add link</button>
+                  </div>
+                  <div class="music-quota-row"><span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span></div>
+                </section>
 
                 <div class="learn-library-filters" id="learnLibraryFilters" role="tablist" aria-label="Your music" hidden>
                   <button id="learnSongsFilter" type="button" role="tab" data-library-filter="songs">Songs</button>
