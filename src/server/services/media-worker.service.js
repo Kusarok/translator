@@ -7,7 +7,7 @@ const workerUrl = new URL(env.mediaWorkerUrl);
 const transport = workerUrl.protocol === "https:" ? https : http;
 const userHeaders = (userId) => userId ? { "X-Translator-User-Id": userId } : {};
 
-const workerRequest = ({ method = "GET", pathname, body, headers = {}, stream = false }) =>
+const workerAttempt = ({ method = "GET", pathname, body, headers = {}, stream = false }) =>
   new Promise((resolve, reject) => {
     const payload = body === undefined ? null : Buffer.from(JSON.stringify(body));
     const request = transport.request(new URL(pathname, workerUrl), {
@@ -35,6 +35,15 @@ const workerRequest = ({ method = "GET", pathname, body, headers = {}, stream = 
     if (payload) request.write(payload);
     request.end();
   });
+
+const workerRequest = async (options) => {
+  try { return await workerAttempt(options); }
+  catch (error) {
+    if ((options.method || "GET") !== "GET" || error.status !== 503) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 650));
+    return workerAttempt(options);
+  }
+};
 
 export const mediaHealth = () => workerRequest({ pathname: "/health" });
 export const createMediaJob = (userId, url) => workerRequest({ method: "POST", pathname: "/jobs", body: { url }, headers: userHeaders(userId) });
