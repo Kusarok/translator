@@ -1,0 +1,20 @@
+[Unit]
+Description=Translator Web Server
+After=network-online.target media-worker.service radio-worker.service
+Wants=network-online.target
+Requires=media-worker.service radio-worker.service
+PartOf=translator.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/github/translator
+EnvironmentFile=-/root/github/translator/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node src/server/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=translator.target

@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { publicStation, stations } from "../services/radio-worker/stations.js";
+
+process.env.RADIO_KURDISH_URLS = "https://radio.example/kurdish.m3u8";
+process.env.RADIO_PERSIAN_NOSTALGIA_URLS = "https://radio.example/nostalgia.m3u8";
+process.env.RADIO_NAVAHANG_URLS = "https://radio.example/navahang.m3u8,https://backup.example/navahang.m3u8";
+process.env.RADIO_JAVAN_URLS = "https://radio.example/javan.m3u8";
+
+const { publicStation, stations } = await import("../services/radio-worker/stations.js");
 
 test("live radio exposes four stable audio stations without leaking IPTV sources", () => {
   assert.deepEqual(stations.map(({ id, name }) => ({ id, name })), [

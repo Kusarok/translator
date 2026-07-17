@@ -1,5 +1,6 @@
 node_modules
 .env
+.env.radio
 data/
 settings.json
 npm-debug.log*
