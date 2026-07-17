@@ -1,4 +1,4 @@
-const USER_AGENT = "Translator/1.0 (https://server.raminexch.store)";
+const USER_AGENT = "Translator/1.0 (https://translate.raminexch.store)";
 let nextRequestAt = 0;
 let requestTail = Promise.resolve();
 
