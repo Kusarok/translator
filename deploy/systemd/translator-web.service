@@ -3,7 +3,7 @@ Description=Translator Web Server
 After=network-online.target media-worker.service radio-worker.service
 Wants=network-online.target
 Requires=media-worker.service radio-worker.service
-PartOf=translator.target
+PartOf=translator.target translator.service
 
 [Service]
 Type=simple

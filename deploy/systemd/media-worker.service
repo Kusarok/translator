@@ -2,7 +2,7 @@
 Description=Translator Media Worker
 After=network-online.target
 Wants=network-online.target
-PartOf=translator.target
+PartOf=translator.target translator.service
 
 [Service]
 Type=simple
