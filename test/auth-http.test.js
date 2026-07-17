@@ -20,7 +20,17 @@ const wait = async () => {
 
 test.before(async () => {
   child = spawn(process.execPath, ["src/server/index.js"], {
-    cwd: process.cwd(), env: { ...process.env, HOST: "127.0.0.1", PORTS: String(port), APP_DATA_DIR: root }, stdio: "ignore"
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORTS: String(port),
+      APP_DATA_DIR: root,
+      GOOGLE_CLIENT_ID: "test-client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "test-secret",
+      GOOGLE_REDIRECT_URI: `${base}/api/auth/google/callback`
+    },
+    stdio: "ignore"
   });
   await wait();
 });
