@@ -1,275 +1,254 @@
 # Translator
 
-Natural, meaning-preserving translation and AI chat, built for talking to the world with confidence.
+A mobile-first multilingual translator, AI chat, and online music-learning app. Translator combines natural translation with a shared music library, synchronized lyrics, Persian lyric translation, personal playlists, artist catalogs, and optional 24/7 audio radio.
 
-The goal of this app is simple: translate text **without losing the meaning of the words**, keep the language **completely natural** in every sentence, and make it **easy and safe** to have a real conversation with anyone, anywhere in the world.
+[Live app](https://server.raminexch.store) · [Report a bug](https://github.com/Kusarok/translator/issues) · [Security](SECURITY.md) · [Privacy](PRIVACY.md)
 
-**Live demo & app:** https://translate.raminexch.store/
+> This repository contains application source code only. Runtime databases, downloaded media, lyrics, user data, OAuth secrets, provider keys, and deployment-specific radio sources belong in ignored local configuration and storage.
 
-> The demo address may change later — that's fine, the app works the same wherever it's hosted.
+## Highlights
 
----
+### Translation and conversation
 
-## What it does
+- Natural multilingual translation with automatic source-language detection.
+- AI chat with image support.
+- Live speech translation and speech-to-text.
+- Cerebras, OpenRouter, Google, and Groq provider support.
+- Bring-your-own-key mode; browser-provided keys are not persisted server-side.
+- Installable PWA with English and Persian interface options.
 
-- 🌍 **25+ languages** with fluent, human-sounding translations, not word-for-word.
-- 🧠 **Meaning first** — tone, nuance, idioms, and intent are preserved, so nothing gets lost in translation.
-- 💬 **AI chat** with image (vision) support.
-- 🎙️ **Live voice translation** — speak and hear the translation back in real time.
-- 🌐 **Bilingual UI** (English / Persian) with light and dark themes.
-- 📱 **Installable** — add it to your home screen and use it like a native app.
+### Music and language learning
 
-## Bring your own API key (BYOK) — nothing is stored
+- Search by song, artist, or lyric text.
+- Shared song cache: once an authorized track is prepared, every user can reuse it.
+- Synchronized lyrics with multilingual-to-Persian translation.
+- Artist catalogs with background validation before songs become available.
+- Personal playlists, recent plays, favorites, and progress.
+- Spotify playlist metadata import and Google account sign-in.
+- Configurable daily limit for preparing previously uncached songs.
+- Optional licensed open-music catalog ingestion.
+- Optional audio-only live radio with background Media Session controls.
 
-Open the app, tap the ⚙ **Settings** button, and paste your own API key under **Your API Key**.
+## Architecture
 
-**Nothing is saved.** Your key stays **only in your own browser** (`localStorage`) and is sent directly with your own requests. It is **never** written to the server, **never** logged, and **never** shared with anyone. Clear your browser data and it is gone. This is intentional, so you can use the app with complete peace of mind.
+```text
+Browser / installed PWA
+        |
+        v
+Express web application :8080
+  |-- translation, chat, accounts and OAuth
+  |-- /api/media  ------> media worker :8090 ------> SQLite + data/
+  `-- /api/radio -------> radio worker :8091 ------> shared audio stream
+```
 
-Get a free key from any of these providers:
+The web process is the only service that should be internet-facing. Media and radio workers should remain on loopback or a private network. Generated data is stored under `data/` and is intentionally excluded from Git.
 
-| Provider | Get a key | Notes |
-| --- | --- | --- |
-| **Cerebras** | [cloud.cerebras.ai](https://cloud.cerebras.ai) | Very fast inference |
-| **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) | Free models are auto-selected for you |
-| **Google AI Studio** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Gemma & Gemini; required for Live voice |
-| **Groq** | [console.groq.com/keys](https://console.groq.com/keys) | Very fast; also powers voice-to-text (Whisper). Bring your own key to use it |
+## Prerequisites
 
-Steps: pick a provider → paste the key → **Save key** → **Test** → **Use**.
+Required:
 
-## Install it as an app (Add to Home Screen)
+- Linux, macOS, or Windows with a Unix-like shell.
+- Node.js **22.13 or newer** (`node:sqlite` is used by the media library).
+- npm.
 
-For the smoothest experience, install it like a native app:
+Required for music preparation:
 
-- **iPhone / iPad (Safari):** tap the **Share** icon, then **Add to Home Screen**.
-- **Android (Chrome):** tap the **⋮** menu, then **Add to Home screen** / **Install app**.
-- **Desktop (Chrome / Edge):** click the **install** icon in the address bar.
+- Python 3 with the `venv` module.
+- FFmpeg and FFprobe.
+- Enough local disk space for the shared media cache.
 
-It then opens full-screen with its own icon and feels like a real app.
+Optional:
 
-## Self-hosting
+- A provider API key for AI translation/chat features.
+- Google OAuth credentials for Google sign-in.
+- Spotify developer credentials for playlist connection.
+- systemd and a reverse proxy for production deployment.
+
+On Ubuntu/Debian, the system packages can be installed with:
 
 ```bash
-git clone <your-repo-url>
+sudo apt update
+sudo apt install -y ffmpeg python3 python3-venv
+```
+
+Install Node.js from an official/current distribution that provides Node 22.13+.
+
+## Quick start
+
+```bash
+git clone https://github.com/Kusarok/translator.git
 cd translator
-npm install
+npm ci
+cp .env.example .env
+npm run media:install
 npm start
 ```
 
-Open **http://localhost:8080** and add a key in ⚙ Settings. That's the whole setup — no config files required.
+Open <http://localhost:8080>. `npm start` starts the web, media, and radio processes when equivalent systemd services are not already active.
 
-## For deployment owners: protect your own keys
+The translation interface can work with a key entered in Settings. Music features need FFmpeg and the Python media tools installed by `npm run media:install`.
 
-If you host this publicly, you can let visitors use their **own** keys (BYOK) while keeping **your** keys private behind a login. Add an owner login in `.env`:
+## Configuration
 
-```text
-OWNER_USERNAME=you
-OWNER_PASSWORD=a-strong-password
-SESSION_TTL_HOURS=720
-```
+All secrets must be stored in `.env`, a secret manager, or service environment variables. Never commit a populated environment file.
 
-With both set, the **API Providers** section always shows 🔒 locked badges and a login form until someone enters that exact username + password. A successful login sets a signed, `HttpOnly` session cookie (default 30 days); **Logout** ends it early. Visitors can still use their own key from **Your API Key** at any time. Leave both empty to keep the simple no-login behavior for local/private use.
+Common settings:
 
-## Free tier: let every visitor try it, without leaking your key
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `HOST`, `PORT` | Public web listener | `0.0.0.0`, `8080` |
+| `TRUST_PROXY` | Trust depth/address behind a reverse proxy | disabled |
+| `APP_DATA_DIR` | Accounts and application data root | `./data` |
+| `MEDIA_WORKER_URL` | Private media-worker URL | `http://127.0.0.1:8090` |
+| `RADIO_WORKER_URL` | Private radio-worker URL | `http://127.0.0.1:8091` |
+| `DAILY_NEW_SONG_LIMIT` | New uncached songs per user per UTC day | `5` |
+| `SESSION_TTL_HOURS` | Account session lifetime | `720` |
+| `FREE_TIER_ENABLED` | Enable the server-funded provider tier | `true` |
+| `FREE_RATE_LIMIT` | Free translation/chat requests per visitor/minute | `5` |
 
-You can offer visitors a **free, no-key** experience on one server-funded model while keeping everything else behind the owner login. By default this is **Gemma 4 on Cerebras, 5 requests per minute per visitor**.
+Provider keys:
 
-When free tier is on, an anonymous visitor (no owner login, no key of their own) can translate and chat right away. Every free request is hardened so the shared key can't be abused or drained:
-
-- 🔒 **The key never reaches the browser.** Free requests are proxied server-side; only `configured: true/false` is ever exposed to the client.
-- 🎯 **The model is locked.** A client can't swap in a bigger/more expensive model — the server ignores the requested model and always uses `FREE_MODEL`.
-- ⏱️ **Per-visitor rate limit.** Translate and chat share one budget (default **5/min**), keyed by client IP.
-- ✂️ **Output & input capped.** Free responses are capped at `FREE_MAX_TOKENS`, input at `MAX_TEXT_LENGTH`, and images at `FREE_MAX_IMAGES`.
-
-Owner and BYOK traffic bypass the free limit entirely — they use their own key with full model choice.
-
-```text
-FREE_TIER_ENABLED=true      # master switch (needs FREE_PROVIDER's key set)
-FREE_PROVIDER=cerebras
-FREE_MODEL=gemma-4-31b
-FREE_RATE_LIMIT=5           # free requests per visitor per minute
-FREE_MAX_TOKENS=2048        # max output tokens per free request
-FREE_MAX_IMAGES=2           # max images per free chat request
-FREE_MAX_INPUT_CHARS=16000  # max total input chars (chat text + system prompt)
-```
-
-> **Behind a reverse proxy, set `TRUST_PROXY`** (e.g. `TRUST_PROXY=1`) so the rate limit is counted per real visitor IP. Without it, everyone shares the proxy's IP and the 5/min budget becomes global.
-
-## Environment variables (optional)
-
-Copy `.env.example` to `.env` and fill in what you need. Keys added in the UI take priority over these.
-
-```text
-HOST=0.0.0.0
-PORT=8080
-MAX_TEXT_LENGTH=8000
-DEFAULT_PROVIDER=cerebras   # groq is also valid (DEFAULT_PROVIDER=groq)
-
+```dotenv
 CEREBRAS_API_KEY=
 OPENROUTER_API_KEY=
 GOOGLE_API_KEY=
-
-GROQ_API_KEY=                                     # owner-only; also powers voice-to-text
-GROQ_BASE_URL=https://api.groq.com/openai/v1     # OpenAI-compatible endpoint
-GROQ_STT_MODEL=whisper-large-v3-turbo            # or whisper-large-v3
-
-OWNER_USERNAME=
-OWNER_PASSWORD=
-SESSION_TTL_HOURS=720
-
-FREE_TIER_ENABLED=true
-FREE_PROVIDER=cerebras
-FREE_MODEL=gemma-4-31b
-FREE_RATE_LIMIT=5
-FREE_MAX_TOKENS=2048
-FREE_MAX_IMAGES=2
-FREE_MAX_INPUT_CHARS=16000
+GROQ_API_KEY=
 ```
 
-## Live Translate (voice)
+### Accounts and Google sign-in
 
-The **Live** tab does real-time speech-to-speech translation using Google's Live API. Speak into the mic and the translation is spoken back and transcribed live.
+Email/password registration works locally without OAuth. Passwords are salted and hashed with scrypt. To enable Google sign-in, create a Google OAuth Web Application and configure:
 
-- Needs a **Google AI Studio** key: your own (from **Your API Key**) or, if you're the logged-in owner, the server's Google key.
-- The microphone only works on a **secure origin**: `localhost` or an `https://` URL. Over plain `http://` on a public IP, browsers block mic access.
-- Audio streams to the server, which proxies to Google, so the key stays server-side when using the owner key.
+```dotenv
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://your-domain.example/api/auth/google/callback
+```
 
-## Groq (fast chat, translation & voice-to-text)
+The redirect URI must exactly match the authorized URI in Google Cloud. Use HTTPS in production.
 
-Groq adds very fast translation/chat models and powers the 🎙️ audio transcription (voice-to-text) feature via Whisper.
+### Spotify playlist connection
 
-**Owner key vs. bring-your-own.** The server's `GROQ_API_KEY` in `.env` is owner-only — it sits behind the same owner login gate as your other configured keys, so anonymous and free-tier visitors can never spend it (neither for chat/translation nor for Whisper transcription). Everyone else brings their own Groq key from ⚙ **Settings → Your API Key** (pick **Groq**, **Save** → **Test** → **Use**). Get a free key at [console.groq.com/keys](https://console.groq.com/keys). Note: owner-only enforcement requires `OWNER_USERNAME` / `OWNER_PASSWORD` to be set; on a deploy with the gate disabled every visitor counts as the owner (single-user/trusted mode).
+```dotenv
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REDIRECT_URI=https://your-domain.example/api/media/spotify/callback
+```
 
-**When audio & Groq turn on.** The Groq models and the 🎙️ audio button appear only when Groq is available to you — you're the logged-in owner with `GROQ_API_KEY` set, or you've added your own Groq key in Settings. Otherwise the audio button stays hidden and Groq isn't offered.
+Spotify supplies account and playlist metadata. The app must follow Spotify attribution, privacy, and platform requirements. Do not use it to obtain content without permission.
 
-**Chat & translation models:**
+### Live radio
 
-| Model | Notes |
+Radio source addresses are deployment settings and are not included in the repository. Put comma-separated HTTPS HLS sources in `.env` or the optional git-ignored `.env.radio`:
+
+```dotenv
+RADIO_KURDISH_URLS=https://licensed.example/kurdish.m3u8
+RADIO_PERSIAN_NOSTALGIA_URLS=https://licensed.example/nostalgia.m3u8
+RADIO_NAVAHANG_URLS=https://primary.example/live.m3u8,https://backup.example/live.m3u8
+RADIO_JAVAN_URLS=https://licensed.example/javan.m3u8
+```
+
+Only configure streams you are authorized to access and relay. A station without a configured source is omitted from the public station list.
+
+See [.env.example](.env.example) for every setting and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production installation.
+
+## Open music catalog
+
+The optional importer only accepts records with explicit license evidence, playable vocal audio, lyrics usable by the learning flow, and stable source identifiers.
+
+```bash
+npm run music:sync-open -- --artist "Artist name"
+```
+
+Review the selected source, recording, composition, lyrics, artwork, and translation rights before importing. Creative Commons attribution and modification notices must remain available to users. Importing metadata is not a substitute for permission.
+
+## Data layout
+
+Runtime storage stays inside this project by default:
+
+```text
+data/
+  accounts/       user accounts and sessions
+  database/       SQLite database and WAL files
+  media/          prepared media
+  tracks/         per-track records
+  lyrics/         source lyrics
+  translations/   generated translations
+  artwork/        cached artwork
+  jobs/           durable background jobs
+  radio/          radio-worker buffers
+```
+
+Back up `data/` and `.env` separately. Neither belongs in source control.
+
+## Commands
+
+| Command | Description |
 | --- | --- |
-| `llama-3.3-70b-versatile` | Meta, strong general-purpose (default), 131k ctx |
-| `llama-3.1-8b-instant` | Meta, fastest, 131k ctx |
-| `meta-llama/llama-4-scout-17b-16e-instruct` | Meta, multimodal (vision), 131k ctx |
-| `qwen/qwen3-32b` | Alibaba, strong multilingual |
-| `openai/gpt-oss-120b` | OpenAI open-weight, 131k ctx |
-| `openai/gpt-oss-20b` | OpenAI open-weight, smaller/faster |
+| `npm start` | Start the complete local application |
+| `npm run start:web` | Start only the public web process |
+| `npm run start:media` | Start only the media worker |
+| `node services/radio-worker/server.js` | Start only the radio worker |
+| `npm run media:install` | Create the Python environment and install yt-dlp/spotDL |
+| `npm run music:sync-open` | Import an explicitly licensed open catalog |
+| `npm test` | Run the Node test suite |
 
-**Voice-to-text (Whisper):** `whisper-large-v3-turbo` (default, fast/cheap) or `whisper-large-v3` (highest accuracy). Tune with the `GROQ_STT_MODEL` / `GROQ_BASE_URL` knobs in the env block above.
+## Production checklist
 
-## Security
+Before exposing a deployment:
 
-- `.env` and `data/` are git-ignored — no API keys are ever committed.
-- BYOK keys stay in the visitor's own browser and are never written to server-side storage.
-- Owner-configured keys stay on the server and require the owner login (when configured) to view or use.
-- Set `OWNER_USERNAME` / `OWNER_PASSWORD` before exposing the app publicly, or anyone could spend the keys you configured.
+1. Use HTTPS and set `TRUST_PROXY` correctly.
+2. Generate unique provider/OAuth credentials and keep them outside Git.
+3. Restrict worker ports to loopback/private networking.
+4. Configure `OWNER_USERNAME` and `OWNER_PASSWORD` if server-funded keys are enabled.
+5. Back up the SQLite database, WAL files, and content directories together.
+6. Confirm licenses for every media source, lyric source, artwork, and radio stream.
+7. Publish a deployment-specific privacy policy and contact method.
+8. Run `npm test`, review `git diff`, and scan Git history for secrets.
+
+The complete checklist is in [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+
+## Responsible and lawful use
+
+Translator is a general-purpose tool. The project is not affiliated with or endorsed by YouTube, Spotify, Google, LRCLIB, any artist, label, broadcaster, or radio station.
+
+Use media tooling only for content you own, content you are authorized to process, or content whose license permits the intended use. Operators are responsible for copyright, platform terms, privacy, attribution, and territorial requirements. The presence of a URL or metadata result does not grant media or lyric rights.
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for software notices.
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Do not report credentials or exploitable vulnerabilities in a public issue; follow [SECURITY.md](SECURITY.md) instead.
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+Copyright belongs to the respective contributors. The project is licensed under the [Apache License 2.0](LICENSE).
 
 ---
 
 <div dir="rtl">
 
-# مترجم (توضیحات فارسی)
+## راه‌اندازی سریع فارسی
 
-ترجمه‌ی طبیعی و وفادار به معنا، به‌همراه چت هوش مصنوعی، برای گفتگوی راحت و مطمئن با تمام دنیا.
+Translator یک برنامه موبایل‌محور برای ترجمه، گفتگوی هوش مصنوعی، پخش آنلاین موسیقی و یادگیری زبان با متن همگام آهنگ است. کتابخانه موسیقی بین کاربران مشترک است، اما پلی‌لیست‌ها، سابقه پخش و حساب هر کاربر جدا باقی می‌ماند.
 
-هدف از ساخت این برنامه ساده است: ترجمه‌ی متن **بدون از دست دادن معنی کلمات**، با زبانی **کاملاً طبیعی** در تک‌تک جمله‌ها، تا **گفتگوی راحت و ایمن با دنیا** برای همه ممکن شود.
+### پیش‌نیازها
 
-**دمو و استفاده:** https://translate.raminexch.store/
-
-> این آدرس ممکن است بعداً تغییر کند؛ مشکلی نیست، برنامه روی هر آدرسی مثل هم کار می‌کند.
-
-## این برنامه چه می‌کند؟
-
-- 🌍 پشتیبانی از **بیش از ۲۵ زبان** با ترجمه‌ی روان و انسانی (نه کلمه‌به‌کلمه).
-- 🧠 **اولویت با معنا** — لحن، ظرافت، اصطلاحات و منظور حفظ می‌شود تا چیزی در ترجمه گم نشود.
-- 💬 **چت هوش مصنوعی** با پشتیبانی از تصویر.
-- 🎙️ **ترجمه‌ی زنده‌ی صدا** — حرف بزنید و ترجمه را همان لحظه بشنوید.
-- 🌐 رابط دوزبانه (فارسی / انگلیسی) با تم روشن و تیره.
-- 📱 قابل نصب مثل یک اپلیکیشن واقعی.
-
-## کلید API خودتان را وارد کنید — چیزی ذخیره نمی‌شود
-
-برنامه را باز کنید، روی دکمه‌ی ⚙ **تنظیمات** بزنید و کلید API خودتان را در بخش **کلید API شما** وارد کنید.
-
-**هیچ چیزی ذخیره نمی‌شود.** کلید شما فقط در **مرورگر خودتان** می‌ماند و مستقیماً همراه درخواست‌های خودتان ارسال می‌شود. این کلید **هرگز** روی سرور ذخیره نمی‌شود، **هرگز** لاگ نمی‌شود و **هرگز** با کسی به اشتراک گذاشته نمی‌شود. اطلاعات مرورگر را پاک کنید و کلید هم پاک می‌شود. این موضوع عمدی است تا با خیال کاملاً راحت از برنامه استفاده کنید.
-
-کلید رایگان را می‌توانید از این سرویس‌ها بگیرید:
-
-- **Cerebras** — از [cloud.cerebras.ai](https://cloud.cerebras.ai) (بسیار سریع)
-- **OpenRouter** — از [openrouter.ai/keys](https://openrouter.ai/keys) (مدل‌های رایگان به‌صورت خودکار انتخاب می‌شوند)
-- **Google AI Studio** — از [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (برای ترجمه‌ی زنده‌ی صدا لازم است)
-- **Groq** — از [console.groq.com/keys](https://console.groq.com/keys) (بسیار سریع؛ همچنین قابلیت تبدیل صدا به متن با Whisper را فراهم می‌کند؛ با کلید خودتان قابل استفاده است)
-
-مراحل: انتخاب سرویس ← وارد کردن کلید ← **ذخیره کلید** ← **تست** ← **استفاده**.
-
-## نصب به‌عنوان اپلیکیشن (Add to Home)
-
-برای استفاده‌ی راحت‌تر، برنامه را مثل یک اپ روی گوشی نصب کنید:
-
-- **آیفون / آیپد (Safari):** روی آیکون **Share** بزنید و سپس **Add to Home Screen** را انتخاب کنید.
-- **اندروید (Chrome):** روی منوی **⋮** بزنید و سپس **Add to Home screen** یا **نصب برنامه** را انتخاب کنید.
-- **دسکتاپ (Chrome / Edge):** روی آیکون **نصب** در نوار آدرس کلیک کنید.
-
-بعد از آن، برنامه تمام‌صفحه و با آیکون مخصوص خودش باز می‌شود و دقیقاً مثل یک اپ واقعی کار می‌کند.
-
-## اجرای شخصی (Self-host)
+- Node.js نسخه 22.13 یا جدیدتر
+- npm
+- برای بخش موسیقی: Python 3، ماژول `venv` و FFmpeg
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Kusarok/translator.git
 cd translator
-npm install
+npm ci
+cp .env.example .env
+npm run media:install
 npm start
 ```
 
-سپس آدرس **http://localhost:8080** را باز کنید و در تنظیمات ⚙ کلید خود را اضافه کنید. نیازی به فایل تنظیمات نیست.
+سپس آدرس `http://localhost:8080` را باز کنید. کلیدهای خصوصی، اطلاعات OAuth، دیتابیس، آهنگ‌ها و Lyrics نباید در Git قرار بگیرند و به‌صورت پیش‌فرض در `.env` و `data/` نگهداری می‌شوند.
 
-## برای مدیر سرور: محافظت از کلیدهای خودتان
-
-اگر برنامه را عمومی منتشر می‌کنید، می‌توانید بگذارید بازدیدکننده‌ها با کلید **خودشان** کار کنند و کلیدهای **شما** پشت یک لاگین محافظت بماند. در فایل `.env` این‌ها را تنظیم کنید:
-
-```text
-OWNER_USERNAME=you
-OWNER_PASSWORD=a-strong-password
-SESSION_TTL_HOURS=720
-```
-
-با تنظیم هر دو، بخش **API Providers** همیشه قفل (🔒) نشان داده می‌شود تا زمانی که همان نام‌کاربری و رمز درست وارد شود. اگر خالی بمانند، برنامه بدون لاگین کار می‌کند (مناسب استفاده‌ی شخصی/محلی).
-
-## استفاده‌ی رایگان برای هر بازدیدکننده، بدون لو رفتن کلید
-
-می‌توانید به هر بازدیدکننده اجازه دهید بدون کلید و بدون لاگین، با **یک مدل رایگان روی سرور** کار کند و بقیه‌ی امکانات پشت لاگین مالک بماند. به‌صورت پیش‌فرض این یعنی **مدل Gemma 4 روی Cerebras، ۵ درخواست در دقیقه برای هر بازدیدکننده**.
-
-هر درخواست رایگان طوری محدود می‌شود که نتوان از کلید مشترک سوءاستفاده کرد یا آن را تخلیه کرد:
-
-- 🔒 **کلید هرگز به مرورگر فرستاده نمی‌شود.** درخواست‌های رایگان سمت سرور پروکسی می‌شوند.
-- 🎯 **مدل قفل است.** کاربر نمی‌تواند مدل گران‌تری انتخاب کند؛ سرور همیشه `FREE_MODEL` را استفاده می‌کند.
-- ⏱️ **محدودیت به‌ازای هر بازدیدکننده.** ترجمه و چت روی یک سقف مشترک (پیش‌فرض ۵ در دقیقه) بر اساس IP.
-- ✂️ **سقف خروجی و ورودی.** پاسخ رایگان تا `FREE_MAX_TOKENS`، ورودی تا `MAX_TEXT_LENGTH` و تصویر تا `FREE_MAX_IMAGES`.
-
-کاربرانی که کلید خودشان را وارد می‌کنند یا مالک لاگین‌کرده، اصلاً مشمول این محدودیت رایگان نیستند.
-
-```text
-FREE_TIER_ENABLED=true
-FREE_PROVIDER=cerebras
-FREE_MODEL=gemma-4-31b
-FREE_RATE_LIMIT=5
-FREE_MAX_TOKENS=2048
-FREE_MAX_IMAGES=2
-FREE_MAX_INPUT_CHARS=16000
-```
-
-> **پشت پروکسی حتماً `TRUST_PROXY` را تنظیم کنید** (مثلاً `TRUST_PROXY=1`) تا محدودیت بر اساس IP واقعی هر کاربر شمرده شود، نه IP پروکسی.
-
-## امنیت
-
-- فایل‌های `.env` و `data/` در گیت نادیده گرفته می‌شوند — هیچ کلیدی هرگز کامیت نمی‌شود.
-- کلید BYOK فقط در مرورگر بازدیدکننده می‌ماند و روی سرور ذخیره نمی‌شود.
-- کلید `GROQ_API_KEY` روی سرور فقط برای مالکِ لاگین‌کرده است؛ بازدیدکننده‌های رایگان هرگز از آن استفاده نمی‌کنند و باید کلید Groq خودشان را در تنظیمات وارد کنند. دکمه‌ی صدا فقط وقتی ظاهر می‌شود که Groq در دسترس شما باشد.
-- قبل از انتشار عمومی، حتماً `OWNER_USERNAME` و `OWNER_PASSWORD` را تنظیم کنید.
-
-## مجوز
-
-تحت مجوز [Apache License 2.0](LICENSE) منتشر شده است.
+برای استقرار واقعی، فایل [راهنمای استقرار](docs/DEPLOYMENT.md)، [سیاست امنیت](SECURITY.md)، [حریم خصوصی](PRIVACY.md) و [چک‌لیست انتشار](docs/RELEASE_CHECKLIST.md) را بخوانید.
 
 </div>
