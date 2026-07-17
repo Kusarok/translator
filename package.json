@@ -18,7 +18,7 @@
     "express-rate-limit": "^8.2.1",
     "google-auth-library": "^10.9.0",
     "helmet": "^8.1.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.1"
   },
   "engines": {
     "node": ">=22.13"
