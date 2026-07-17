@@ -1,13 +1,16 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { asyncHandler } from "../utils/async-handler.js";
-import { addPlaylistTrack, artist, createArtist, createJob, createPlaylist, createSearch, createSearchJob, deleteMedia, deletePlaylist, discoverArtists, getJob, getLyrics, getSearch, health, library, lyricsTranslationStatus, openTrack, playlist, prepareArtistTrack, prepareSearchResult, removePlaylistTrack, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, trackProgress, translateSyncedLyrics, updatePlaylist } from "../controllers/media.controller.js";
+import { requireOwner } from "../services/auth.service.js";
+import { addPlaylistTrack, artist, createArtist, createJob, createPlaylist, createSearch, createSearchJob, deleteMedia, deletePlaylist, discoverArtists, getJob, getLyrics, getSearch, health, library, lyricsTranslationStatus, openTrack, playlist, prepareArtistTrack, prepareSearchResult, removePlaylistTrack, spotifyCallback, spotifyConnect, spotifyImportPlaylist, streamArtwork, streamMedia, streamPublicArtwork, streamPublicMedia, trackProgress, translateSyncedLyrics, updatePlaylist } from "../controllers/media.controller.js";
 
 export const mediaRouter = Router();
 const searchLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
 
 mediaRouter.get("/health", asyncHandler(health));
 mediaRouter.get("/library", asyncHandler(library));
+mediaRouter.get("/public/:id/stream", asyncHandler(streamPublicMedia));
+mediaRouter.get("/public/artwork/:id", asyncHandler(streamPublicArtwork));
 mediaRouter.post("/library/artists/discover", searchLimiter, asyncHandler(discoverArtists));
 mediaRouter.post("/library/artists", asyncHandler(createArtist));
 mediaRouter.get("/library/artists/:id", asyncHandler(artist));
@@ -35,4 +38,4 @@ mediaRouter.get("/jobs/:id", asyncHandler(getJob));
 mediaRouter.get("/artwork/:id", asyncHandler(streamArtwork));
 mediaRouter.get("/:id/stream", asyncHandler(streamMedia("stream")));
 mediaRouter.get("/:id/download", asyncHandler(streamMedia("download")));
-mediaRouter.delete("/:id", asyncHandler(deleteMedia));
+mediaRouter.delete("/:id", requireOwner, asyncHandler(deleteMedia));

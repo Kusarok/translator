@@ -3,7 +3,7 @@ Description=Translator Web Server
 After=network-online.target media-worker.service radio-worker.service
 Wants=network-online.target
 Requires=media-worker.service radio-worker.service
-PartOf=translator.target
+PartOf=translator.target translator.service
 
 [Service]
 Type=simple
@@ -15,6 +15,14 @@ Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateDevices=true
+UMask=0077
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
 
 [Install]
 WantedBy=translator.target

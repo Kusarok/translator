@@ -42,6 +42,7 @@
     </svg>
     <div class="login-gate" id="loginGate" hidden>
       <div class="login-card">
+        <button class="login-close" id="loginClose" type="button" aria-label="Continue without signing in">×</button>
         <div class="login-logo" aria-hidden="true">♪</div>
         <h1 class="login-title">Your music, your progress</h1>
         <p class="login-subtitle">Listen online and learn languages with lyrics.</p>
@@ -61,6 +62,7 @@
           <button class="login-btn" id="loginBtn" type="submit">Sign in</button>
           <p class="login-error" id="loginError" hidden></p>
         </form>
+        <button class="login-guest" id="loginGuest" type="button">Continue with open music</button>
       </div>
     </div>
     <main class="app-shell" id="appShell" hidden>
@@ -480,6 +482,13 @@
                   <div class="radio-station-sheet-handle" aria-hidden="true"></div>
                   <header><div><span>LIVE RADIO</span><h2 id="radioStationSheetTitle">Choose a station</h2></div><button id="radioStationSheetClose" type="button" aria-label="Close station list">×</button></header>
                   <div class="radio-station-switcher" id="radioStationSwitcher"></div>
+                  <button class="radio-add-station" id="radioAddStation" type="button">+ Add your own station</button>
+                  <form class="radio-station-form" id="radioStationForm" hidden>
+                    <label>Station name<input id="radioStationName" maxlength="80" autocomplete="off" placeholder="My radio" required></label>
+                    <label>Secure stream URL<input id="radioStationUrl" type="url" inputmode="url" maxlength="2048" autocomplete="url" placeholder="https://…" required></label>
+                    <p id="radioStationFormError" role="alert" hidden></p>
+                    <div><button id="radioStationCancel" type="button">Cancel</button><button id="radioStationSave" type="submit">Save station</button></div>
+                  </form>
                 </section>
               </div>
               <audio id="radioAudio" preload="none"></audio>

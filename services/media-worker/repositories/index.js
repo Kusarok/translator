@@ -28,6 +28,11 @@ export const createRepositories = (db) => ({
   },
   licenses: {
     findForTrack: (trackId) => db.prepare("SELECT * FROM track_licenses WHERE track_id=?").get(trackId) || null,
+    isPublicTrack: (trackId) => Boolean(db.prepare(`SELECT 1 FROM track_licenses
+      WHERE track_id=? AND covers_recording=1 AND covers_composition=1 AND covers_lyrics=1
+      AND verified_at IS NOT NULL AND TRIM(evidence_url)!=''
+      AND UPPER(REPLACE(REPLACE(TRIM(license_code),' ','-'),'_','-')) IN
+        ('CC0','CC0-1.0','PUBLIC-DOMAIN','PDM-1.0','CC-BY-4.0','CC-BY-SA-4.0')`).get(trackId)),
     upsert(input) {
       const current = this.findForTrack(input.trackId);
       const stamp = now(), id = current?.id || input.id || createId("license");
@@ -135,6 +140,11 @@ export const createRepositories = (db) => ({
     findById: (id) => db.prepare("SELECT * FROM media_assets WHERE id = ?").get(id) || null,
     findByProviderId: (provider, providerMediaId) => db.prepare("SELECT * FROM media_assets WHERE provider=? AND provider_media_id=?").get(provider, providerMediaId) || null,
     findReadyForTrack: (trackId) => db.prepare("SELECT * FROM media_assets WHERE track_id=? AND status='ready' ORDER BY updated_at DESC LIMIT 1").get(trackId) || null,
+    findPublicById: (id) => db.prepare(`SELECT m.* FROM media_assets m JOIN track_licenses tl ON tl.track_id=m.track_id
+      WHERE m.id=? AND m.status='ready' AND tl.covers_recording=1 AND tl.covers_composition=1 AND tl.covers_lyrics=1
+      AND tl.verified_at IS NOT NULL AND TRIM(tl.evidence_url)!=''
+      AND UPPER(REPLACE(REPLACE(TRIM(tl.license_code),' ','-'),'_','-')) IN
+        ('CC0','CC0-1.0','PUBLIC-DOMAIN','PDM-1.0','CC-BY-4.0','CC-BY-SA-4.0')`).get(id) || null,
     upsert(input) {
       const existing = input.providerMediaId ? this.findByProviderId(input.provider, input.providerMediaId) : null;
       const stamp = now(), id = existing?.id || input.id || createId("media");
@@ -244,6 +254,20 @@ export const createRepositories = (db) => ({
         LEFT JOIN track_licenses tl ON tl.track_id=t.id
         WHERE EXISTS(SELECT 1 FROM lyrics l WHERE l.track_id=t.id)
         ORDER BY m.updated_at DESC,t.updated_at DESC LIMIT ?`).all(userId, limit);
+    },
+    publicCatalog(limit = 500) {
+      return db.prepare(`SELECT t.*,a.id AS artwork_id,m.id AS media_id,tl.license_code,tl.license_url,
+        tl.rights_holder,tl.attribution_text,tl.evidence_url
+        FROM tracks t
+        JOIN media_assets m ON m.id=(SELECT id FROM media_assets WHERE track_id=t.id AND status='ready' ORDER BY updated_at DESC LIMIT 1)
+        JOIN track_licenses tl ON tl.track_id=t.id
+        LEFT JOIN artwork_assets a ON a.track_id=t.id
+        WHERE EXISTS(SELECT 1 FROM lyrics l WHERE l.track_id=t.id)
+          AND tl.covers_recording=1 AND tl.covers_composition=1 AND tl.covers_lyrics=1
+          AND tl.verified_at IS NOT NULL AND TRIM(tl.evidence_url)!=''
+          AND UPPER(REPLACE(REPLACE(TRIM(tl.license_code),' ','-'),'_','-')) IN
+            ('CC0','CC0-1.0','PUBLIC-DOMAIN','PDM-1.0','CC-BY-4.0','CC-BY-SA-4.0')
+        ORDER BY m.updated_at DESC,t.updated_at DESC LIMIT ?`).all(limit);
     },
     continueLearning(userId = "usr_legacy", limit = 8) {
       if (typeof userId === "number") { limit = userId; userId = "usr_legacy"; }

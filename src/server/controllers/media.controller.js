@@ -1,4 +1,4 @@
-import { addLibraryPlaylistTrack, artworkStream, createLibraryArtist, createLibraryPlaylist, createLyricsSearchJob, createMediaJob, createSearchMediaJob, deleteLibraryPlaylist, discoverLibraryArtists, getLibrary, getLibraryArtist, getLibraryPlaylist, getLyricsSearchJob, getLyricsTranslationStatus as getCachedTranslationStatus, getMediaJob, mediaHealth, mediaStream, openCachedTrack, prepareLibraryArtistTrack, prepareLyricsSearchResult, removeLibraryPlaylistTrack, removeMedia, saveTrackProgress, updateLibraryPlaylist } from "../services/media-worker.service.js";
+import { addLibraryPlaylistTrack, artworkStream, createLibraryArtist, createLibraryPlaylist, createLyricsSearchJob, createMediaJob, createSearchMediaJob, deleteLibraryPlaylist, discoverLibraryArtists, getLibrary, getLibraryArtist, getLibraryPlaylist, getLyricsSearchJob, getLyricsTranslationStatus as getCachedTranslationStatus, getMediaJob, getPublicLibrary, getPublicTrack, mediaHealth, mediaStream, openCachedTrack, prepareLibraryArtistTrack, prepareLyricsSearchResult, publicArtworkStream, publicMediaStream, removeLibraryPlaylistTrack, removeMedia, saveTrackProgress, updateLibraryPlaylist } from "../services/media-worker.service.js";
 import { findSpotifyLyrics, translateLyrics } from "../services/lyrics.service.js";
 import { isOwnerAuthenticated, readSession } from "../services/auth.service.js";
 import { env } from "../config/env.js";
@@ -50,6 +50,22 @@ export const streamArtwork = async (req, res) => {
   upstream.pipe(res);
 };
 
+export const streamPublicMedia = async (req, res) => {
+  const upstream = await publicMediaStream(req.params.id, req.headers.range);
+  res.status(upstream.statusCode || 200);
+  for (const header of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
+    if (upstream.headers[header]) res.set(header, upstream.headers[header]);
+  }
+  upstream.on("error", () => res.destroy()); upstream.pipe(res);
+};
+
+export const streamPublicArtwork = async (req, res) => {
+  const upstream = await publicArtworkStream(req.params.id);
+  res.status(upstream.statusCode || 200);
+  for (const header of ["content-type", "content-length", "cache-control"]) if (upstream.headers[header]) res.set(header, upstream.headers[header]);
+  upstream.on("error", () => res.destroy()); upstream.pipe(res);
+};
+
 export const getLyrics = async (req, res) => {
   const lesson = await findSpotifyLyrics(req.body?.url);
   if (lesson?.trackId) await saveTrackProgress(readSession(req).id, lesson.trackId, { status: "new" });
@@ -81,8 +97,9 @@ export const lyricsTranslationStatus = async (req, res) => {
 const relay = (result, res) => res.status(result.status).json(result.data);
 const userId = (req) => readSession(req).id;
 export const library = async (req, res) => {
-  const result = await getLibrary(userId(req));
-  result.data.spotify.configured = Boolean(env.spotifyClientId && env.spotifyClientSecret && env.spotifyRedirectUri);
+  const session = readSession(req);
+  const result = session ? await getLibrary(session.id) : await getPublicLibrary();
+  if (session) result.data.spotify.configured = Boolean(env.spotifyClientId && env.spotifyClientSecret && env.spotifyRedirectUri);
   relay(result, res);
 };
 export const createPlaylist = async (req, res) => relay(await createLibraryPlaylist(userId(req), req.body), res);
@@ -91,7 +108,10 @@ export const updatePlaylist = async (req, res) => relay(await updateLibraryPlayl
 export const deletePlaylist = async (req, res) => relay(await deleteLibraryPlaylist(userId(req), req.params.id), res);
 export const addPlaylistTrack = async (req, res) => relay(await addLibraryPlaylistTrack(userId(req), req.params.id, req.body), res);
 export const removePlaylistTrack = async (req, res) => relay(await removeLibraryPlaylistTrack(userId(req), req.params.id, req.params.trackId), res);
-export const openTrack = async (req, res) => relay(await openCachedTrack(userId(req), req.params.id), res);
+export const openTrack = async (req, res) => {
+  const session = readSession(req);
+  relay(session ? await openCachedTrack(session.id, req.params.id) : await getPublicTrack(req.params.id), res);
+};
 export const trackProgress = async (req, res) => relay(await saveTrackProgress(userId(req), req.params.id, req.body), res);
 export const discoverArtists = async (req, res) => relay(await discoverLibraryArtists(req.body?.name), res);
 export const createArtist = async (req, res) => relay(await createLibraryArtist(userId(req), req.body), res);

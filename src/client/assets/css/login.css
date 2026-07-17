@@ -10,6 +10,7 @@
 .login-gate[hidden] { display: none; }
 
 .login-card {
+  position: relative;
   width: min(100%, 390px);
   border: 1px solid var(--line, #2a2d31);
   border-radius: 24px;
@@ -18,6 +19,8 @@
   padding: 34px 26px 28px;
   text-align: center;
 }
+.login-close { position: absolute; inset-block-start: 14px; inset-inline-end: 14px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text); font-size: 24px; }
+.login-guest { margin-top: 16px; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
 .login-logo { width: 62px; height: 62px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 20px; background: var(--grad-accent, #32d6c5); color: #06211e; font-size: 34px; font-weight: 900; box-shadow: var(--accent-glow); }
 .login-title { margin: 0; color: var(--text, #f0f2f5); font-size: 27px; font-weight: 900; letter-spacing: -.04em; }
 .login-subtitle { margin: 8px auto 24px; max-width: 290px; color: var(--muted, #8b9098); font-size: 14px; line-height: 1.55; }

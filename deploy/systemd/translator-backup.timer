@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Translator metadata backup
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+RandomizedDelaySec=20m
+Persistent=true
+Unit=translator-backup.service
+
+[Install]
+WantedBy=timers.target

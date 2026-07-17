@@ -78,3 +78,27 @@ test("a repeated Google callback returns an authenticated browser to the app", a
   assert.equal(callback.status, 302);
   assert.equal(callback.headers.get("location"), "/?auth=google_success");
 });
+
+test("personal radio stations require a session and stay editable for their owner", async () => {
+  assert.equal((await fetch(`${base}/api/radio/my-stations`)).status, 401);
+  const registration = await fetch(`${base}/api/auth/register`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "radio-owner@example.com", password: "correct-horse", displayName: "Radio Owner" })
+  });
+  const cookie = registration.headers.get("set-cookie").split(";", 1)[0];
+  const createdResponse = await fetch(`${base}/api/radio/my-stations`, {
+    method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "My station", streamUrl: "https://radio.example.com/live.mp3" })
+  });
+  assert.equal(createdResponse.status, 201);
+  const created = await createdResponse.json();
+  assert.match(created.id, /^urs_/);
+  const updatedResponse = await fetch(`${base}/api/radio/my-stations/${created.id}`, {
+    method: "PATCH", headers: { Cookie: cookie, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Night mix", streamUrl: "https://radio.example.com/live.mp3" })
+  });
+  assert.equal((await updatedResponse.json()).name, "Night mix");
+  const listed = await fetch(`${base}/api/radio/my-stations`, { headers: { Cookie: cookie } });
+  assert.equal((await listed.json()).stations.length, 1);
+  assert.equal((await fetch(`${base}/api/radio/my-stations/${created.id}`, { method: "DELETE", headers: { Cookie: cookie } })).status, 200);
+});

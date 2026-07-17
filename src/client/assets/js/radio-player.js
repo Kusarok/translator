@@ -1,4 +1,5 @@
-import { getRadioStations } from "./api.js";
+import { createPersonalRadioStation, deletePersonalRadioStation, getPersonalRadioStations, getRadioStations, updatePersonalRadioStation } from "./api.js";
+import Hls from "/assets/vendor/hls.mjs";
 
 const byId = (id) => document.getElementById(id);
 const ui = {
@@ -12,6 +13,9 @@ const ui = {
   mini: byId("radioMiniPlayer"), miniOpen: byId("radioMiniOpen"), miniArtwork: byId("radioMiniArtwork"),
   miniName: byId("radioMiniName"), miniLanguage: byId("radioMiniLanguage"), miniPlay: byId("radioMiniPlay"),
   miniClose: byId("radioMiniClose")
+  ,addStation: byId("radioAddStation"), stationForm: byId("radioStationForm"), stationName: byId("radioStationName"),
+  stationUrl: byId("radioStationUrl"), stationFormError: byId("radioStationFormError"),
+  stationCancel: byId("radioStationCancel"), stationSave: byId("radioStationSave")
 };
 
 const FAVORITES_KEY = "translator_radio_favorites";
@@ -26,6 +30,8 @@ let reconnectTimer = 0;
 let sleepTimer = 0;
 let sleepIndex = 0;
 let catalogRetry = 0;
+let editingStation = null;
+let hls = null;
 
 const favorites = () => {
   try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { return new Set(); }
@@ -67,6 +73,7 @@ const updateMediaSession = () => {
 const destroyStream = () => {
   clearTimeout(reconnectTimer);
   reconnectTimer = 0;
+  hls?.destroy(); hls = null;
   ui.audio.pause();
   ui.audio.removeAttribute("src");
   ui.audio.load();
@@ -99,7 +106,15 @@ const attachStream = () => {
   if (!active) return;
   destroyStream();
   setStatus(active.live ? "Connecting to live stream…" : "Station is connecting…", "connecting");
-  const source = `${active.streamUrl}?v=${Date.now()}`;
+  const sourceUrl = new URL(active.streamUrl, location.origin);
+  if (!active.personal) sourceUrl.searchParams.set("v", Date.now());
+  const source = sourceUrl.href;
+  if (active.personal && sourceUrl.pathname.toLowerCase().endsWith(".m3u8") && Hls.isSupported()) {
+    hls = new Hls({ enableWorker: false, lowLatencyMode: false, maxBufferLength: 30, backBufferLength: 0 });
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => { if (wantsPlayback) ui.audio.play().catch(handlePlayFailure); });
+    hls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) scheduleReconnect(2_000); });
+    hls.loadSource(source); hls.attachMedia(ui.audio); return;
+  }
   ui.audio.src = source;
   ui.audio.load();
   if (wantsPlayback) ui.audio.play().catch(handlePlayFailure);
@@ -195,6 +210,7 @@ function renderCards() {
 
 function renderSwitcher() {
   ui.switcher.replaceChildren(...stations.map((station) => {
+    const row = document.createElement("div"); row.className = "radio-station-switcher-row";
     const button = document.createElement("button");
     button.type = "button";
     button.className = active?.id === station.id ? "active" : "";
@@ -208,9 +224,56 @@ function renderSwitcher() {
       selectStation(station, { open: false });
       closeStationPicker();
     });
-    return button;
+    row.append(button);
+    if (station.personal) {
+      const actions = document.createElement("span"); actions.className = "radio-personal-actions";
+      const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Edit"; edit.setAttribute("aria-label", `Edit ${station.name}`);
+      edit.addEventListener("click", () => showStationForm(station));
+      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Delete"; remove.setAttribute("aria-label", `Delete ${station.name}`);
+      remove.addEventListener("click", async () => {
+        if (!confirm(`Delete ${station.name}?`)) return;
+        await deletePersonalRadioStation(station.id);
+        if (active?.id === station.id) stop();
+        stations = stations.filter((item) => item.id !== station.id); renderCards(); renderSwitcher();
+      });
+      actions.append(edit, remove); row.append(actions);
+    }
+    return row;
   }));
 }
+
+const showStationForm = (station = null) => {
+  if (document.body.dataset.authenticated !== "true") {
+    window.dispatchEvent(new CustomEvent("auth:required")); return;
+  }
+  editingStation = station;
+  ui.stationName.value = station?.name || "";
+  ui.stationUrl.value = station?.streamUrl || "";
+  ui.stationFormError.hidden = true;
+  ui.stationForm.hidden = false; ui.addStation.hidden = true;
+  ui.stationName.focus({ preventScroll: true });
+};
+
+const hideStationForm = () => {
+  editingStation = null; ui.stationForm.reset(); ui.stationForm.hidden = true; ui.addStation.hidden = false;
+};
+
+const saveStation = async (event) => {
+  event.preventDefault(); ui.stationSave.disabled = true; ui.stationFormError.hidden = true;
+  try {
+    const payload = { name: ui.stationName.value, streamUrl: ui.stationUrl.value };
+    const saved = editingStation
+      ? await updatePersonalRadioStation(editingStation.id, payload)
+      : await createPersonalRadioStation(payload);
+    saved.personal = true; saved.language = "Personal"; saved.artwork = "/icon-192.png";
+    saved.accent = "#58f1d5"; saved.accentAlt = "#23aeda"; saved.live = true;
+    const index = stations.findIndex((item) => item.id === saved.id);
+    if (index >= 0) stations[index] = saved; else stations.push(saved);
+    hideStationForm(); renderCards(); renderSwitcher();
+  } catch (error) {
+    ui.stationFormError.textContent = error.message || "Station could not be saved."; ui.stationFormError.hidden = false;
+  } finally { ui.stationSave.disabled = false; }
+};
 
 const openStationPicker = () => {
   if (!ui.stationSheet?.hidden) return;
@@ -285,6 +348,9 @@ export const initRadio = async () => {
   ui.stationTrigger?.addEventListener("click", openStationPicker);
   ui.stationSheetClose?.addEventListener("click", () => closeStationPicker());
   ui.stationSheetBackdrop?.addEventListener("click", () => closeStationPicker());
+  ui.addStation?.addEventListener("click", () => showStationForm());
+  ui.stationCancel?.addEventListener("click", hideStationForm);
+  ui.stationForm?.addEventListener("submit", saveStation);
   ui.stationSheet?.addEventListener("keydown", (event) => {
     if (event.key === "Escape") { event.preventDefault(); closeStationPicker(); }
   });
@@ -304,6 +370,11 @@ export const initRadio = async () => {
     try {
       const result = await getRadioStations();
       stations = Array.isArray(result.stations) ? result.stations : [];
+      try {
+        const personal = await getPersonalRadioStations();
+        stations.push(...(personal.stations || []).map((station) => ({ ...station, personal: true, language: "Personal",
+          artwork: "/icon-192.png", accent: "#58f1d5", accentAlt: "#23aeda", live: true })));
+      } catch { /* Guests still receive the public radio catalog. */ }
       renderCards();
       const remembered = stations.find((station) => station.id === localStorage.getItem(LAST_STATION_KEY));
       if (remembered) { active = remembered; paintActive(); ui.mini.hidden = true; document.body.classList.remove("radio-mini-active"); }

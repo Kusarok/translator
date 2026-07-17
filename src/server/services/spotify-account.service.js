@@ -2,11 +2,13 @@ import crypto from "node:crypto";
 import { env } from "../config/env.js";
 import { HttpError } from "../utils/http-error.js";
 import { getSpotifyAccount, importSpotifyPlaylistCache, saveSpotifyAccount } from "./media-worker.service.js";
+import { appKey } from "./app-secret.js";
 
 const authorizeUrl = "https://accounts.spotify.com/authorize";
 const tokenUrl = "https://accounts.spotify.com/api/token";
 const scopes = "playlist-read-private";
-const key = () => crypto.createHash("sha256").update(`${env.ownerPassword}:${env.spotifyClientSecret}`).digest();
+const legacyKey = () => crypto.createHash("sha256").update(`${env.ownerPassword}:${env.spotifyClientSecret}`).digest();
+const key = () => appKey("spotify-tokens");
 
 const seal = (value) => {
   const iv = crypto.randomBytes(12);
@@ -16,23 +18,30 @@ const seal = (value) => {
 };
 
 const open = (value) => {
-  const [iv, tag, encrypted] = String(value || "").split(".").map((part) => Buffer.from(part, "base64url"));
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key(), iv);
-  decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  const parts = String(value || "").split(".").map((part) => Buffer.from(part, "base64url"));
+  for (const candidate of [key(), legacyKey()]) {
+    try {
+      const decipher = crypto.createDecipheriv("aes-256-gcm", candidate, parts[0]);
+      decipher.setAuthTag(parts[1]);
+      return Buffer.concat([decipher.update(parts[2]), decipher.final()]).toString("utf8");
+    } catch { /* Existing tokens may still use the legacy deployment key. */ }
+  }
+  throw new HttpError(401, "Reconnect Spotify to refresh your secure session.");
 };
 
 const signedState = (userId) => {
   const payload = Buffer.from(JSON.stringify({ exp: Date.now() + 10 * 60 * 1000, nonce: crypto.randomUUID(), userId })).toString("base64url");
-  const signature = crypto.createHmac("sha256", env.ownerPassword).update(payload).digest("base64url");
+  const signature = crypto.createHmac("sha256", appKey("spotify-state")).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 };
 
 const verifyState = (state) => {
   const [payload, signature] = String(state || "").split(".");
   if (!payload || !signature) return false;
-  const expected = crypto.createHmac("sha256", env.ownerPassword).update(payload).digest("base64url");
-  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false;
+  const expected = crypto.createHmac("sha256", appKey("spotify-state")).update(payload).digest("base64url");
+  const legacy = crypto.createHmac("sha256", env.ownerPassword).update(payload).digest("base64url");
+  const matches = (candidate) => signature.length === candidate.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(candidate));
+  if (!matches(expected) && !matches(legacy)) return false;
   try {
     const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
     return decoded.exp > Date.now() ? decoded : null;

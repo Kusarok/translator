@@ -31,6 +31,7 @@ const sendIndex = (res) => {
 };
 
 const jsDir = path.join(clientPath, "assets", "js");
+const hlsModulePath = path.join(__dirname, "../../node_modules/hls.js/dist/hls.mjs");
 
 const versionImports = (code) =>
   code.replace(/((?:from|import)\s*\(?\s*)(["'])(\.\.?\/[^"']+?\.js)\2/g,
@@ -64,7 +65,7 @@ export const createApp = () => {
       directives: {
         defaultSrc: ["'self'"],
         baseUri: ["'self'"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https:"],
         fontSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'self'"],
@@ -77,6 +78,7 @@ export const createApp = () => {
           "https://www.facebook.com"
         ],
         imgSrc: ["'self'", "data:", "https:"],
+        mediaSrc: ["'self'", "https:"],
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],
         scriptSrcAttr: ["'none'"],
@@ -93,15 +95,21 @@ export const createApp = () => {
 
   app.use(express.json({ limit: "15mb" }));
   app.get("/", (_req, res) => sendIndex(res));
+  app.get("/assets/vendor/hls.mjs", (_req, res) => res.sendFile(hlsModulePath, { headers: { "Cache-Control": "public, max-age=86400" } }));
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 
   // Every personal API is behind a real user session. Health and auth stay public
   // so the sign-in screen can render and create an account.
-  const PUBLIC_API = /^\/(health|auth)/;
+  const isPublicApi = (req) => {
+    if (/^\/(health|auth)(?:\/|$)/.test(req.path)) return true;
+    if (req.method === "GET" && (req.path === "/radio/stations" || /^\/radio\/stations\/[^/]+\/[^/]+$/.test(req.path))) return true;
+    if (req.method === "GET" && (req.path === "/media/library" || /^\/media\/public\/(?:artwork\/)?[^/]+(?:\/stream)?$/.test(req.path))) return true;
+    return req.method === "POST" && /^\/media\/library\/tracks\/trk_[A-Za-z0-9-]+\/open$/.test(req.path);
+  };
   app.use("/api", (req, res, next) => {
     if (readSession(req)) return next();
-    if (PUBLIC_API.test(req.path)) return next();
+    if (isPublicApi(req)) return next();
     return res.status(401).json({ error: "Authentication required." });
   });
 

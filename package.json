@@ -10,6 +10,7 @@
     "start:media": "node services/media-worker/server.js",
     "media:install": "node scripts/install-media-tools.js",
     "music:sync-open": "node scripts/sync-open-music.js",
+    "backup": "node scripts/backup-data.js",
     "test": "node --test"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "express-rate-limit": "^8.6.0",
     "google-auth-library": "^10.9.0",
     "helmet": "^8.3.0",
+    "hls.js": "1.6.16",
     "ws": "^8.21.1"
   },
   "engines": {

@@ -100,6 +100,19 @@ body.radio-is-playing .radio-station-card.is-active .radio-card-bars { display: 
 .radio-station-switcher strong { font-size: 12px; }.radio-station-switcher small { margin-top: 4px; color: rgba(255,255,255,.48); font-size: 9px; }
 .radio-station-switcher button > i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.2); }
 .radio-station-switcher button.active > i { background: var(--radio-accent); box-shadow: 0 0 12px var(--radio-accent); }
+.radio-station-switcher-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 6px; }
+.radio-station-switcher-row > button { width: 100%; }
+.radio-personal-actions { display: grid; gap: 3px; }
+.radio-station-switcher .radio-personal-actions button { min-height: 28px; min-width: 52px; padding: 5px 8px; display: block; border-radius: 9px; color: rgba(255,255,255,.72); text-align: center; font-size: 9px; }
+.radio-add-station { width: 100%; min-height: 46px; margin-top: 9px; border: 1px dashed color-mix(in srgb,var(--radio-accent) 48%,transparent); border-radius: 15px; background: color-mix(in srgb,var(--radio-accent) 9%,transparent); color: #fff; font-weight: 800; }
+.radio-station-form { margin-top: 9px; padding: 12px; display: grid; gap: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 17px; background: rgba(0,0,0,.2); }
+.radio-station-form[hidden] { display: none; }
+.radio-station-form label { display: grid; gap: 5px; color: rgba(255,255,255,.62); font-size: 10px; font-weight: 750; }
+.radio-station-form input { min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(0,0,0,.26); color: #fff; font: inherit; }
+.radio-station-form > div { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.radio-station-form > div button { min-height: 40px; border: 0; border-radius: 12px; background: rgba(255,255,255,.08); color: #fff; font-weight: 800; }
+.radio-station-form > div button:last-child { background: var(--radio-accent); color: #06211e; }
+.radio-station-form p { margin: 0; color: #ff9ca8; font-size: 10px; }
 #radioAudio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 body.radio-player-open .learn-bottom-nav,body.radio-player-open .radio-mini-player { display: none; }
 

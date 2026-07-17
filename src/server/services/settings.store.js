@@ -3,6 +3,7 @@ import path from "node:path";
 import { env } from "../config/env.js";
 import { providerCatalog, providerMap, publicModels } from "../config/providers.js";
 import { HttpError } from "../utils/http-error.js";
+import { openSecret, sealSecret } from "./app-secret.js";
 
 const settingsFile = path.join(env.dataDir, "settings.json");
 
@@ -19,7 +20,8 @@ let store = load();
 const persist = () => {
   try {
     fs.mkdirSync(env.dataDir, { recursive: true });
-    fs.writeFileSync(settingsFile, JSON.stringify(store, null, 2));
+    fs.writeFileSync(settingsFile, JSON.stringify(store, null, 2), { mode: 0o600 });
+    fs.chmodSync(settingsFile, 0o600);
   } catch {}
 };
 
@@ -38,7 +40,7 @@ const requireProvider = (id) => {
 const resolveKey = (id) => {
   const provider = providerMap[id];
   if (!provider) return "";
-  const saved = String(storedProvider(id).apiKey || "").trim();
+  const saved = String(openSecret(storedProvider(id).apiKey || "", `provider:${id}`) || "").trim();
   return saved || envKey(provider);
 };
 
@@ -106,12 +108,21 @@ export const setProviderKey = (id, apiKey) => {
   store.providers[id] = store.providers[id] || {};
   const clean = String(apiKey || "").trim();
   if (clean) {
-    store.providers[id].apiKey = clean;
+    store.providers[id].apiKey = sealSecret(clean, `provider:${id}`);
   } else {
     delete store.providers[id].apiKey;
   }
   persist();
 };
+
+// Migrate legacy plaintext provider keys in place without changing their runtime value.
+let migrated = false;
+for (const [id, value] of Object.entries(store.providers || {})) {
+  if (value?.apiKey && !String(value.apiKey).startsWith("enc:v1:")) {
+    value.apiKey = sealSecret(value.apiKey, `provider:${id}`); migrated = true;
+  }
+}
+if (migrated) persist(); else if (fs.existsSync(settingsFile)) { try { fs.chmodSync(settingsFile, 0o600); } catch {} }
 
 export const setProviderModel = (id, model) => {
   const provider = requireProvider(id);

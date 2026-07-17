@@ -2,20 +2,30 @@
 Description=Translator Live Radio Worker
 After=network-online.target
 Wants=network-online.target
-PartOf=translator.target
+PartOf=translator.target translator.service
 
 [Service]
 Type=simple
 WorkingDirectory=/root/github/translator
 EnvironmentFile=-/root/github/translator/.env
 EnvironmentFile=-/root/github/translator/.env.radio
-Environment=RADIO_WORKER_HOST=0.0.0.0
+Environment=RADIO_WORKER_HOST=127.0.0.1
 Environment=RADIO_WORKER_PORT=8091
 Environment=RADIO_STORAGE_DIR=/root/github/translator/data/radio
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node services/radio-worker/server.js
 Restart=always
 RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
 
 [Install]
 WantedBy=translator.target

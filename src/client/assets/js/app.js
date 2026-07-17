@@ -36,7 +36,7 @@ import { getRuntime, getRequestPayload, updateModel, getGroqKey } from "./byok.j
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
 import { initViewportSizing } from "./viewport.js";
 import { initMedia } from "./media-app.js";
-import { checkAuth } from "./login.js";
+import { checkAuth, showLogin } from "./login.js";
 import { initMotion } from "./motion.js";
 import { initRadio } from "./radio-player.js";
 
@@ -61,7 +61,11 @@ const account = {
 };
 const renderAccount = () => {
   const user = state.auth?.user;
-  if (!user) return;
+  if (!user) {
+    account.initial.textContent = "↗";
+    account.toggle?.setAttribute("aria-label", "Sign in");
+    return;
+  }
   account.name.textContent = user.displayName || "Account";
   account.email.textContent = user.email || "";
   account.initial.textContent = (user.displayName || user.email || "U").trim().slice(0, 1).toUpperCase();
@@ -452,6 +456,7 @@ const bindEvents = () => {
     elements.inputText.focus(); elements.inputText.setSelectionRange(elements.inputText.value.length, elements.inputText.value.length);
   }));
   account.toggle?.addEventListener("click", (event) => {
+    if (!state.auth?.authenticated) { event.stopPropagation(); showLogin(); return; }
     event.stopPropagation(); account.menu.hidden = !account.menu.hidden;
     account.toggle.setAttribute("aria-expanded", String(!account.menu.hidden));
   });
@@ -508,7 +513,7 @@ const boot = async () => {
   initSettings(loadHealth);
   initByokUi(refreshAccessAfterKeyChange);
   initLive();
-  loadHealth();
+  await loadHealth();
   updateCharacterCount();
   updateDirection(elements.inputText);
 

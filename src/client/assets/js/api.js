@@ -16,6 +16,7 @@ const request = async (url, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new CustomEvent("auth:required"));
     const fallback = response.status >= 500
       ? "Something went wrong on the server. Try again."
       : response.status === 404 ? "This item is no longer available." : "Couldn’t complete that action.";
@@ -82,6 +83,10 @@ export const logoutOwner = () => request("/api/auth/logout", { method: "POST" })
 
 export const getMediaHealth = () => request("/api/media/health");
 export const getRadioStations = () => request("/api/radio/stations");
+export const getPersonalRadioStations = () => request("/api/radio/my-stations");
+export const createPersonalRadioStation = (payload) => request("/api/radio/my-stations", { method: "POST", body: JSON.stringify(payload) });
+export const updatePersonalRadioStation = (id, payload) => request(`/api/radio/my-stations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const deletePersonalRadioStation = (id) => request(`/api/radio/my-stations/${encodeURIComponent(id)}`, { method: "DELETE" });
 
 export const createMediaJob = (url) => request("/api/media/jobs", {
   method: "POST",

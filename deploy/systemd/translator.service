@@ -1,0 +1,9 @@
+[Unit]
+Description=Translator application compatibility service
+Requires=translator-web.service media-worker.service radio-worker.service
+After=translator-web.service media-worker.service radio-worker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/true

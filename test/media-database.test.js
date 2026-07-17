@@ -85,3 +85,26 @@ test("repositories cache entities with independent prefixed ids and relative pat
   assert.equal(repo.playlists.findById(playlist.id), null);
   db.close();
 });
+
+test("the guest catalog only exposes fully verified open-license songs", () => {
+  const db = openDatabase({ filename: ":memory:" });
+  const repo = createRepositories(db);
+  const addTrack = (externalId, license) => {
+    const track = repo.tracks.upsert({ source: "jamendo", externalId, title: externalId, artist: "Open Artist" });
+    repo.lyrics.upsert({ trackId: track.id, source: "lrclib", externalId, contentHash: `lyrics-${externalId}`, relativePath: `lyrics/${externalId}/original.json` });
+    const media = repo.media.upsert({ trackId: track.id, provider: "jamendo", providerMediaId: externalId, relativePath: `media/${externalId}/audio.mp3` });
+    repo.licenses.upsert({ trackId: track.id, licenseCode: license.code, licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+      rightsHolder: "Open Artist", attributionText: `${externalId} by Open Artist`, evidenceUrl: "https://example.com/evidence",
+      evidenceHash: `evidence-${externalId}`, evidenceRelativePath: `licenses/${externalId}/evidence.json`,
+      coversRecording: true, coversComposition: true, coversLyrics: license.coversLyrics });
+    return { track, media };
+  };
+  const publicSong = addTrack("public-song", { code: "CC BY 4.0", coversLyrics: true });
+  const incomplete = addTrack("missing-lyrics-rights", { code: "CC BY 4.0", coversLyrics: false });
+  const closed = addTrack("closed-song", { code: "All rights reserved", coversLyrics: true });
+  assert.deepEqual(repo.library.publicCatalog().map((row) => row.id), [publicSong.track.id]);
+  assert.ok(repo.media.findPublicById(publicSong.media.id));
+  assert.equal(repo.media.findPublicById(incomplete.media.id), null);
+  assert.equal(repo.media.findPublicById(closed.media.id), null);
+  db.close();
+});
