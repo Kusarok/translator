@@ -2,7 +2,7 @@
 
 A mobile-first multilingual translator, AI chat, and music-learning companion built around openly licensed music and user-connected Spotify playlists. Translator combines natural translation with synchronized lyrics, contextual Persian translation, personal learning collections, artist catalogs, and optional 24/7 audio radio.
 
-[Live app](https://server.raminexch.store) · [Report a bug](https://github.com/Kusarok/translator/issues) · [Security](SECURITY.md) · [Privacy](PRIVACY.md)
+[Live app](https://translate.raminexch.store) · [Report a bug](https://github.com/Kusarok/translator/issues) · [Security](SECURITY.md) · [Privacy](PRIVACY.md)
 
 > This repository contains application source code only. Runtime databases, downloaded media, lyrics, user data, OAuth secrets, provider keys, and deployment-specific radio sources belong in ignored local configuration and storage.
 

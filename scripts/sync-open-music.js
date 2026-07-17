@@ -10,7 +10,7 @@ import { config } from "../services/media-worker/config.js";
 import { createId } from "../services/media-worker/database/index.js";
 import { repositories } from "../services/media-worker/persistence.js";
 
-const USER_AGENT = "TranslatorOpenMusic/1.0 (+https://server.raminexch.store)";
+const USER_AGENT = "TranslatorOpenMusic/1.0 (+https://translate.raminexch.store)";
 const CATALOG = Object.freeze({
   id: "josh-woodward",
   artist: "Josh Woodward",
