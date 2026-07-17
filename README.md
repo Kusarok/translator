@@ -1,6 +1,6 @@
 # Translator
 
-A mobile-first multilingual translator, AI chat, and online music-learning app. Translator combines natural translation with a shared music library, synchronized lyrics, Persian lyric translation, personal playlists, artist catalogs, and optional 24/7 audio radio.
+A mobile-first multilingual translator, AI chat, and music-learning companion built around openly licensed music and user-connected Spotify playlists. Translator combines natural translation with synchronized lyrics, contextual Persian translation, personal learning collections, artist catalogs, and optional 24/7 audio radio.
 
 [Live app](https://server.raminexch.store) · [Report a bug](https://github.com/Kusarok/translator/issues) · [Security](SECURITY.md) · [Privacy](PRIVACY.md)
 
@@ -19,14 +19,16 @@ A mobile-first multilingual translator, AI chat, and online music-learning app. 
 
 ### Music and language learning
 
-- Search by song, artist, or lyric text.
-- Shared song cache: once an authorized track is prepared, every user can reuse it.
-- Synchronized lyrics with multilingual-to-Persian translation.
-- Artist catalogs with background validation before songs become available.
-- Personal playlists, recent plays, favorites, and progress.
-- Spotify playlist metadata import and Google account sign-in.
+The music experience is designed as a guided language-learning journey. Learners can explore a curated catalog of openly licensed vocal music or connect Spotify to bring their own playlist context, then listen, follow synchronized lyrics, understand each line in Persian, and build a personal study routine around the songs they enjoy.
+
+- Curated open-music catalogs with recorded license evidence and creator attribution.
+- Spotify account connection for personal playlist, track, artist, album, and artwork context.
+- Search by song, artist, or lyric line across suitable learning material.
+- Shared preparation cache so an eligible song already available to the community opens quickly for everyone.
+- Synchronized original lyrics with contextual multilingual-to-Persian translation.
+- Artist catalogs whose songs are checked for playable audio and usable lyrics before appearing.
+- Personal learning playlists, recent plays, favorites, and progress.
 - Configurable daily limit for preparing previously uncached songs.
-- Optional licensed open-music catalog ingestion.
 - Optional audio-only live radio with background Media Session controls.
 
 ## Architecture
@@ -135,7 +137,7 @@ SPOTIFY_CLIENT_SECRET=
 SPOTIFY_REDIRECT_URI=https://your-domain.example/api/media/spotify/callback
 ```
 
-Spotify supplies account and playlist metadata. The app must follow Spotify attribution, privacy, and platform requirements. Do not use it to obtain content without permission.
+The Spotify connection lets learners bring the structure of their own playlists into the learning experience. Track, artist, album, and artwork context remains attributed and linked to Spotify, while learning availability is determined independently by the deployment's reviewed music and lyrics sources.
 
 ### Live radio
 
@@ -154,13 +156,13 @@ See [.env.example](.env.example) for every setting and [docs/DEPLOYMENT.md](docs
 
 ## Open music catalog
 
-The optional importer only accepts records with explicit license evidence, playable vocal audio, lyrics usable by the learning flow, and stable source identifiers.
+Openly licensed vocal music is the foundation of the built-in learning catalog. The importer accepts a recording only when it has clear license evidence, playable vocal audio, lyrics suitable for translation and synchronized study, and stable source identifiers.
 
 ```bash
 npm run music:sync-open -- --artist "Artist name"
 ```
 
-Review the selected source, recording, composition, lyrics, artwork, and translation rights before importing. Creative Commons attribution and modification notices must remain available to users. Importing metadata is not a substitute for permission.
+Every accepted song keeps its creator, source, license link, and relevant attribution visible. Recording, composition, lyrics, artwork, and translation permissions are reviewed separately so learners receive a catalog that is both useful and respectful of the people who created it.
 
 ## Data layout
 
@@ -208,11 +210,11 @@ Before exposing a deployment:
 
 The complete checklist is in [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 
-## Responsible and lawful use
+## Music learning and creator respect
 
-Translator is a general-purpose tool. The project is not affiliated with or endorsed by YouTube, Spotify, Google, LRCLIB, any artist, label, broadcaster, or radio station.
+Translator's music features are intended to make language learning more engaging through openly licensed catalogs, personal playlist connections, synchronized lyrics, and contextual translation. The product is designed to help learners discover creators, understand songs, and continue listening through properly attributed sources.
 
-Use media tooling only for content you own, content you are authorized to process, or content whose license permits the intended use. Operators are responsible for copyright, platform terms, privacy, attribution, and territorial requirements. The presence of a URL or metadata result does not grant media or lyric rights.
+Deployments curate the music, lyrics, artwork, and radio sources they are permitted to provide and preserve the attribution required by each source. Third-party names and trademarks identify supported integrations and remain the property of their respective owners.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for software notices.
 
@@ -230,7 +232,7 @@ Copyright belongs to the respective contributors. The project is licensed under 
 
 ## راه‌اندازی سریع فارسی
 
-Translator یک برنامه موبایل‌محور برای ترجمه، گفتگوی هوش مصنوعی، پخش آنلاین موسیقی و یادگیری زبان با متن همگام آهنگ است. کتابخانه موسیقی بین کاربران مشترک است، اما پلی‌لیست‌ها، سابقه پخش و حساب هر کاربر جدا باقی می‌ماند.
+Translator یک برنامه موبایل‌محور برای ترجمه، گفتگوی هوش مصنوعی و یادگیری زبان با موسیقی است. بخش موسیقی بر پایه آثار دارای مجوز باز و اتصال حساب Spotify طراحی شده تا کاربر بتواند آهنگ‌های مناسب را پیدا کند، همراه متن همگام گوش دهد، مفهوم هر خط را به فارسی بفهمد و پلی‌لیست آموزشی خودش را بسازد. کتابخانه آماده‌شده بین کاربران مشترک است، اما پلی‌لیست‌ها، سابقه پخش و پیشرفت هر کاربر جدا باقی می‌ماند.
 
 ### پیش‌نیازها
 
