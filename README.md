@@ -30,6 +30,8 @@ The music experience is designed as a guided language-learning journey. Learners
 - Personal learning playlists, recent plays, favorites, and progress.
 - Configurable daily limit for preparing previously uncached songs.
 - Optional audio-only live radio with background Media Session controls.
+- Guest listening for verified open-license songs and the deployment radio catalog; accounts are only required for personal libraries and non-public catalog items.
+- Private user-saved HTTPS radio links with editable station names.
 
 ## Architecture
 
@@ -152,6 +154,8 @@ RADIO_JAVAN_URLS=https://licensed.example/javan.m3u8
 
 Only configure streams you are authorized to access and relay. A station without a configured source is omitted from the public station list.
 
+The deployment radio catalog is available without signing in. Signed-in listeners can also save their own HTTPS audio stream links, rename them, and remove them later; these personal links stay attached to that account and are never added to the shared station catalog. Browser playback of a personal HLS source still depends on that source permitting browser access.
+
 See [.env.example](.env.example) for every setting and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production installation.
 
 ## Open music catalog
@@ -170,8 +174,8 @@ Runtime storage stays inside this project by default:
 
 ```text
 data/
-  accounts/       user accounts and sessions
-  database/       SQLite database and WAL files
+  app-secret.key  local encryption key (mode 0600)
+  database/       accounts, sessions, personal stations and media metadata
   media/          prepared media
   tracks/         per-track records
   lyrics/         source lyrics
@@ -181,7 +185,7 @@ data/
   radio/          radio-worker buffers
 ```
 
-Back up `data/` and `.env` separately. Neither belongs in source control.
+`npm run backup` creates a consistent local metadata snapshot under ignored `backups/`. It includes databases, licenses, lyrics, translations, artwork and the local encryption key, but intentionally excludes the large `data/media/` audio cache. Keep an additional filesystem backup if prepared audio must survive disk loss. Neither runtime data nor backups belong in source control.
 
 ## Commands
 
@@ -193,6 +197,7 @@ Back up `data/` and `.env` separately. Neither belongs in source control.
 | `node services/radio-worker/server.js` | Start only the radio worker |
 | `npm run media:install` | Create the Python environment and install yt-dlp/spotDL |
 | `npm run music:sync-open` | Import an explicitly licensed open catalog |
+| `npm run backup` | Create a local metadata/database backup |
 | `npm test` | Run the Node test suite |
 
 ## Production checklist
@@ -203,7 +208,7 @@ Before exposing a deployment:
 2. Generate unique provider/OAuth credentials and keep them outside Git.
 3. Restrict worker ports to loopback/private networking.
 4. Configure `OWNER_USERNAME` and `OWNER_PASSWORD` if server-funded keys are enabled.
-5. Back up the SQLite database, WAL files, and content directories together.
+5. Enable `translator-backup.timer` and separately back up `data/media/` when cached audio must be retained.
 6. Confirm licenses for every media source, lyric source, artwork, and radio stream.
 7. Publish a deployment-specific privacy policy and contact method.
 8. Run `npm test`, review `git diff`, and scan Git history for secrets.

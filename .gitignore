@@ -2,6 +2,7 @@ node_modules
 .env
 .env.radio
 data/
+backups/
 settings.json
 npm-debug.log*
 .DS_Store

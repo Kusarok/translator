@@ -1,0 +1,14 @@
+[Unit]
+Description=Translator local metadata backup
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/github/translator
+EnvironmentFile=-/root/github/translator/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node scripts/backup-data.js
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+

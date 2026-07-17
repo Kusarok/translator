@@ -10,6 +10,7 @@
     "start:media": "node services/media-worker/server.js",
     "media:install": "node scripts/install-media-tools.js",
     "music:sync-open": "node scripts/sync-open-music.js",
+    "backup": "node scripts/backup-data.js",
     "test": "node --test"
   },
   "dependencies": {
