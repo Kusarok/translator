@@ -1,4 +1,5 @@
 import { createPersonalRadioStation, deletePersonalRadioStation, getPersonalRadioStations, getRadioStations, updatePersonalRadioStation } from "./api.js";
+import Hls from "/assets/vendor/hls.mjs";
 
 const byId = (id) => document.getElementById(id);
 const ui = {
@@ -30,6 +31,7 @@ let sleepTimer = 0;
 let sleepIndex = 0;
 let catalogRetry = 0;
 let editingStation = null;
+let hls = null;
 
 const favorites = () => {
   try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { return new Set(); }
@@ -71,6 +73,7 @@ const updateMediaSession = () => {
 const destroyStream = () => {
   clearTimeout(reconnectTimer);
   reconnectTimer = 0;
+  hls?.destroy(); hls = null;
   ui.audio.pause();
   ui.audio.removeAttribute("src");
   ui.audio.load();
@@ -106,6 +109,12 @@ const attachStream = () => {
   const sourceUrl = new URL(active.streamUrl, location.origin);
   if (!active.personal) sourceUrl.searchParams.set("v", Date.now());
   const source = sourceUrl.href;
+  if (active.personal && sourceUrl.pathname.toLowerCase().endsWith(".m3u8") && Hls.isSupported()) {
+    hls = new Hls({ enableWorker: false, lowLatencyMode: false, maxBufferLength: 30, backBufferLength: 0 });
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => { if (wantsPlayback) ui.audio.play().catch(handlePlayFailure); });
+    hls.on(Hls.Events.ERROR, (_event, data) => { if (data.fatal) scheduleReconnect(2_000); });
+    hls.loadSource(source); hls.attachMedia(ui.audio); return;
+  }
   ui.audio.src = source;
   ui.audio.load();
   if (wantsPlayback) ui.audio.play().catch(handlePlayFailure);

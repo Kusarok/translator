@@ -31,6 +31,7 @@ const sendIndex = (res) => {
 };
 
 const jsDir = path.join(clientPath, "assets", "js");
+const hlsModulePath = path.join(__dirname, "../../node_modules/hls.js/dist/hls.mjs");
 
 const versionImports = (code) =>
   code.replace(/((?:from|import)\s*\(?\s*)(["'])(\.\.?\/[^"']+?\.js)\2/g,
@@ -64,7 +65,7 @@ export const createApp = () => {
       directives: {
         defaultSrc: ["'self'"],
         baseUri: ["'self'"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https:"],
         fontSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'self'"],
@@ -94,6 +95,7 @@ export const createApp = () => {
 
   app.use(express.json({ limit: "15mb" }));
   app.get("/", (_req, res) => sendIndex(res));
+  app.get("/assets/vendor/hls.mjs", (_req, res) => res.sendFile(hlsModulePath, { headers: { "Cache-Control": "public, max-age=86400" } }));
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 
