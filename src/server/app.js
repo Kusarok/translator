@@ -77,6 +77,7 @@ export const createApp = () => {
           "https://www.facebook.com"
         ],
         imgSrc: ["'self'", "data:", "https:"],
+        mediaSrc: ["'self'", "https:"],
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],
         scriptSrcAttr: ["'none'"],
@@ -98,10 +99,15 @@ export const createApp = () => {
 
   // Every personal API is behind a real user session. Health and auth stay public
   // so the sign-in screen can render and create an account.
-  const PUBLIC_API = /^\/(health|auth)/;
+  const isPublicApi = (req) => {
+    if (/^\/(health|auth)(?:\/|$)/.test(req.path)) return true;
+    if (req.method === "GET" && (req.path === "/radio/stations" || /^\/radio\/stations\/[^/]+\/[^/]+$/.test(req.path))) return true;
+    if (req.method === "GET" && (req.path === "/media/library" || /^\/media\/public\/(?:artwork\/)?[^/]+(?:\/stream)?$/.test(req.path))) return true;
+    return req.method === "POST" && /^\/media\/library\/tracks\/trk_[A-Za-z0-9-]+\/open$/.test(req.path);
+  };
   app.use("/api", (req, res, next) => {
     if (readSession(req)) return next();
-    if (PUBLIC_API.test(req.path)) return next();
+    if (isPublicApi(req)) return next();
     return res.status(401).json({ error: "Authentication required." });
   });
 

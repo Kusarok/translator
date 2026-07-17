@@ -6,10 +6,13 @@ const errorEl = document.getElementById("loginError");
 const nameInput = document.getElementById("loginName");
 const passwordInput = document.getElementById("loginPassword");
 const googleButton = document.getElementById("googleLogin");
+const closeButton = document.getElementById("loginClose");
+const guestButton = document.getElementById("loginGuest");
 let mode = "login";
 let bound = false;
 
-const showLogin = () => { if (gate) gate.hidden = false; if (shell) shell.hidden = true; };
+export const showLogin = () => { if (gate) gate.hidden = false; if (shell) shell.hidden = false; };
+export const hideLogin = () => { if (gate) gate.hidden = true; };
 const showApp = () => { if (gate) gate.hidden = true; if (shell) shell.hidden = false; };
 const showError = (message) => { if (errorEl) { errorEl.textContent = message; errorEl.hidden = false; } };
 
@@ -46,6 +49,9 @@ const bind = () => {
   if (bound) return;
   bound = true;
   form?.addEventListener("submit", handleLogin);
+  closeButton?.addEventListener("click", hideLogin);
+  guestButton?.addEventListener("click", hideLogin);
+  window.addEventListener("auth:required", showLogin);
   document.querySelectorAll("[data-auth-mode]").forEach((item) => item.addEventListener("click", () => selectMode(item.dataset.authMode)));
 };
 
@@ -55,8 +61,10 @@ export const checkAuth = async () => {
     const data = await response.json();
     if (!data.auth?.authenticated) {
       googleButton.hidden = !data.auth?.googleEnabled;
-      bind(); showLogin(); return false;
+      document.body.dataset.authenticated = "false";
+      bind(); showApp(); return true;
     }
+    document.body.dataset.authenticated = "true";
     showApp(); return true;
-  } catch { bind(); showLogin(); return false; }
+  } catch { bind(); showApp(); return true; }
 };

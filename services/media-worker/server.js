@@ -8,7 +8,7 @@ import { safeMediaPath } from "./storage.js";
 import { cacheTrackLyrics, cacheTranslation, findTrackForReference, getCachedLesson, getCachedLessonByTrackId, reindexCachedLyrics } from "./services/lesson-cache.service.js";
 import { repositories } from "./persistence.js";
 import path from "node:path";
-import { addTrackToPlaylist, createLearningPlaylist, deleteLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, removeTrackFromPlaylist, updateLearningPlaylist, updateTrackProgress } from "./services/library.service.js";
+import { addTrackToPlaylist, createLearningPlaylist, deleteLearningPlaylist, getPlaylistDetail, importSpotifyPlaylist, libraryOverview, openLibraryTrack, openPublicLibraryTrack, publicLibraryOverview, removeTrackFromPlaylist, updateLearningPlaylist, updateTrackProgress } from "./services/library.service.js";
 import { createLyricsSearch, getLyricsSearch, prepareSearchResult } from "./modules/search/search.service.js";
 import { createArtistCatalog, discoverArtists, getArtistCatalog, prepareArtistCatalogItem } from "./modules/artists/artist.service.js";
 import { dueTranslationJobs, getTranslationJobForTrack, publicTranslationJob, scheduleTranslationJob, updateTranslationJob } from "./services/translation-job.service.js";
@@ -113,6 +113,12 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, capabilities: capabilities(), platforms: platformCatalog() });
     }
     if (req.method === "GET" && url.pathname === "/library") return json(res, 200, libraryOverview(requestUser(req)));
+    if (req.method === "GET" && url.pathname === "/public/library") return json(res, 200, publicLibraryOverview());
+    const publicTrackMatch = /^\/public\/library\/tracks\/(trk_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && publicTrackMatch) {
+      const lesson = openPublicLibraryTrack(publicTrackMatch[1]);
+      return lesson ? json(res, 200, lesson) : json(res, 404, { error: "Open-license track not found." });
+    }
     if (req.method === "POST" && url.pathname === "/artists/discover") return json(res, 200, { artists: await discoverArtists((await body(req)).name) });
     if (req.method === "POST" && url.pathname === "/artists") {
       const userId = requestUser(req);
@@ -242,6 +248,12 @@ const server = http.createServer(async (req, res) => {
       const artwork = repositories.artwork.findById(artworkMatch[1]);
       return artwork ? serveArtwork(res, artwork) : json(res, 404, { error: "Artwork not found." });
     }
+    const publicArtworkMatch = /^\/public\/artwork\/(art_[A-Za-z0-9-]+)$/.exec(url.pathname);
+    if (req.method === "GET" && publicArtworkMatch) {
+      const artwork = repositories.artwork.findById(publicArtworkMatch[1]);
+      return artwork && repositories.licenses.isPublicTrack(artwork.track_id)
+        ? serveArtwork(res, artwork) : json(res, 404, { error: "Open-license artwork not found." });
+    }
     const jobMatch = /^\/jobs\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
     if (req.method === "GET" && jobMatch) {
       const job = getJob(jobMatch[1]);
@@ -251,6 +263,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && mediaMatch) {
       const item = getMedia(mediaMatch[1]);
       return item ? serveFile(req, res, item, mediaMatch[2] === "download") : json(res, 404, { error: "Media not found." });
+    }
+    const publicMediaMatch = /^\/public\/media\/([A-Za-z0-9_-]+)\/stream$/.exec(url.pathname);
+    if (req.method === "GET" && publicMediaMatch) {
+      const allowed = repositories.media.findPublicById(publicMediaMatch[1]);
+      const item = allowed ? getMedia(publicMediaMatch[1]) : null;
+      return item ? serveFile(req, res, item, false) : json(res, 404, { error: "Open-license media not found." });
     }
     const deleteMatch = /^\/media\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
     if (req.method === "DELETE" && deleteMatch) {

@@ -49,6 +49,8 @@ export const getLyricsTranslationStatus = (trackId) => workerRequest({ pathname:
 export const getDueLyricsTranslations = (limit = 2) => workerRequest({ pathname: `/translation-jobs/due?limit=${encodeURIComponent(limit)}` });
 export const updateLyricsTranslationJob = (id, payload) => workerRequest({ method: "PATCH", pathname: `/translation-jobs/${encodeURIComponent(id)}`, body: payload });
 export const getLibrary = (userId) => workerRequest({ pathname: "/library", headers: userHeaders(userId) });
+export const getPublicLibrary = () => workerRequest({ pathname: "/public/library" });
+export const getPublicTrack = (id) => workerRequest({ pathname: `/public/library/tracks/${encodeURIComponent(id)}` });
 export const discoverLibraryArtists = (name) => workerRequest({ method: "POST", pathname: "/artists/discover", body: { name } });
 export const createLibraryArtist = (userId, payload) => workerRequest({ method: "POST", pathname: "/artists", body: payload, headers: userHeaders(userId) });
 export const getLibraryArtist = (userId, id) => workerRequest({ pathname: `/artists/${encodeURIComponent(id)}`, headers: userHeaders(userId) });
@@ -74,3 +76,8 @@ export const mediaStream = (id, kind, range) => workerRequest({
   stream: true
 });
 export const artworkStream = (id) => workerRequest({ pathname: `/artwork/${encodeURIComponent(id)}`, stream: true });
+export const publicMediaStream = (id, range) => workerRequest({
+  pathname: `/public/media/${encodeURIComponent(id)}/stream`,
+  headers: range ? { Range: range } : {}, stream: true
+});
+export const publicArtworkStream = (id) => workerRequest({ pathname: `/public/artwork/${encodeURIComponent(id)}`, stream: true });

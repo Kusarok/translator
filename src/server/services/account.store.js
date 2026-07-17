@@ -43,6 +43,16 @@ db.exec(`
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS user_radio_stations (
+    id TEXT PRIMARY KEY CHECK(id LIKE 'urs_%'),
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    stream_url TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(user_id, stream_url)
+  );
+  CREATE INDEX IF NOT EXISTS user_radio_stations_user_idx ON user_radio_stations(user_id, updated_at DESC);
   CREATE INDEX IF NOT EXISTS user_sessions_user_idx ON user_sessions(user_id);
   CREATE INDEX IF NOT EXISTS user_sessions_expiry_idx ON user_sessions(expires_at);
 `);
@@ -169,3 +179,42 @@ export const consumeOAuthState = (provider, state) => {
   db.prepare("DELETE FROM oauth_states WHERE state_hash=?").run(hash);
   return true;
 };
+
+const publicRadioStation = (row) => row && ({
+  id: row.id, name: row.name, streamUrl: row.stream_url, personal: true,
+  createdAt: row.created_at, updatedAt: row.updated_at
+});
+
+export const listUserRadioStations = (userId) => db.prepare(
+  "SELECT * FROM user_radio_stations WHERE user_id=? ORDER BY updated_at DESC"
+).all(userId).map(publicRadioStation);
+
+export const createUserRadioStation = (userId, { name, streamUrl }) => {
+  if (Number(db.prepare("SELECT COUNT(*) count FROM user_radio_stations WHERE user_id=?").get(userId).count) >= 50) {
+    throw new TypeError("You can save up to 50 personal stations.");
+  }
+  const stamp = now(), stationId = id("urs");
+  try {
+    db.prepare("INSERT INTO user_radio_stations(id,user_id,name,stream_url,created_at,updated_at) VALUES (?,?,?,?,?,?)")
+      .run(stationId, userId, name, streamUrl, stamp, stamp);
+  } catch (error) {
+    if (String(error.message).includes("UNIQUE")) throw new TypeError("This stream is already saved.");
+    throw error;
+  }
+  return publicRadioStation(db.prepare("SELECT * FROM user_radio_stations WHERE id=? AND user_id=?").get(stationId, userId));
+};
+
+export const updateUserRadioStation = (userId, stationId, { name, streamUrl }) => {
+  try {
+    const result = db.prepare("UPDATE user_radio_stations SET name=?,stream_url=?,updated_at=? WHERE id=? AND user_id=?")
+      .run(name, streamUrl, now(), stationId, userId);
+    return result.changes ? publicRadioStation(db.prepare("SELECT * FROM user_radio_stations WHERE id=? AND user_id=?").get(stationId, userId)) : null;
+  } catch (error) {
+    if (String(error.message).includes("UNIQUE")) throw new TypeError("This stream is already saved.");
+    throw error;
+  }
+};
+
+export const deleteUserRadioStation = (userId, stationId) => db.prepare(
+  "DELETE FROM user_radio_stations WHERE id=? AND user_id=?"
+).run(stationId, userId).changes > 0;

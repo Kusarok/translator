@@ -4,8 +4,10 @@ import { config } from "../config.js";
 import { repositories } from "../persistence.js";
 import { getCachedLessonByTrackId } from "./lesson-cache.service.js";
 
-const artworkUrl = (row) => row.artwork_id ? `/api/media/artwork/${row.artwork_id}` : row.artwork_url || "";
-const trackView = (row) => ({
+const artworkUrl = (row, publicAccess = false) => row.artwork_id
+  ? `/api/media/${publicAccess ? "public/" : ""}artwork/${row.artwork_id}`
+  : row.artwork_url || "";
+const trackView = (row, publicAccess = false) => ({
   id: row.id,
   spotifyId: row.external_id,
   sourceUrl: row.source_url,
@@ -13,7 +15,7 @@ const trackView = (row) => ({
   artist: row.artist,
   album: row.album,
   duration: row.duration_seconds,
-  artwork: artworkUrl(row),
+  artwork: artworkUrl(row, publicAccess),
   mediaId: row.media_id || null,
   ready: Boolean(row.media_id),
   learningStatus: row.learning_status || "new",
@@ -24,6 +26,29 @@ const trackView = (row) => ({
     attribution: row.attribution_text, evidenceUrl: row.evidence_url
   } : null
 });
+
+export const publicLibraryOverview = () => ({
+  continueLearning: [], recent: [],
+  catalog: repositories.library.publicCatalog().map((row) => trackView(row, true)),
+  playlists: [], artists: [], quota: null,
+  spotify: { connected: false, configured: false }, guest: true
+});
+
+export const openPublicLibraryTrack = (trackId) => {
+  const track = repositories.tracks.findById(trackId);
+  if (!track || !repositories.licenses.isPublicTrack(trackId)) return null;
+  const lesson = getCachedLessonByTrackId(trackId);
+  if (!lesson) return null;
+  const media = lesson.mediaId ? repositories.media.findPublicById(lesson.mediaId) : null;
+  return {
+    ...lesson,
+    artwork: lesson.artwork?.startsWith("/api/media/artwork/")
+      ? lesson.artwork.replace("/api/media/artwork/", "/api/media/public/artwork/") : lesson.artwork,
+    streamUrl: media ? `/api/media/public/${media.id}/stream` : null,
+    downloadUrl: null,
+    media: media ? { id: media.id, streamUrl: `/api/media/public/${media.id}/stream`, downloadUrl: null } : null
+  };
+};
 
 const playlistView = (row) => ({
   id: row.id, source: row.source, externalId: row.external_id, name: row.name,
