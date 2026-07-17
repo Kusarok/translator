@@ -1,0 +1,7 @@
+[Unit]
+Description=Translator application services
+After=network-online.target
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target

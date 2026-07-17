@@ -8,13 +8,15 @@ import { env } from "./config/env.js";
 import { chatConfig } from "./config/chat.config.js";
 import { providerCatalog, publicModels } from "./config/providers.js";
 import { getPublicState } from "./services/settings.store.js";
-import { gateEnabled, isOwnerAuthenticated } from "./services/auth.service.js";
+import { gateEnabled, googleLoginEnabled, isOwnerAuthenticated, readSession } from "./services/auth.service.js";
 import { freeTierEnabled, freeTierInfo } from "./services/free-tier.service.js";
 import { translateRouter } from "./routes/translate.routes.js";
 import { transcribeRouter } from "./routes/transcribe.routes.js";
 import { chatRouter } from "./routes/chat.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
+import { mediaRouter } from "./routes/media.routes.js";
+import { radioRouter } from "./routes/radio.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,13 +68,22 @@ export const createApp = () => {
         fontSrc: ["'self'"],
         formAction: ["'self'"],
         frameAncestors: ["'self'"],
-        imgSrc: ["'self'", "data:"],
+        frameSrc: [
+          "'self'",
+          "https://www.youtube-nocookie.com",
+          "https://www.instagram.com",
+          "https://www.tiktok.com",
+          "https://platform.twitter.com",
+          "https://www.facebook.com"
+        ],
+        imgSrc: ["'self'", "data:", "https:"],
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'"]
       }
-    }
+    },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" }
   }));
 
   // Transcription carries base64 audio (up to 20 MB raw -> ~27 MB encoded), so give just this
@@ -85,11 +96,27 @@ export const createApp = () => {
   app.get(/^\/assets\/js\/.+\.js$/, serveModule);
   app.use(express.static(clientPath, { index: false }));
 
+  // Every personal API is behind a real user session. Health and auth stay public
+  // so the sign-in screen can render and create an account.
+  const PUBLIC_API = /^\/(health|auth)/;
+  app.use("/api", (req, res, next) => {
+    if (readSession(req)) return next();
+    if (PUBLIC_API.test(req.path)) return next();
+    return res.status(401).json({ error: "Authentication required." });
+  });
+
   app.get("/api/health", (req, res) => {
+    const user = readSession(req);
+    const authenticated = Boolean(user);
+
+    // Signed-out visitors only receive what the account screen needs.
+    if (!authenticated) {
+      return res.json({ ok: true, auth: { gateEnabled: true, authenticated: false, owner: false, googleEnabled: googleLoginEnabled() } });
+    }
+
     const state = getPublicState();
     const active = state.providers.find((provider) => provider.id === state.activeProvider);
     const google = state.providers.find((provider) => provider.id === "google");
-    const authenticated = isOwnerAuthenticated(req);
 
     res.json({
       ok: true,
@@ -99,10 +126,10 @@ export const createApp = () => {
       models: active.models,
       maxTextLength: env.maxTextLength,
       chat: { ...chatConfig, models: active.models, defaultModel: active.selectedModel },
-      live: { available: Boolean(google?.configured) && authenticated, model: "gemini-3.5-live-translate-preview" },
-      transcription: { available: authenticated && Boolean(env.groqApiKey), model: env.groqSttModel },
+      live: { available: Boolean(google?.configured) && user.role === "owner", model: "gemini-3.5-live-translate-preview" },
+      transcription: { available: user.role === "owner" && Boolean(env.groqApiKey), model: env.groqSttModel },
       catalog: providerCatalog.map((provider) => ({ id: provider.id, label: provider.label, models: publicModels(provider) })),
-      auth: { gateEnabled: gateEnabled(), authenticated },
+      auth: { gateEnabled: gateEnabled(), authenticated, owner: user.role === "owner", googleEnabled: googleLoginEnabled(), user },
       free: freeTierInfo()
     });
   });
@@ -164,6 +191,17 @@ export const createApp = () => {
     standardHeaders: true,
     legacyHeaders: false
   }), transcribeRouter);
+
+  app.use("/api/media", rateLimit({
+    windowMs: 60 * 1000,
+    // The client polls once per second while a background job is active. This ceiling still
+    // bounds abusive traffic without causing legitimate long-running downloads to self-block.
+    limit: 180,
+    standardHeaders: true,
+    legacyHeaders: false
+  }), mediaRouter);
+
+  app.use("/api/radio", radioRouter);
 
   app.use((_req, res) => sendIndex(res));
 

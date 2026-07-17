@@ -49,10 +49,19 @@ export const env = {
   groqApiKey: process.env.GROQ_API_KEY || "",
   groqBaseUrl: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
   groqSttModel: process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo",
-  dataDir: path.join(rootDir, "data"),
+  mediaWorkerUrl: process.env.MEDIA_WORKER_URL || "http://127.0.0.1:8090",
+  radioWorkerUrl: process.env.RADIO_WORKER_URL || "http://127.0.0.1:8091",
+  spotifyClientId: process.env.SPOTIFY_CLIENT_ID || "",
+  spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET || "",
+  spotifyRedirectUri: process.env.SPOTIFY_REDIRECT_URI || "",
+  dataDir: process.env.APP_DATA_DIR || path.join(rootDir, "data"),
   ownerUsername: process.env.OWNER_USERNAME || "",
   ownerPassword: process.env.OWNER_PASSWORD || "",
   sessionTtlHours: toPositiveInt(process.env.SESSION_TTL_HOURS, 720),
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || "",
+  dailyNewSongLimit: toPositiveInt(process.env.DAILY_NEW_SONG_LIMIT, 5),
   // Free tier: let anonymous visitors use one server-funded model without a key.
   // Defaults to ON so a deployment that configures FREE_PROVIDER's key gets it out of the box;
   // set FREE_TIER_ENABLED=false to turn it off entirely.

@@ -35,19 +35,37 @@ import { initByokUi, refreshByokUi } from "./byok-ui.js";
 import { getRuntime, getRequestPayload, updateModel, getGroqKey } from "./byok.js";
 import { initLive, stopLive, setLiveAvailable, refreshLiveAvailability, applyLiveTranslations } from "./live.js";
 import { initViewportSizing } from "./viewport.js";
+import { initMedia } from "./media-app.js";
+import { checkAuth } from "./login.js";
+import { initMotion } from "./motion.js";
+import { initRadio } from "./radio-player.js";
 
 const menuTabs = document.querySelectorAll(".mode-option");
 const modeBtn = document.querySelector("#modeBtn");
 const modeMenu = document.querySelector("#modeMenu");
 const modeIcon = document.querySelector("#modeIcon");
+const modeIconUse = modeIcon?.querySelector("use");
 const modeLabel = document.querySelector("#modeLabel");
 const views = {
   translator: document.querySelector("#translatorView"),
   chat: document.querySelector("#chatView"),
-  live: document.querySelector("#liveView")
+  live: document.querySelector("#liveView"),
+  media: document.querySelector("#mediaView")
 };
 
 let lastTranslation = "";
+const account = {
+  toggle: document.getElementById("accountToggle"), menu: document.getElementById("accountMenu"),
+  initial: document.getElementById("accountInitial"), name: document.getElementById("accountName"),
+  email: document.getElementById("accountEmail"), logout: document.getElementById("accountLogout")
+};
+const renderAccount = () => {
+  const user = state.auth?.user;
+  if (!user) return;
+  account.name.textContent = user.displayName || "Account";
+  account.email.textContent = user.email || "";
+  account.initial.textContent = (user.displayName || user.email || "U").trim().slice(0, 1).toUpperCase();
+};
 
 const closeModeMenu = () => {
   modeMenu.classList.remove("open");
@@ -74,7 +92,7 @@ const switchView = (view) => {
   });
 
   if (activeTab) {
-    modeIcon.textContent = activeTab.dataset.icon;
+    modeIconUse?.setAttribute("href", `#icon-${activeTab.dataset.icon}`);
     const labelSpan = activeTab.querySelector("[data-i18n]");
     if (labelSpan) {
       modeLabel.dataset.i18n = labelSpan.dataset.i18n;
@@ -89,6 +107,7 @@ const loadHealth = async () => {
   try {
     const health = await getHealth();
     setHealth(health);
+    renderAccount();
     applyHealth();
     updateDirectionLabel();
     setLiveAvailable(health.live?.available);
@@ -333,6 +352,8 @@ const clearAll = () => {
   clearMessages();
   resetConversation();
   lastTranslation = "";
+  elements.clearButton.hidden = true;
+  elements.copyLastButton.hidden = true;
   elements.inputText.value = "";
   updateDirection(elements.inputText);
   autoGrowInput();
@@ -425,6 +446,20 @@ const bindEvents = () => {
   });
 
   elements.serverStatus.addEventListener("click", loadHealth);
+  document.querySelectorAll("[data-translate-example]").forEach((button) => button.addEventListener("click", () => {
+    elements.inputText.value = button.dataset.translateExample || "";
+    updateDirection(elements.inputText); autoGrowInput(); updateCharacterCount();
+    elements.inputText.focus(); elements.inputText.setSelectionRange(elements.inputText.value.length, elements.inputText.value.length);
+  }));
+  account.toggle?.addEventListener("click", (event) => {
+    event.stopPropagation(); account.menu.hidden = !account.menu.hidden;
+    account.toggle.setAttribute("aria-expanded", String(!account.menu.hidden));
+  });
+  account.menu?.addEventListener("click", (event) => event.stopPropagation());
+  account.logout?.addEventListener("click", async () => {
+    account.logout.disabled = true;
+    try { await fetch("/api/auth/logout", { method: "POST" }); } finally { window.location.replace("/"); }
+  });
 
   modeBtn.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -432,7 +467,7 @@ const bindEvents = () => {
     modeBtn.setAttribute("aria-expanded", open ? "true" : "false");
   });
 
-  document.addEventListener("click", closeModeMenu);
+  document.addEventListener("click", () => { closeModeMenu(); if (account.menu) account.menu.hidden = true; });
 
   menuTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -454,23 +489,34 @@ const bindEvents = () => {
   });
 };
 
-initViewportSizing();
-bindEvents();
-initTheme();
-populateLanguageSelects();
-initLangPicker(elements);
-initScrollAwareTopbar();
-setLanguage(localStorage.getItem("lang") || "en");
-switchView("translator");
-initSettings(loadHealth);
-initByokUi(refreshAccessAfterKeyChange);
-initLive();
-loadHealth();
-updateCharacterCount();
-updateDirection(elements.inputText);
+const boot = async () => {
+  const authed = await checkAuth();
+  if (!authed) return;
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  });
-}
+  initViewportSizing();
+  initMedia();
+  initRadio();
+  bindEvents();
+  initTheme();
+  populateLanguageSelects();
+  initLangPicker(elements);
+  initScrollAwareTopbar();
+  setLanguage(localStorage.getItem("lang") || "en");
+  window.addEventListener("app:switch-view", (event) => switchView(event.detail?.view || "media"));
+  switchView("media");
+  initMotion();
+  initSettings(loadHealth);
+  initByokUi(refreshAccessAfterKeyChange);
+  initLive();
+  loadHealth();
+  updateCharacterCount();
+  updateDirection(elements.inputText);
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+};
+
+boot();

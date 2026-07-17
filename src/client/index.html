@@ -26,26 +26,64 @@
     <link rel="stylesheet" href="/assets/css/components.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/chat.css?v=__ASSET_VERSION__">
     <link rel="stylesheet" href="/assets/css/langpicker.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/media.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/login.css?v=__ASSET_VERSION__">
+    <link rel="stylesheet" href="/assets/css/motion.css?v=__ASSET_VERSION__">
   </head>
   <body>
-    <main class="app-shell">
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-translate" viewBox="0 0 24 24"><path d="M4 5h10M9 3v2M6 9c1.5 3.2 3.8 5.5 7 7M12 9c-1 3-3.7 6-7 8M15 19l3-8 3 8M16.2 16h3.6"/></symbol>
+      <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M5 18.5 3.5 21l4-1.2A9 9 0 1 0 5 18.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></symbol>
+      <symbol id="icon-live" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></symbol>
+      <symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+      <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l2 2M18 5l2 2"/></symbol>
+    </svg>
+    <div class="login-gate" id="loginGate" hidden>
+      <div class="login-card">
+        <div class="login-logo" aria-hidden="true">♪</div>
+        <h1 class="login-title">Your music, your progress</h1>
+        <p class="login-subtitle">Listen online and learn languages with lyrics.</p>
+        <a class="google-login" id="googleLogin" href="/api/auth/google">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.8 5.8 0 0 1-5.5-4H3.2v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.5 14.1a6 6 0 0 1 0-4.2V7.3H3.2a10 10 0 0 0 0 9.4l3.3-2.6z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.8A9.7 9.7 0 0 0 3.2 7.3l3.3 2.6A5.8 5.8 0 0 1 12 5.9z"/></svg>
+          Continue with Google
+        </a>
+        <div class="login-divider"><span>or</span></div>
+        <div class="login-tabs" role="tablist">
+          <button class="active" type="button" data-auth-mode="login">Sign in</button>
+          <button type="button" data-auth-mode="register">Create account</button>
+        </div>
+        <form class="login-form" id="loginForm" autocomplete="on">
+          <input class="login-input" id="loginName" type="text" name="name" autocomplete="name" placeholder="Your name" hidden>
+          <input class="login-input" id="loginEmail" type="text" name="email" autocomplete="username" placeholder="Email or owner username" required autocapitalize="none" spellcheck="false">
+          <input class="login-input" id="loginPassword" type="password" name="password" autocomplete="current-password" placeholder="Password" required>
+          <button class="login-btn" id="loginBtn" type="submit">Sign in</button>
+          <p class="login-error" id="loginError" hidden></p>
+        </form>
+      </div>
+    </div>
+    <main class="app-shell" id="appShell" hidden>
       <section class="workspace" aria-label="App">
         <header class="topbar">
           <div class="mode-wrap">
             <button class="mode-btn" id="modeBtn" type="button" aria-haspopup="true" aria-expanded="false">
-              <span class="mode-icon" id="modeIcon">🔤</span>
+              <span class="mode-icon" id="modeIcon"><svg aria-hidden="true"><use href="#icon-translate"/></svg></span>
               <span class="mode-label" id="modeLabel" data-i18n="appName">Translator</span>
               <span class="mode-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
             </button>
             <div class="mode-menu" id="modeMenu" role="menu">
-              <button class="menu-tab mode-option active" data-view="translator" data-icon="🔤" role="menuitem">
-                <span aria-hidden="true">🔤</span><span data-i18n="appName">Translator</span>
+              <button class="menu-tab mode-option active" data-view="translator" data-icon="translate" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-translate"/></svg></span><span data-i18n="appName">Translator</span>
               </button>
-              <button class="menu-tab mode-option" data-view="chat" data-icon="💬" role="menuitem">
-                <span aria-hidden="true">💬</span><span data-i18n="chat">Chat</span>
+              <button class="menu-tab mode-option" data-view="chat" data-icon="chat" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-chat"/></svg></span><span data-i18n="chat">Chat</span>
               </button>
-              <button class="menu-tab mode-option" data-view="live" data-icon="🎙️" role="menuitem">
-                <span aria-hidden="true">🎙️</span><span data-i18n="liveTab">Live</span>
+              <button class="menu-tab mode-option" data-view="live" data-icon="live" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-live"/></svg></span><span data-i18n="liveTab">Live</span>
+              </button>
+              <button class="menu-tab mode-option" data-view="media" data-icon="music" role="menuitem">
+                <span aria-hidden="true"><svg><use href="#icon-music"/></svg></span><span data-i18n="mediaTab">Music</span>
               </button>
             </div>
           </div>
@@ -54,6 +92,13 @@
               <span class="dot" aria-hidden="true"></span>
               <span class="status-text" data-i18n="checkingStatus">Checking</span>
             </button>
+            <div class="account-wrap">
+              <button class="account-button" id="accountToggle" type="button" aria-label="Account" aria-expanded="false"><span id="accountInitial">U</span></button>
+              <div class="account-menu" id="accountMenu" hidden>
+                <strong id="accountName">Account</strong><small id="accountEmail"></small>
+                <button id="accountLogout" type="button">Sign out</button>
+              </div>
+            </div>
             <button class="icon-btn" id="settingsToggle" type="button" data-i18n-aria="openSettings" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
           </div>
         </header>
@@ -66,12 +111,36 @@
                 <span class="lang-pill-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
               </button>
               <span class="strip-actions">
-                <button class="icon-btn small ghost" id="copyLastButton" type="button" data-i18n-aria="copyLast" aria-label="Copy last translation"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                <button class="icon-btn small ghost" id="clearButton" type="button" data-i18n-aria="clearTranslations" aria-label="Clear translations"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+                <button class="icon-btn small ghost" id="copyLastButton" type="button" data-i18n-aria="copyLast" aria-label="Copy last translation" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button class="icon-btn small ghost" id="clearButton" type="button" data-i18n-aria="clearTranslations" aria-label="Clear translations" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
               </span>
             </div>
             <div class="messages" id="translatorMessages">
-              <div class="chat-empty" id="translatorEmptyState" data-i18n="trEmpty">Type below and press Enter to translate…</div>
+              <div class="translator-welcome" id="translatorEmptyState">
+                <div class="translator-welcome-visual" aria-hidden="true">
+                  <svg viewBox="0 0 160 160" role="presentation">
+                    <defs>
+                      <linearGradient id="translatorVisualGradient" x1="18" y1="18" x2="142" y2="142" gradientUnits="userSpaceOnUse"><stop stop-color="#58f1d5"/><stop offset="1" stop-color="#23aeda"/></linearGradient>
+                      <radialGradient id="translatorVisualGlow"><stop stop-color="#4ff0d0" stop-opacity=".28"/><stop offset="1" stop-color="#4ff0d0" stop-opacity="0"/></radialGradient>
+                    </defs>
+                    <circle class="translator-visual-glow" cx="80" cy="80" r="72" fill="url(#translatorVisualGlow)"/>
+                    <circle class="translator-orbit-ring translator-orbit-ring-a" cx="80" cy="80" r="61"/>
+                    <circle class="translator-orbit-ring translator-orbit-ring-b" cx="80" cy="80" r="48"/>
+                    <g class="translator-card translator-card-source"><rect x="28" y="48" width="54" height="48" rx="14"/><path d="M42 64h26M42 74h17M42 84h22"/></g>
+                    <g class="translator-card translator-card-target"><rect x="78" y="65" width="54" height="48" rx="14"/><path d="M92 81h26M99 91h19M94 101h24"/></g>
+                    <path class="translator-flow" d="M60 109c12 14 32 16 47 4M101 117l7-4-2 8"/>
+                    <g class="translator-orbit-nodes"><circle cx="80" cy="18" r="4"/><circle cx="140" cy="82" r="3"/><circle cx="35" cy="124" r="3.5"/></g>
+                  </svg>
+                </div>
+                <span class="translator-welcome-kicker">SMART TRANSLATION</span>
+                <h1>Translate anything</h1>
+                <p>Paste text in any language. We’ll detect it automatically and keep the meaning natural.</p>
+                <div class="translator-suggestions" aria-label="Translation examples">
+                  <button type="button" data-translate-example="Translate this message naturally: "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18.5 3.5 21l4-1.2A9 9 0 1 0 5 18.5Z"/></svg>Translate a message</button>
+                  <button type="button" data-translate-example="Make this translation sound natural: "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m18 15 .8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z"/></svg>Make it natural</button>
+                  <button type="button" data-translate-example="Explain the meaning and context of this text: "><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>Explain meaning</button>
+                </div>
+              </div>
             </div>
             <div class="composer">
               <div class="key-banner" id="translatorKeyBanner" hidden>
@@ -154,6 +223,300 @@
               <button class="icon-btn small ghost" id="liveClearButton" type="button" data-i18n-aria="liveClear" aria-label="Clear transcript"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
             </div>
           </section>
+
+          <section class="view media-view" id="mediaView" hidden>
+            <div class="media-scroll">
+              <div class="learn-library" id="learnLibrary">
+                <header class="learn-library-header">
+                  <div>
+                    <span class="learn-overline">FOR YOU</span>
+                    <h1 id="learnLibraryTitle">Home</h1>
+                  </div>
+                  <button class="learn-add-button" id="learnAddButton" type="button" aria-label="Add music">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </header>
+                <form class="learn-search-bar" id="learnSearchForm" role="search">
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                  <input id="learnSearchInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Search songs, artists, or lyrics" aria-label="Search songs, artists, or lyrics">
+                </form>
+                <section class="radio-home" id="radioHome" aria-labelledby="radioHomeTitle">
+                  <header class="radio-home-heading">
+                    <div><span class="radio-live-dot" aria-hidden="true"></span><h2 id="radioHomeTitle">Live Radio</h2></div>
+                    <span>24/7 MUSIC</span>
+                  </header>
+                  <div class="radio-station-rail" id="radioStationRail" aria-live="polite">
+                    <div class="radio-card-skeleton"></div><div class="radio-card-skeleton"></div>
+                  </div>
+                </section>
+                <section class="music-home-hero" id="musicHomeHero">
+                  <svg class="music-home-wave" viewBox="0 0 180 150" aria-hidden="true"><path d="M18 80c18-54 34 54 52 0s34 54 52 0 34 54 50 0"/><path d="M18 104c18-34 34 34 52 0s34 34 52 0 34 34 50 0"/></svg>
+                  <div class="music-home-copy">
+                    <span>DISCOVER</span>
+                    <h2>Find your next song</h2>
+                    <p>Search by title, artist, or even a lyric you remember.</p>
+                  </div>
+                  <div class="music-home-actions">
+                    <button class="music-home-primary" id="musicHomeSearch" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg> Explore</button>
+                    <button class="music-home-secondary" id="musicHomeAdd" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add link</button>
+                  </div>
+                  <div class="music-quota-row"><span class="learn-daily-limit" id="learnDailyLimit">5 new songs left today</span></div>
+                </section>
+
+                <div class="learn-library-filters" id="learnLibraryFilters" role="tablist" aria-label="Your music" hidden>
+                  <button id="learnSongsFilter" type="button" role="tab" data-library-filter="songs">Songs</button>
+                  <button id="learnArtistsFilter" type="button" role="tab" data-library-filter="artists">Artists</button>
+                  <button id="learnPlaylistsFilter" type="button" role="tab" data-library-filter="playlists">Playlists</button>
+                </div>
+
+                <section class="learn-section learn-quick-section" id="learnQuickSection" hidden>
+                  <div class="learn-section-heading"><h2>Jump back in</h2></div>
+                  <div class="learn-quick-grid" id="learnQuickAccess"></div>
+                </section>
+
+                <section class="learn-section" id="learnContinueSection" hidden>
+                  <div class="learn-section-heading"><h2>Continue listening</h2></div>
+                  <div class="learn-continue" id="learnContinue"></div>
+                </section>
+
+                <section class="learn-section" id="learnRecentSection">
+                  <div class="learn-section-heading"><h2 id="learnRecentTitle">Recently added</h2></div>
+                  <div class="learn-track-list" id="learnRecent"></div>
+                  <div class="learn-library-empty" id="learnLibraryEmpty" hidden>
+                    <div class="learn-empty-icon">♪</div>
+                    <h2>Your music starts here</h2>
+                    <p>Find a song or paste its link. It will stay ready for listening and learning.</p>
+                    <button id="learnEmptyAdd" type="button">Add your first song</button>
+                  </div>
+                </section>
+
+                <section class="learn-section" id="learnArtistsSection" hidden>
+                  <div class="learn-section-heading"><h2 id="learnArtistsTitle">Your artists</h2></div>
+                  <div class="learn-artist-grid" id="learnArtists"></div>
+                  <div class="learn-collection-empty" id="learnArtistsEmpty" hidden><span>♪</span><strong>No artists yet</strong><small>Open an artist from Search to add them here.</small></div>
+                </section>
+
+                <section class="learn-section" id="learnPlaylistsSection">
+                  <div class="learn-section-heading">
+                    <h2 id="learnPlaylistsTitle">Your playlists</h2>
+                    <button id="learnNewPlaylist" type="button">New playlist</button>
+                  </div>
+                  <div class="learn-playlist-grid" id="learnPlaylists"></div>
+                  <div class="learn-empty-playlists" id="learnPlaylistsEmpty">
+                    <span>♫</span><p>Group songs for the mood, artist, or lesson you want.</p>
+                  </div>
+                </section>
+
+              </div>
+
+              <section class="learn-search-page" id="learnSearchPage" hidden>
+                <header class="learn-subpage-nav">
+                  <button id="learnSearchBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                  <span>Search</span><span></span>
+                </header>
+                <form class="learn-search-bar learn-search-bar-page" id="learnSearchPageForm" role="search">
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                  <input id="learnSearchPageInput" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="Song, artist, or lyrics" aria-label="Search songs and lyrics">
+                  <button id="learnSearchClear" type="button" aria-label="Clear">×</button>
+                </form>
+                <div class="learn-search-summary" id="learnSearchSummary" role="status" aria-live="polite"></div>
+                <div id="learnSearchArtist"></div>
+                <div class="learn-search-loading" id="learnSearchLoading" role="status" aria-live="polite" hidden><span aria-hidden="true"></span><div><strong>Finding songs</strong><small id="learnSearchStage">Checking what is ready to play…</small></div></div>
+                <div class="learn-search-results" id="learnSearchResults"></div>
+                <div class="learn-search-empty" id="learnSearchEmpty" hidden><span>⌕</span><h2>No songs found</h2><p>Try a song title, artist, or a different lyric line.</p></div>
+              </section>
+
+              <section class="learn-artist-page" id="learnArtistPage" hidden>
+                <header class="learn-subpage-nav">
+                  <button id="learnArtistBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                  <span>Artist</span><span></span>
+                </header>
+                <div class="learn-artist-hero" id="learnArtistHero"></div>
+                <div class="learn-artist-progress" id="learnArtistProgress" role="status" aria-live="polite" hidden><span aria-hidden="true"></span><div><strong>Finding songs</strong><small id="learnArtistProgressText">Building this artist’s collection…</small></div></div>
+                <div class="learn-artist-toolbar"><h2>Songs</h2><span id="learnArtistCount"></span></div>
+                <div class="learn-track-list" id="learnArtistTracks"></div>
+                <div class="learn-artist-empty" id="learnArtistEmpty" hidden><span>♪</span><strong>No songs are ready yet</strong><small>Come back soon or try another artist.</small></div>
+              </section>
+
+              <section class="learn-playlist-page" id="learnPlaylistPage" hidden>
+                <header class="learn-subpage-nav">
+                  <button id="learnPlaylistBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                  <span>Playlist</span><button id="learnPlaylistMenu" type="button" aria-label="Playlist options">•••</button>
+                </header>
+                <div class="learn-playlist-hero" id="learnPlaylistHero"></div>
+                <div class="learn-track-list" id="learnPlaylistTracks"></div>
+              </section>
+
+              <div class="learn-sheet-backdrop" id="learnAddSheet" hidden>
+                <div class="learn-sheet" role="dialog" aria-modal="true" aria-labelledby="learnAddTitle">
+                  <div class="learn-sheet-handle"></div>
+                  <div class="learn-sheet-title"><div><span>Add music</span><h2 id="learnAddTitle">Paste a song link</h2></div><button id="learnAddClose" type="button" aria-label="Close">×</button></div>
+                  <form class="media-import" id="mediaImportForm">
+                    <label class="media-url-label" for="mediaUrl">Song or playlist link</label>
+                    <div class="media-url-row">
+                      <span class="media-url-field">
+                        <svg class="media-url-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <input id="mediaUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://open.spotify.com/track/…" required>
+                      </span>
+                      <button id="mediaSubmit" type="submit">Add</button>
+                    </div>
+                  </form>
+                  <button class="learn-connect-spotify" id="learnConnectSpotify" type="button"><span class="spotify-dot">●</span><span><strong>Connect Spotify</strong><small>Import playlists from your account</small></span><span>›</span></button>
+                  <p class="learn-sheet-note" id="learnSpotifyNote">Connect once to bring your playlists into the app.</p>
+                </div>
+              </div>
+
+              <div class="media-status-card" id="mediaStatusCard" hidden aria-live="polite">
+                <div class="media-status-top">
+                  <span class="media-source-badge" id="mediaSourceBadge">Media</span>
+                  <span class="media-status-label" id="mediaStatusLabel">Getting song ready</span>
+                </div>
+                <div class="media-progress-track"><span id="mediaProgressBar"></span></div>
+                <p id="mediaStatusText"></p>
+              </div>
+
+              <article class="media-card track-hero" id="mediaResult" hidden>
+                <header class="track-result-nav">
+                  <button class="track-result-back" id="mediaResultBack" type="button" aria-label="Back to song link">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <span>Song</span>
+                  <span class="track-result-nav-spacer" aria-hidden="true"></span>
+                </header>
+                <div class="track-result-main">
+                  <div class="track-art">
+                    <img id="mediaArtwork" alt="" hidden>
+                    <span class="track-art-note" aria-hidden="true"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+                  </div>
+                  <div class="track-info">
+                    <span class="media-source-badge" id="mediaResultSource">Media</span>
+                    <h2 id="mediaResultTitle"></h2>
+                    <p id="mediaResultMeta"></p>
+                  </div>
+                </div>
+                <div class="track-result-actions">
+                  <button class="media-start-learning" id="mediaStartLearning" type="button">Play song</button>
+                  <div class="media-actions">
+                    <a class="media-primary-action" id="mediaOriginal" href="#" target="_blank" rel="noopener noreferrer">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+                      Open in Spotify
+                    </a>
+                    <a class="media-secondary-action" id="mediaLicense" href="#" target="_blank" rel="noopener noreferrer" hidden>License</a>
+                    <button class="media-secondary-action" id="mediaRemove" type="button">Choose another song</button>
+                    <button class="media-secondary-action" id="mediaAddPlaylist" type="button">Add to playlist</button>
+                  </div>
+                </div>
+                <div class="media-lesson" id="mediaLesson" hidden>
+                  <header class="lesson-header">
+                    <button class="lesson-back" id="mediaLessonClose" type="button" aria-label="Close player">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <img class="lesson-cover" id="mediaLessonCover" alt="" hidden>
+                    <div class="lesson-head-text">
+                      <span class="lesson-eyebrow">Now playing</span>
+                      <strong id="mediaLessonTitle"></strong>
+                      <span id="mediaLessonArtist"></span>
+                    </div>
+                    <span class="lesson-ytmusic-mark" aria-label="Online music">▶</span>
+                  </header>
+                  <div class="lesson-mode-tabs" role="tablist" aria-label="Player view">
+                    <button class="active" id="lessonNowPlayingTab" type="button" role="tab" aria-selected="true" aria-controls="lessonNowPlayingPanel">Now Playing</button>
+                    <button id="lessonLearnTab" type="button" role="tab" aria-selected="false" aria-controls="mediaLyrics">Lyrics &amp; Learn</button>
+                  </div>
+                  <div class="lesson-content" id="lessonContent">
+                    <div class="lesson-translation-state" id="lessonTranslationState" role="status" aria-live="polite" hidden>
+                      <span id="lessonTranslationText">Preparing translation…</span>
+                      <button id="lessonTranslationRetry" type="button" hidden>Try again</button>
+                    </div>
+                    <section class="lesson-now-playing" id="lessonNowPlayingPanel" role="tabpanel" aria-labelledby="lessonNowPlayingTab">
+                      <div class="lesson-now-art">
+                        <img id="mediaNowPlayingCover" alt="" hidden>
+                        <span id="mediaNowPlayingFallback" aria-hidden="true">♪</span>
+                      </div>
+                      <div class="lesson-now-copy">
+                        <h1 id="mediaNowPlayingTitle"></h1>
+                        <p id="mediaNowPlayingArtist"></p>
+                      </div>
+                      <button class="lesson-open-lyrics" id="lessonOpenLyrics" type="button">Lyrics &amp; translation <span>›</span></button>
+                    </section>
+                    <div class="media-lyrics" id="mediaLyrics" role="tabpanel" aria-labelledby="lessonLearnTab" aria-live="polite" hidden></div>
+                  </div>
+                  <div class="media-player-wrap" id="mediaPlayerWrap"></div>
+                </div>
+                <p class="media-disclosure" id="mediaDisclosure" hidden></p>
+              </article>
+            </div>
+            <section class="radio-player" id="radioPlayer" hidden aria-label="Live radio player">
+              <div class="radio-player-ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+              <header class="radio-player-header">
+                <button id="radioPlayerBack" type="button" aria-label="Close live radio"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+                <button class="radio-station-trigger" id="radioStationTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="radioStationSheet">
+                  <span>LIVE RADIO</span><strong id="radioPlayerName">Choose station</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+                </button>
+                <button id="radioPlayerShare" type="button" aria-label="Share station"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></button>
+              </header>
+              <div class="radio-player-stage">
+                <div class="radio-orbit radio-orbit-one" aria-hidden="true"></div>
+                <div class="radio-orbit radio-orbit-two" aria-hidden="true"></div>
+                <div class="radio-art-shell"><img id="radioPlayerArtwork" alt=""><span class="radio-live-badge">LIVE</span></div>
+              </div>
+              <div class="radio-now-copy">
+                <span id="radioPlayerLanguage"></span>
+                <p id="radioPlayerStatus" role="status" aria-live="polite">Ready to play</p>
+              </div>
+              <div class="radio-equalizer" id="radioEqualizer" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <div class="radio-player-controls">
+                <button class="radio-side-control" id="radioFavorite" type="button" aria-label="Add to favorites"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg><span>Favorite</span></button>
+                <button class="radio-main-play" id="radioPlayerPlay" type="button" aria-label="Play live radio">
+                  <svg class="radio-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="radio-pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                </button>
+                <button class="radio-side-control" id="radioSleep" type="button" aria-label="Sleep timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="radioSleepLabel">Sleep</span></button>
+              </div>
+              <div class="radio-station-sheet" id="radioStationSheet" hidden>
+                <button class="radio-station-sheet-backdrop" id="radioStationSheetBackdrop" type="button" aria-label="Close station list"></button>
+                <section class="radio-station-sheet-card" role="dialog" aria-modal="true" aria-labelledby="radioStationSheetTitle">
+                  <div class="radio-station-sheet-handle" aria-hidden="true"></div>
+                  <header><div><span>LIVE RADIO</span><h2 id="radioStationSheetTitle">Choose a station</h2></div><button id="radioStationSheetClose" type="button" aria-label="Close station list">×</button></header>
+                  <div class="radio-station-switcher" id="radioStationSwitcher"></div>
+                </section>
+              </div>
+              <audio id="radioAudio" preload="none"></audio>
+            </section>
+            <nav class="learn-bottom-nav" aria-label="Music navigation">
+              <button class="active" id="learnLibraryNav" type="button" aria-current="page">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home
+              </button>
+              <button id="learnSearchNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span>Search
+              </button>
+              <button id="learnMusicNav" type="button">
+                <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 2v6M16 2v6M8 13h8M8 17h5"/></svg></span>Your Music
+              </button>
+            </nav>
+            <div class="learn-mini-player" id="learnMiniPlayer" hidden>
+              <button class="mini-track-open" id="learnMiniOpen" type="button" aria-label="Open now playing">
+                <img id="learnMiniCover" alt="" hidden>
+                <span class="mini-cover-fallback" id="learnMiniCoverFallback">♪</span>
+                <span class="mini-track-copy"><strong id="learnMiniTitle"></strong><small id="learnMiniArtist"></small><small class="mini-current-lyric" id="learnMiniLyric"></small></span>
+              </button>
+              <button class="mini-play-button" id="learnMiniPlay" type="button" aria-label="Play">
+                <svg class="mini-icon-play" viewBox="0 0 24 24" width="23" height="23" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="mini-icon-pause" viewBox="0 0 24 24" width="23" height="23" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              </button>
+              <button class="mini-close-button" id="learnMiniClose" type="button" aria-label="Close player">×</button>
+              <span class="mini-progress"><span id="learnMiniProgress"></span></span>
+            </div>
+            <div class="radio-mini-player" id="radioMiniPlayer" hidden>
+              <button class="radio-mini-open" id="radioMiniOpen" type="button" aria-label="Open live radio">
+                <img id="radioMiniArtwork" alt=""><span><strong id="radioMiniName"></strong><small><i></i> LIVE · <span id="radioMiniLanguage"></span></small></span>
+              </button>
+              <span class="radio-mini-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <button class="radio-mini-play" id="radioMiniPlay" type="button" aria-label="Play live radio"><svg class="radio-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="radio-pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+              <button class="radio-mini-close" id="radioMiniClose" type="button" aria-label="Stop radio">×</button>
+            </div>
+          </section>
         </main>
 
         <div class="overlay" id="appSettingsPanel">
@@ -164,7 +527,7 @@
               <button class="icon-btn small" id="appSettingsClose" type="button" aria-label="Close">✕</button>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="sourceLanguage">Language</label>
               <div class="lang-row">
                 <select class="select" id="sourceLanguage" name="sourceLanguage" data-i18n-aria="sourceLanguage" aria-label="Source language"></select>
@@ -173,7 +536,7 @@
               </div>
             </div>
 
-            <div class="sheet-section section-translator">
+            <div class="sheet-section section-translator translator-setting">
               <label class="setting-label" data-i18n="selectTone">Preset</label>
               <select class="select full" id="toneSelect" data-i18n-aria="selectTone" aria-label="Select tone">
                 <option value="default">Default</option>
@@ -186,8 +549,8 @@
             <div class="sheet-section row-between">
               <label class="setting-label" data-i18n="themeSection">Theme</label>
               <div class="segmented" id="themeSeg">
-                <button class="seg-btn" type="button" data-theme-val="light">☀️ <span data-i18n="themeLight">Light</span></button>
-                <button class="seg-btn" type="button" data-theme-val="dark">🌙 <span data-i18n="themeDark">Dark</span></button>
+                <button class="seg-btn" type="button" data-theme-val="light"><svg aria-hidden="true"><use href="#icon-sun"/></svg><span data-i18n="themeLight">Light</span></button>
+                <button class="seg-btn" type="button" data-theme-val="dark"><svg aria-hidden="true"><use href="#icon-moon"/></svg><span data-i18n="themeDark">Dark</span></button>
               </div>
             </div>
 
@@ -201,7 +564,7 @@
 
             <div class="sheet-section">
               <button class="settings-row" id="apiSettingsTrigger" type="button" aria-haspopup="dialog">
-                <span class="settings-row-icon" aria-hidden="true">🔑</span>
+                <span class="settings-row-icon" aria-hidden="true"><svg><use href="#icon-key"/></svg></span>
                 <span class="settings-row-text">
                   <span class="settings-row-title" data-i18n="apiSectionTitle">API &amp; Providers</span>
                   <span class="settings-row-sub" id="apiSettingsSummary" data-i18n="apiSectionSub">Keys, provider &amp; model</span>
@@ -210,8 +573,9 @@
               </button>
             </div>
 
-            <div class="sheet-section row-between">
-              <label class="setting-label" data-i18n="feedbackTitle">Feedback</label>
+            <div class="sheet-section settings-support">
+              <span class="settings-support-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/></svg></span>
+              <span><strong data-i18n="feedbackTitle">Help &amp; Support</strong><small>Questions, feedback, or account help</small></span>
               <a class="feedback-link" href="mailto:info@kafenet.com">info@kafenet.com</a>
             </div>
           </div>

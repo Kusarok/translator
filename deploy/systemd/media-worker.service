@@ -1,0 +1,21 @@
+[Unit]
+Description=Translator Media Worker
+After=network-online.target
+Wants=network-online.target
+PartOf=translator.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/github/translator
+EnvironmentFile=-/root/github/translator/.env
+Environment=MEDIA_WORKER_HOST=127.0.0.1
+Environment=MEDIA_WORKER_PORT=8090
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node services/media-worker/server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=translator.target

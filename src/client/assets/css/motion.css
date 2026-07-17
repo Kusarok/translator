@@ -1,0 +1,224 @@
+/* Motion is progressive enhancement: content stays visible until JS opts in. */
+.motion-enabled .motion-reveal {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(.985);
+  filter: saturate(.82);
+  transition:
+    opacity 520ms var(--ease-out),
+    transform 620ms var(--ease-spring),
+    filter 520ms var(--ease-out);
+  transition-delay: min(calc(var(--motion-order, 0) * 34ms), 204ms);
+  will-change: opacity, transform;
+}
+
+.motion-enabled .motion-reveal.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: none;
+}
+
+.view:not([hidden]),
+.learn-search-page:not([hidden]),
+.learn-artist-page:not([hidden]),
+.learn-playlist-page:not([hidden]) {
+  animation: motion-page-in 380ms var(--ease-out) both;
+}
+
+@keyframes motion-page-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+.mode-menu.open {
+  transform-origin: top left;
+  animation: motion-menu-in 260ms var(--ease-spring) both;
+}
+
+[dir="rtl"] .mode-menu.open { transform-origin: top right; }
+
+@keyframes motion-menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+
+.has-motion-ripple { position: relative; overflow: hidden; isolation: isolate; }
+.motion-ripple {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  pointer-events: none;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  transform: scale(0);
+  opacity: .8;
+  animation: motion-ripple-out 560ms var(--ease-out) forwards;
+}
+
+@keyframes motion-ripple-out {
+  70% { opacity: .18; }
+  to { opacity: 0; transform: scale(1); }
+}
+
+.learn-bottom-nav button.active span {
+  animation: motion-nav-pop 360ms var(--ease-spring);
+}
+
+@keyframes motion-nav-pop {
+  0% { transform: translateY(3px) scale(.82); }
+  60% { transform: translateY(-1px) scale(1.08); }
+  100% { transform: none; }
+}
+
+.music-home-wave {
+  stroke-dasharray: 18 13;
+  animation: motion-wave-flow 11s linear infinite;
+}
+
+@keyframes motion-wave-flow { to { stroke-dashoffset: -124; } }
+
+.music-home-hero::after {
+  content: "";
+  position: absolute;
+  inset: -70% -30%;
+  z-index: -2;
+  pointer-events: none;
+  background: conic-gradient(from 180deg,transparent,rgba(79,240,208,.08),transparent 28%);
+  animation: motion-ambient-turn 16s linear infinite;
+}
+
+@keyframes motion-ambient-turn { to { transform: rotate(1turn); } }
+
+.translator-orbit-ring-a { animation: translator-orbit-forward 18s linear infinite; }
+.translator-orbit-ring-b { animation: translator-orbit-back 14s linear infinite; }
+.translator-orbit-nodes { animation: translator-orbit-forward 11s linear infinite; }
+.translator-card-source { animation: translator-card-source 4.8s ease-in-out infinite alternate; transform-origin: 55px 72px; }
+.translator-card-target { animation: translator-card-target 5.2s ease-in-out .4s infinite alternate; transform-origin: 105px 89px; }
+.translator-flow { stroke-dasharray: 7 7; animation: translator-flow 2.8s linear infinite; }
+.translator-visual-glow { animation: translator-glow 4s ease-in-out infinite alternate; transform-origin: 80px 80px; }
+
+@keyframes translator-orbit-forward { to { transform: rotate(1turn); } }
+@keyframes translator-orbit-back { to { transform: rotate(-1turn); } }
+@keyframes translator-card-source { to { transform: translate3d(-2px,-3px,0) rotate(-1deg); } }
+@keyframes translator-card-target { to { transform: translate3d(2px,3px,0) rotate(1deg); } }
+@keyframes translator-flow { to { stroke-dashoffset: -28; } }
+@keyframes translator-glow { to { opacity: .62; transform: scale(1.08); } }
+
+.media-lesson.is-playing::before {
+  animation: motion-player-ambient 14s ease-in-out infinite alternate;
+}
+
+@keyframes motion-player-ambient {
+  from { transform: scale(1.16) translate3d(-1.5%, -1%, 0); filter: blur(64px) saturate(1.2); opacity: .36; }
+  to { transform: scale(1.3) translate3d(2%, 1.5%, 0); filter: blur(72px) saturate(1.55); opacity: .5; }
+}
+
+.media-lesson.is-playing .lesson-now-art {
+  animation: motion-cover-breathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes motion-cover-breathe {
+  from { transform: translateY(0) scale(1); box-shadow: 0 28px 70px -24px rgba(0,0,0,.95); }
+  to { transform: translateY(-4px) scale(1.012); box-shadow: 0 34px 86px -22px rgba(0,0,0,.98),0 0 42px -25px var(--accent); }
+}
+
+.lp-play { position: relative; }
+.lp-play.is-playing::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 1px solid color-mix(in srgb,var(--accent) 46%,transparent);
+  border-radius: inherit;
+  animation: motion-play-pulse 2.4s ease-out infinite;
+}
+
+@keyframes motion-play-pulse {
+  0% { opacity: .65; transform: scale(.86); }
+  72%,100% { opacity: 0; transform: scale(1.18); }
+}
+
+.learn-mini-player::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg,transparent 24%,rgba(79,240,208,.07) 48%,transparent 72%);
+  transform: translateX(-110%);
+}
+
+.learn-mini-player.is-playing::before { animation: motion-mini-sheen 5.5s ease-in-out infinite; }
+.learn-mini-player.is-playing .mini-track-open img { animation: motion-mini-cover 3.6s ease-in-out infinite alternate; }
+
+@keyframes motion-mini-sheen {
+  0%,42% { transform: translateX(-110%); }
+  72%,100% { transform: translateX(110%); }
+}
+
+@keyframes motion-mini-cover { to { transform: scale(1.045); filter: saturate(1.12); } }
+
+@keyframes radio-skeleton { to { background-position: -220% 0; } }
+@keyframes radio-bars { 0%,100% { height: 5px; } 45% { height: 18px; } 70% { height: 10px; } }
+@keyframes radio-orbit-forward { to { transform: rotate(1turn); } }
+@keyframes radio-orbit-back { to { transform: rotate(-1turn); } }
+@keyframes radio-art-float { to { transform: translateY(-6px) rotate(2deg) scale(1.018); } }
+@keyframes radio-ambient-drift { to { transform: translate3d(28px,-20px,0) scale(1.18); } }
+@keyframes radio-eq { 0%,100% { transform: scaleY(.18); opacity: .35; } 30% { transform: scaleY(1); opacity: .95; } 62% { transform: scaleY(.46); opacity: .62; } }
+@keyframes radio-play-breathe { to { transform: scale(1.045); box-shadow: 0 22px 60px -14px var(--radio-accent); } }
+@keyframes radio-sheet-rise { from { opacity: 0; transform: translateY(34px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes radio-sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
+body.radio-is-playing .radio-card-bars i,body.radio-is-playing .radio-mini-bars i { animation: radio-bars .8s ease-in-out infinite; }
+body.radio-is-playing .radio-card-bars i:nth-child(2),body.radio-is-playing .radio-mini-bars i:nth-child(2) { animation-delay: -.36s; animation-duration: .64s; }
+body.radio-is-playing .radio-card-bars i:nth-child(3),body.radio-is-playing .radio-mini-bars i:nth-child(3) { animation-delay: -.18s; animation-duration: .92s; }
+body.radio-is-playing .radio-mini-bars i:nth-child(4) { animation-delay: -.51s; animation-duration: .72s; }
+body.radio-is-playing .radio-station-card.is-active > img { animation: motion-mini-cover 6s ease-in-out infinite alternate; }
+.radio-player.is-playing .radio-orbit-one { animation: radio-orbit-forward 18s linear infinite; }
+.radio-player.is-playing .radio-orbit-two { animation: radio-orbit-back 13s linear infinite; }
+.radio-player.is-playing .radio-art-shell { animation: radio-art-float 6s ease-in-out infinite alternate; }
+.radio-player.is-playing .radio-player-ambient span { animation: radio-ambient-drift 9s ease-in-out infinite alternate; }
+.radio-player.is-playing .radio-player-ambient span:nth-child(2) { animation-delay: -3s; animation-duration: 12s; }
+.radio-player.is-playing .radio-player-ambient span:nth-child(3) { animation-delay: -6s; animation-duration: 14s; }
+.radio-player.is-playing .radio-equalizer i { animation: radio-eq .9s ease-in-out infinite; }
+.radio-player.is-playing .radio-equalizer i:nth-child(3n) { animation-delay: -.42s; animation-duration: .72s; }
+.radio-player.is-playing .radio-equalizer i:nth-child(4n) { animation-delay: -.68s; animation-duration: 1.12s; }
+.radio-player.is-playing .radio-equalizer i:nth-child(5n) { animation-delay: -.21s; animation-duration: .82s; }
+.radio-player.is-playing .radio-main-play { animation: radio-play-breathe 2.6s ease-in-out infinite alternate; }
+.radio-station-sheet:not([hidden]) .radio-station-sheet-card { animation: radio-sheet-rise .34s cubic-bezier(.2,.85,.2,1) both; }
+.radio-station-sheet:not([hidden]) .radio-station-sheet-backdrop { animation: radio-sheet-fade .24s ease-out both; }
+
+.lyric-pair {
+  transform-origin: left center;
+  transition: color 320ms var(--ease-standard),opacity 320ms var(--ease-standard),transform 420ms var(--ease-spring),filter 320ms var(--ease-standard);
+}
+
+.lyric-pair.is-active {
+  transform: translate3d(5px,0,0) scale(1.012);
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,.18));
+}
+
+[dir="rtl"] .lyric-pair { transform-origin: right center; }
+[dir="rtl"] .lyric-pair.is-active { transform: translate3d(-5px,0,0) scale(1.012); }
+
+@media (hover: hover) and (pointer: fine) {
+  .learn-track-row,.learn-search-result,.learn-quick-tile,.learn-continue-card,.learn-playlist-card,.learn-artist-card {
+    transition: transform var(--dur-fast) var(--ease-spring),background var(--dur-fast) var(--ease-standard),box-shadow var(--dur-fast) var(--ease-standard);
+  }
+  .learn-track-row:hover,.learn-search-result:hover,.learn-quick-tile:hover { transform: translateY(-2px); }
+  .learn-continue-card:hover,.learn-playlist-card:hover,.learn-artist-card:hover { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-reveal,.view:not([hidden]),.learn-search-page:not([hidden]),.learn-artist-page:not([hidden]),.learn-playlist-page:not([hidden]),
+  .mode-menu.open,.music-home-wave,.music-home-hero::after,.media-lesson.is-playing::before,
+  .media-lesson.is-playing .lesson-now-art,.lp-play.is-playing::after,.learn-mini-player.is-playing::before,
+  .learn-mini-player.is-playing .mini-track-open img,.learn-bottom-nav button.active span,
+  .translator-orbit-ring-a,.translator-orbit-ring-b,.translator-orbit-nodes,.translator-card-source,
+  .translator-card-target,.translator-flow,.translator-visual-glow {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+  .radio-card-skeleton,.radio-card-bars i,.radio-mini-bars i,.radio-orbit,.radio-art-shell,
+  .radio-player-ambient span,.radio-equalizer i,.radio-main-play,.radio-station-card.is-active > img,
+  .radio-station-sheet-card,.radio-station-sheet-backdrop { animation: none !important; }
+}

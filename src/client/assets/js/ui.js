@@ -133,6 +133,7 @@ export const setServerStatus = (statusKey, type = "") => {
   pill.classList.remove("online", "error");
   if (statusKey === "online") pill.classList.add("online");
   if (type === "error") pill.classList.add("error");
+  pill.hidden = statusKey === "online";
 };
 
 export const updateKeyGate = () => {
@@ -254,6 +255,8 @@ export const buildResultMeta = ({ model, timing }, direction) => {
 
 const hideEmptyState = () => {
   if (elements.emptyState) elements.emptyState.hidden = true;
+  if (elements.clearButton) elements.clearButton.hidden = false;
+  if (elements.copyLastButton) elements.copyLastButton.hidden = false;
 };
 
 const appendRow = (role, bubble) => {
