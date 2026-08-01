@@ -4,6 +4,7 @@ import { repositories } from "../../persistence.js";
 import { getCachedLessonByTrackId, cacheTrackLyrics } from "../../services/lesson-cache.service.js";
 import { dedupeCandidates, rankCandidate } from "./result-ranker.js";
 import { ftsPhrase, normalizeSearchText, validateSearchQuery } from "./query-normalizer.js";
+import { fetchLrclibSearch } from "./lrclib.provider.js";
 import { config } from "../../config.js";
 
 const MAX_LYRICS_CANDIDATES = 20;
@@ -43,11 +44,7 @@ const localResultId = (trackId) => -Number.parseInt(
 );
 
 const searchLrclib = async (query) => {
-  const response = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`, {
-    headers: { "User-Agent": "Translator/1.0 (lyrics-first search)" }, signal: AbortSignal.timeout(20000)
-  });
-  if (!response.ok) throw new Error(`Lyrics search returned HTTP ${response.status}.`);
-  const rows = await response.json();
+  const rows = await fetchLrclibSearch(query);
   return dedupeCandidates((Array.isArray(rows) ? rows : []).filter((row) => row.syncedLyrics && parseLrc(row.syncedLyrics).some((line) => line.text))).slice(0, MAX_LYRICS_CANDIDATES);
 };
 

@@ -235,3 +235,9 @@ test("private library artwork URLs are not changed by Array.map indexes", () => 
   assert.match(libraryService, /trackView\(row,\s*\{\s*publicAccess:\s*true\s*\}\)/,
     "only the public catalog should explicitly request public artwork URLs");
 });
+
+test("search failures show the worker error and retry guidance", () => {
+  assert.match(search, /failed \? "Search failed\."/);
+  assert.match(search, /job\.error \|\| "Search failed\."/);
+  assert.match(search, /Submit to try again\./);
+});

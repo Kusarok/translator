@@ -130,14 +130,18 @@ const renderArtistAction = (job) => {
 const render = (job) => {
   el.results.replaceChildren(...job.results.map(resultCard));
   renderArtistAction(job);
-  const done = job.status === "completed" || job.status === "failed";
+  const failed = job.status === "failed";
+  const done = job.status === "completed" || failed;
   el.page.setAttribute("aria-busy", done ? "false" : "true");
   el.loading.hidden = done;
   el.empty.hidden = !done || Boolean(job.results.length);
-  el.stage.textContent = job.status === "searching" ? "Finding songs with lyrics…"
+  el.stage.textContent = failed ? "Search failed."
+    : job.status === "searching" ? "Finding songs with lyrics…"
     : job.status === "verifying" ? "Finding songs you can play…"
       : "Starting your search…";
-  el.summary.textContent = done
+  el.summary.textContent = failed
+    ? `${job.error || "Search failed."} Submit to try again.`
+    : done
     ? `${job.results.length} playable ${job.results.length === 1 ? "song" : "songs"}`
     : "Playable results will appear here automatically";
 };
