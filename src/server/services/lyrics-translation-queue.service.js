@@ -9,12 +9,13 @@ let processing = false;
 const safeError = (error) => String(error?.message || "Translation failed").slice(0, 500);
 const nextDelay = (attempts) => RETRY_DELAYS_MS[Math.min(RETRY_DELAYS_MS.length - 1, Math.max(0, attempts - 1))];
 
-export const scheduleLyricsTranslationRetry = async ({ trackId, error, attempts = 1 }) => {
+export const scheduleLyricsTranslationRetry = async ({ trackId, error, attempts }) => {
+  const retryAttempt = Number(attempts) || 1;
   const result = await scheduleLyricsTranslation({
     trackId,
     targetLanguage: "fa",
-    attempts,
-    delayMs: nextDelay(attempts),
+    ...(attempts == null ? {} : { attempts: retryAttempt }),
+    delayMs: nextDelay(retryAttempt),
     lastError: safeError(error)
   });
   return result.data;

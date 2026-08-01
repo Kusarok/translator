@@ -66,7 +66,8 @@ export const providerRequest = async (body, runtime) => {
       "Content-Type": "application/json",
       ...runtime.extraHeaders
     },
-    body: JSON.stringify(normalizeBody(body, runtime))
+    body: JSON.stringify(normalizeBody(body, runtime)),
+    signal: AbortSignal.timeout(90_000)
   });
 
   if (!response.ok) {
