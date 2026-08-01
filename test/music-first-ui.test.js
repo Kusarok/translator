@@ -17,6 +17,7 @@ const layoutCss = read("src/client/assets/css/layout.css");
 const motionCss = read("src/client/assets/css/motion.css");
 const motionJs = read("src/client/assets/js/motion.js");
 const i18n = read("src/client/assets/js/i18n.js");
+const libraryService = read("services/media-worker/services/library.service.js");
 
 const ids = (source) => [...source.matchAll(/\bid=["']([^"']+)["']/g)].map((match) => match[1]);
 
@@ -226,4 +227,11 @@ test("lyrics translation retries stay simple and refresh without reloading", () 
   const playerTranslationCopy = html.match(/<div class="lesson-translation-state"[\s\S]*?<\/div>/)?.[0] || "";
   assert.doesNotMatch(playerTranslationCopy, /rate limit|provider|queue|API quota/i,
     "technical translation failures must not be exposed in player copy");
+});
+
+test("private library artwork URLs are not changed by Array.map indexes", () => {
+  assert.doesNotMatch(libraryService, /\.map\(trackView\)/,
+    "Array.map must not pass its numeric index into trackView's access options");
+  assert.match(libraryService, /trackView\(row,\s*\{\s*publicAccess:\s*true\s*\}\)/,
+    "only the public catalog should explicitly request public artwork URLs");
 });

@@ -7,7 +7,7 @@ import { getCachedLessonByTrackId } from "./lesson-cache.service.js";
 const artworkUrl = (row, publicAccess = false) => row.artwork_id
   ? `/api/media/${publicAccess ? "public/" : ""}artwork/${row.artwork_id}`
   : row.artwork_url || "";
-const trackView = (row, publicAccess = false) => ({
+const trackView = (row, { publicAccess = false } = {}) => ({
   id: row.id,
   spotifyId: row.external_id,
   sourceUrl: row.source_url,
@@ -29,7 +29,7 @@ const trackView = (row, publicAccess = false) => ({
 
 export const publicLibraryOverview = () => ({
   continueLearning: [], recent: [],
-  catalog: repositories.library.publicCatalog().map((row) => trackView(row, true)),
+  catalog: repositories.library.publicCatalog().map((row) => trackView(row, { publicAccess: true })),
   playlists: [], artists: [], quota: null,
   spotify: { connected: false, configured: false }, guest: true
 });
@@ -58,9 +58,9 @@ const playlistView = (row) => ({
 });
 
 export const libraryOverview = (userId) => ({
-  continueLearning: repositories.library.continueLearning(userId).map(trackView),
-  recent: repositories.library.recent(userId).map(trackView),
-  catalog: repositories.library.catalog(userId).map(trackView),
+  continueLearning: repositories.library.continueLearning(userId).map((row) => trackView(row)),
+  recent: repositories.library.recent(userId).map((row) => trackView(row)),
+  catalog: repositories.library.catalog(userId).map((row) => trackView(row)),
   playlists: repositories.playlists.list(userId).map(playlistView),
   artists: repositories.artists.list(userId).map((row) => ({
     id: row.id, name: row.name, status: row.scan_status, discoveredCount: row.discovered_count,
@@ -96,7 +96,7 @@ export const importSpotifyPlaylist = (userId, payload) => {
 export const getPlaylistDetail = (userId, id) => {
   const playlist = repositories.playlists.findById(id, userId);
   if (!playlist) return null;
-  return { ...playlistView(playlist), tracks: repositories.playlists.tracks(id, userId).map(trackView) };
+  return { ...playlistView(playlist), tracks: repositories.playlists.tracks(id, userId).map((row) => trackView(row)) };
 };
 
 export const updateLearningPlaylist = (userId, id, payload) => {
