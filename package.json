@@ -20,7 +20,7 @@
     "google-auth-library": "^10.9.0",
     "helmet": "^8.3.0",
     "hls.js": "1.6.16",
-    "ws": "^8.21.1"
+    "ws": "^8.21.2"
   },
   "engines": {
     "node": ">=22.13"
